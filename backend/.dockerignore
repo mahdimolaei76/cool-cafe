@@ -1,0 +1,7 @@
+.git
+.env
+.env.*
+uploads/*
+!uploads/.gitkeep
+README.md
+docker-compose.yml
