@@ -3,12 +3,12 @@ FROM docker.arvancloud.ir/golang:1.21-alpine AS builder
 RUN apk add --no-cache git ca-certificates
 
 WORKDIR /app
-ENV GOPROXY=https://goproxy.cn,direct
-ENV GOSUMDB=off
+
 COPY go.mod go.sum ./
-RUN go mod download
 COPY . .
-RUN go build -o api ./cmd/api
+
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -o api ./cmd/api
+
 
 FROM docker.arvancloud.ir/alpine:3.19
 
