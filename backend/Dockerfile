@@ -6,7 +6,7 @@ WORKDIR /app
 ENV GOPROXY=https://goproxy.cn,direct
 ENV GOSUMDB=off
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go build -mod=vendor -o api ./cmd/api
 
 COPY . .
 
