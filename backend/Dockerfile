@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine AS builder
+FROM docker.arvancloud.ir/golang:1.21-alpine AS builder
 
 RUN apk add --no-cache git ca-certificates
 
@@ -12,7 +12,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o api ./cmd/api
 
-FROM alpine:3.19
+FROM docker.arvancloud.ir/alpine:3.19
 
 RUN apk add --no-cache ca-certificates tzdata
 
