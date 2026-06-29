@@ -4,6 +4,7 @@ services:
     image: docker.arvancloud.ir/postgres:16-alpine
     restart: unless-stopped
     environment:
+    
       POSTGRES_USER: coolcafe
       POSTGRES_PASSWORD: coolcafe_secret_2024
       POSTGRES_DB: coolcafe
