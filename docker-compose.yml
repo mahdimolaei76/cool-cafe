@@ -1,7 +1,7 @@
 services:
 
   db:
-    image: postgres:16-alpine
+    image: docker.arvancloud.ir/postgres:16-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: coolcafe
