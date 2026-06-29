@@ -29,9 +29,9 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
-    const order = addOrder({
+    const order = await addOrder({
       customerFirstName: form.firstName,
       customerLastName: form.lastName,
       customerPhone: form.phone,

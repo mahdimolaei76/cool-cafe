@@ -54,9 +54,9 @@ export default function NewOrder() {
   const total = Math.max(0, subtotal - form.discount);
   const itemCount = cart.reduce((s, c) => s + c.quantity, 0);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (cart.length === 0) return;
-    const order = addOrder({
+    const order = await addOrder({
       customerFirstName: form.firstName || 'مشتری', customerLastName: form.lastName || 'حضوری', customerPhone: form.phone,
       items: cart.map(c => ({ id: crypto.randomUUID(), menuItemId: c.menuItem.id, menuItem: c.menuItem, name: c.menuItem.name, price: c.menuItem.price, quantity: c.quantity, subtotal: c.menuItem.price * c.quantity })),
       subtotal, discount: form.discount, total, notes: form.notes, status: 'pending', orderType: form.orderType, paymentMethod: form.paymentMethod, cashier: user?.name || '',

@@ -14,7 +14,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import type { MenuItem } from '@/types';
 
 export default function MenuManagement() {
-  const { menuItems, categories, addMenuItem, updateMenuItem, deleteMenuItem } = useAppStore();
+  const { menuItems, categories, addMenuItem, updateMenuItem, deleteMenuItem, uploadImage } = useAppStore();
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -50,18 +50,22 @@ export default function MenuManagement() {
     setModalOpen(true);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm(p => ({ ...p, image: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+      try {
+        const url = await uploadImage(file);
+        setForm(p => ({ ...p, image: url }));
+      } catch {
+        // fallback base64
+        const reader = new FileReader();
+        reader.onloadend = () => setForm(p => ({ ...p, image: reader.result as string }));
+        reader.readAsDataURL(file);
+      }
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const data = {
       name: form.name,
       description: form.description,
@@ -72,9 +76,9 @@ export default function MenuManagement() {
       isFeatured: form.isFeatured,
     };
     if (editingItem) {
-      updateMenuItem(editingItem.id, data);
+      await updateMenuItem(editingItem.id, data);
     } else {
-      addMenuItem(data);
+      await addMenuItem(data);
     }
     setModalOpen(false);
   };

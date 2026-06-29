@@ -17,8 +17,14 @@ type UploadHandler struct {
 }
 
 func NewUploadHandler(uploadDir string) *UploadHandler {
+	// Create upload directory if it doesn't exist
 	os.MkdirAll(uploadDir, 0755)
 	return &UploadHandler{uploadDir: uploadDir}
+}
+
+type UploadResponse struct {
+	URL      string `json:"url"`
+	Filename string `json:"filename"`
 }
 
 func (h *UploadHandler) Upload(w http.ResponseWriter, r *http.Request) {
@@ -27,40 +33,38 @@ func (h *UploadHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "فایل ارسال نشده")
+		respondError(w, http.StatusBadRequest, "Failed to get file from request")
 		return
 	}
 	defer file.Close()
 
-	// Validate image type
-	ct := header.Header.Get("Content-Type")
-	if !strings.HasPrefix(ct, "image/") {
-		respondError(w, http.StatusBadRequest, "فقط فایل تصویری مجاز است")
+	// Validate file type
+	contentType := header.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "image/") {
+		respondError(w, http.StatusBadRequest, "Only image files are allowed")
 		return
 	}
 
-	// Generate filename
+	// Generate unique filename
 	ext := filepath.Ext(header.Filename)
-	if ext == "" {
-		ext = ".jpg"
-	}
 	filename := fmt.Sprintf("%s-%s%s", time.Now().Format("20060102"), uuid.New().String()[:8], ext)
 
+	// Create file
 	dst, err := os.Create(filepath.Join(h.uploadDir, filename))
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "خطا در ذخیره فایل")
+		respondError(w, http.StatusInternalServerError, "Failed to create file")
 		return
 	}
 	defer dst.Close()
 
+	// Copy file
 	if _, err := io.Copy(dst, file); err != nil {
-		respondError(w, http.StatusInternalServerError, "خطا در ذخیره فایل")
+		respondError(w, http.StatusInternalServerError, "Failed to save file")
 		return
 	}
 
-	// Return URL relative to server root — frontend can access via /uploads/filename
-	respondJSON(w, http.StatusOK, map[string]string{
-		"url":      "/uploads/" + filename,
-		"filename": filename,
+	respondJSON(w, http.StatusOK, UploadResponse{
+		URL:      "/uploads/" + filename,
+		Filename: filename,
 	})
 }

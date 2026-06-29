@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAppStore } from '@/store';
-
 import PublicMenu from '@/pages/PublicMenu';
 import LoginPage from '@/pages/admin/LoginPage';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -20,59 +19,37 @@ import QRCodePage from '@/pages/admin/QRCodePage';
 import SettingsPage from '@/pages/admin/SettingsPage';
 
 export default function App() {
-  const theme = useAppStore(s => s.theme);
+  const { theme, fetchCategories, fetchMenuItems, fetchOrders } = useAppStore();
 
+  // Apply theme
   useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    if (theme === 'dark') document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
   }, [theme]);
+
+  // Fetch data from API on mount (falls back to localStorage cache if offline)
+  useEffect(() => {
+    fetchCategories();
+    fetchMenuItems();
+    fetchOrders();
+  }, [fetchCategories, fetchMenuItems, fetchOrders]);
 
   return (
     <BrowserRouter>
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          style: {
-            background: theme === 'dark' ? '#27272a' : '#fff',
-            color: theme === 'dark' ? '#f4f4f5' : '#18181b',
-            border: theme === 'dark' ? '1px solid #3f3f46' : '1px solid #e4e4e7',
-            borderRadius: '12px',
-          },
-        }}
-      />
+      <Toaster position="top-center" toastOptions={{ style: { background: theme === 'dark' ? '#27272a' : '#fff', color: theme === 'dark' ? '#f4f4f5' : '#18181b', border: theme === 'dark' ? '1px solid #3f3f46' : '1px solid #e4e4e7', borderRadius: '12px' } }} />
       <Routes>
-        {/* Public Menu */}
         <Route path="/" element={<PublicMenu />} />
-        
-        {/* Admin Login */}
         <Route path="/admin/login" element={<LoginPage />} />
-        
-        {/* Cashier Routes - Full access to ordering */}
-        <Route
-          path="/cashier"
-          element={
-            <ProtectedRoute roles={['cashier', 'admin']}>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
+
+        {/* Cashier */}
+        <Route path="/cashier" element={<ProtectedRoute roles={['cashier', 'admin']}><AdminLayout /></ProtectedRoute>}>
           <Route index element={<NewOrder />} />
           <Route path="orders" element={<CashierOrders />} />
           <Route path="dashboard" element={<CashierDashboard />} />
         </Route>
 
-        {/* Admin Routes */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute roles={['admin']}>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
+        {/* Admin */}
+        <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminLayout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
           <Route path="menu" element={<MenuManagement />} />
           <Route path="categories" element={<CategoryManagement />} />
@@ -84,7 +61,6 @@ export default function App() {
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

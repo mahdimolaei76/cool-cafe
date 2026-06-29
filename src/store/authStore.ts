@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { authApi } from '@/lib/api';
 
 interface User {
   id: string;
@@ -10,43 +11,33 @@ interface User {
 
 interface AuthStore {
   user: User | null;
+  token: string | null;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
-// Demo users - در پروداکشن از API استفاده می‌شود
-const DEMO_USERS = [
-  { id: '1', username: 'admin', password: 'admin123', name: 'مدیر سیستم', role: 'admin' as const },
-  { id: '2', username: 'cashier', password: 'cash123', name: 'صندوق‌دار', role: 'cashier' as const },
-];
-
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set) => ({
       user: null,
+      token: null,
       isAuthenticated: false,
 
       login: async (username: string, password: string) => {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        const user = DEMO_USERS.find(u => u.username === username && u.password === password);
-        
-        if (user) {
-          const { password: _, ...userData } = user;
-          set({ user: userData, isAuthenticated: true });
+        try {
+          const res = await authApi.login(username, password);
+          set({ user: res.user, token: res.token, isAuthenticated: true });
           return true;
+        } catch {
+          return false;
         }
-        return false;
       },
 
       logout: () => {
-        set({ user: null, isAuthenticated: false });
+        set({ user: null, token: null, isAuthenticated: false });
       },
     }),
-    {
-      name: 'cool-cafe-auth',
-    }
+    { name: 'cool-cafe-auth' }
   )
 );

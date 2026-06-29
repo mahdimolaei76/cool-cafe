@@ -30,13 +30,13 @@ export default function CategoryManagement() {
     setForm({ name: cat.name, slug: cat.slug, icon: cat.icon, order: cat.order, isActive: cat.isActive });
     setModalOpen(true);
   };
-  const handleSave = () => {
+  const handleSave = async () => {
     const slug = form.name.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-').replace(/(^-|-$)/g, '');
-    if (editingCat) updateCategory(editingCat.id, { ...form, slug });
-    else addCategory({ ...form, slug });
+    if (editingCat) await updateCategory(editingCat.id, { ...form, slug });
+    else await addCategory({ ...form, slug });
     setModalOpen(false);
   };
-  const handleDelete = () => { if (deleteId) { deleteCategory(deleteId); setDeleteId(null); } };
+  const handleDelete = async () => { if (deleteId) { await deleteCategory(deleteId); setDeleteId(null); } };
 
   const moveCategory = (id: string, direction: 'up' | 'down') => {
     const idx = sorted.findIndex(c => c.id === id);
