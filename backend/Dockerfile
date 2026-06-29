@@ -6,11 +6,9 @@ WORKDIR /app
 ENV GOPROXY=https://goproxy.cn,direct
 ENV GOSUMDB=off
 COPY go.mod go.sum ./
-RUN go build -mod=vendor -o api ./cmd/api
-
+RUN go mod download
 COPY . .
-
-RUN CGO_ENABLED=0 GOOS=linux go build -o api ./cmd/api
+RUN go build -o api ./cmd/api
 
 FROM docker.arvancloud.ir/alpine:3.19
 
