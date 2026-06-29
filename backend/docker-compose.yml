@@ -37,7 +37,7 @@ services:
       DB_SSLMODE: disable
       JWT_SECRET: change-me-to-a-random-64-char-string-in-production
       UPLOAD_DIR: /app/uploads
-      ALLOWED_ORIGINS: "http://localhost:5173,http://62.60.129.30"
+      ALLOWED_ORIGINS: "http://localhost:4173,http://62.60.129.30"
     volumes:
       - uploads:/app/uploads
     depends_on:
