@@ -15,14 +15,14 @@ export default function Dashboard() {
     const today = dayjs().startOf('day');
     const yesterday = dayjs().subtract(1, 'day').startOf('day');
 
-    const todayOrders = orders.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled');
-    const yesterdayOrders = orders.filter(o => dayjs(o.createdAt).isAfter(yesterday) && dayjs(o.createdAt).isBefore(today) && o.status !== 'cancelled');
+    const todayOrders = orders?.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled');
+    const yesterdayOrders = orders?.filter(o => dayjs(o.createdAt).isAfter(yesterday) && dayjs(o.createdAt).isBefore(today) && o.status !== 'cancelled');
 
     const todayRevenue = todayOrders.reduce((s, o) => s + o.total, 0);
     const yesterdayRevenue = yesterdayOrders.reduce((s, o) => s + o.total, 0);
-    const activeOrders = orders.filter(o => o.status !== 'cancelled');
+    const activeOrders = orders?.filter(o => o.status !== 'cancelled');
     const totalRevenue = activeOrders.reduce((s, o) => s + o.total, 0);
-    const pendingOrders = orders.filter(o => o.status === 'pending').length;
+    const pendingOrders = orders?.filter(o => o.status === 'pending').length;
 
     return {
       totalRevenue,

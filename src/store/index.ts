@@ -73,7 +73,7 @@ interface AppStore {
   toggleTheme: () => void;
 
   // Settings
-  settings: { name: string; phone: string; email: string; address: string };
+  settings: { name: string; phone: string; email: string; address: string; };
   updateSettings: (s: Partial<AppStore['settings']>) => void;
 }
 
@@ -135,7 +135,7 @@ export const useAppStore = create<AppStore>()(
       },
       deleteCategory: async (id) => {
         try { await categoryApi.delete(id); } catch { /* continue */ }
-        set(s => ({ categories: s.categories.filter(c => c.id !== id) }));
+        set(s => ({ categories: s.categories?.filter(c => c.id !== id) }));
       },
 
       // ─── Menu Items ───

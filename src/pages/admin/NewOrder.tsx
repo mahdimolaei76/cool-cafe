@@ -22,7 +22,7 @@ export default function NewOrder() {
   const [customerModal, setCustomerModal] = useState(false);
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person' as OrderType, paymentMethod: 'cash' as PaymentMethod });
 
-  const activeCategories = categories.filter(c => c.isActive).sort((a, b) => a.order - b.order);
+  const activeCategories = categories?.filter(c => c.isActive).sort((a, b) => a.order - b.order);
 
   // Top 6 best sellers
   const topSellingItems = useMemo(() => {

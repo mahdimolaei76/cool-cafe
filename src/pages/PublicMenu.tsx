@@ -21,7 +21,7 @@ export default function PublicMenu() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const catScrollRef = useRef<HTMLDivElement>(null);
 
-  const activeCategories = categories.filter(c => c.isActive).sort((a, b) => a.order - b.order);
+  const activeCategories = categories?.filter(c => c.isActive).sort((a, b) => a.order - b.order);
 
   const filteredItems = useMemo(() => {
     let items = menuItems;

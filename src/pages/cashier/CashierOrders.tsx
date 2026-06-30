@@ -26,11 +26,11 @@ export default function CashierOrders() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  const activeOrders = orders.filter(o => ['pending', 'preparing', 'ready'].includes(o.status));
+  const activeOrders = orders?.filter(o => ['pending', 'preparing', 'ready'].includes(o.status));
   const statusCounts: Record<string, number> = {
-    pending: orders.filter(o => o.status === 'pending').length,
-    preparing: orders.filter(o => o.status === 'preparing').length,
-    ready: orders.filter(o => o.status === 'ready').length,
+    pending: orders?.filter(o => o.status === 'pending').length || 0,
+    preparing: orders?.filter(o => o.status === 'preparing').length || 0,
+    ready: orders?.filter(o => o.status === 'ready').length || 0,
   };
 
   const filteredOrders = useMemo(() => {
@@ -93,7 +93,7 @@ export default function CashierOrders() {
           { key: 'pending', label: 'در انتظار', count: statusCounts.pending },
           { key: 'preparing', label: 'آماده‌سازی', count: statusCounts.preparing },
           { key: 'ready', label: 'آماده', count: statusCounts.ready },
-          { key: 'delivered', label: 'تحویل شده', count: orders.filter(o => o.status === 'delivered').length },
+          { key: 'delivered', label: 'تحویل شده', count: orders?.filter(o => o.status === 'delivered').length || 0 },
         ].map(s => (
           <button key={s.key} onClick={() => setSelectedStatus(s.key)} className={cn(
             'flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap',

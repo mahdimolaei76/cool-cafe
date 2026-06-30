@@ -38,8 +38,8 @@ export default function AdminLayout() {
   const isCashier = user?.role === 'cashier';
   const navItems = isCashier ? cashierNavItems : adminNavItems;
 
-  const pendingOrdersCount = orders.filter(o => ['pending', 'preparing'].includes(o.status)).length;
-  const activeOrdersCount = orders.filter(o => ['pending', 'preparing', 'ready'].includes(o.status)).length;
+  const pendingOrdersCount = orders?.filter(o => ['pending', 'preparing'].includes(o.status)).length;
+  const activeOrdersCount = orders?.filter(o => ['pending', 'preparing', 'ready'].includes(o.status)).length;
 
   const isActive = (path: string, exact?: boolean) => {
     if (exact) return location.pathname === path;
@@ -108,13 +108,13 @@ export default function AdminLayout() {
           <div className="lg:hidden fixed inset-0 z-40">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
             <motion.div initial={{ x: 280 }} animate={{ x: 0 }} exit={{ x: 280 }} transition={{ type: 'spring', damping: 30, stiffness: 300 }} className="absolute right-0 top-0 bottom-0 w-[300px]">
-              <SidebarContent 
-                onClose={() => setSidebarOpen(false)} 
-                isActive={isActive} 
-                theme={theme} 
-                toggleTheme={toggleTheme} 
-                user={user} 
-                onLogout={handleLogout} 
+              <SidebarContent
+                onClose={() => setSidebarOpen(false)}
+                isActive={isActive}
+                theme={theme}
+                toggleTheme={toggleTheme}
+                user={user}
+                onLogout={handleLogout}
                 navItems={navItems}
                 pendingOrdersCount={pendingOrdersCount}
                 activeOrdersCount={activeOrdersCount}
@@ -127,11 +127,11 @@ export default function AdminLayout() {
 
       {/* Desktop Sidebar */}
       <div className="hidden lg:block fixed right-0 top-0 bottom-0 w-[280px] z-30">
-        <SidebarContent 
-          isActive={isActive} 
-          theme={theme} 
-          toggleTheme={toggleTheme} 
-          user={user} 
+        <SidebarContent
+          isActive={isActive}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          user={user}
           onLogout={handleLogout}
           navItems={navItems}
           pendingOrdersCount={pendingOrdersCount}
@@ -150,12 +150,12 @@ export default function AdminLayout() {
   );
 }
 
-function SidebarContent({ 
-  onClose, 
-  isActive, 
-  theme, 
-  toggleTheme, 
-  user, 
+function SidebarContent({
+  onClose,
+  isActive,
+  theme,
+  toggleTheme,
+  user,
   onLogout,
   navItems,
   pendingOrdersCount,
@@ -166,7 +166,7 @@ function SidebarContent({
   isActive: (path: string, exact?: boolean) => boolean;
   theme: string;
   toggleTheme: () => void;
-  user: { name: string; role: string; username: string } | null;
+  user: { name: string; role: string; username: string; } | null;
   onLogout: () => void;
   navItems: any[];
   pendingOrdersCount: number;
@@ -220,14 +220,14 @@ function SidebarContent({
         <div className="px-4 py-4 border-b border-surface-100 dark:border-surface-800">
           <div className={cn(
             "flex items-center gap-3 p-3 rounded-xl",
-            isCashier 
-              ? "bg-brand-50 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-800" 
+            isCashier
+              ? "bg-brand-50 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-800"
               : "bg-surface-50 dark:bg-surface-800/50"
           )}>
             <div className={cn(
               "w-11 h-11 rounded-full flex items-center justify-center",
-              isCashier 
-                ? "bg-brand-600 text-white" 
+              isCashier
+                ? "bg-brand-600 text-white"
                 : "bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400"
             )}>
               <User className="w-5 h-5" />
@@ -271,17 +271,17 @@ function SidebarContent({
                 'flex items-center gap-4 transition-all duration-200',
                 isCashier
                   ? cn(
-                      'px-5 py-4 rounded-2xl text-base font-bold',
-                      active
-                        ? 'bg-brand-600 text-white shadow-xl shadow-brand-500/30 scale-105'
-                        : 'bg-surface-50 dark:bg-surface-800 text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 border-2 border-surface-200 dark:border-surface-700'
-                    )
+                    'px-5 py-4 rounded-2xl text-base font-bold',
+                    active
+                      ? 'bg-brand-600 text-white shadow-xl shadow-brand-500/30 scale-105'
+                      : 'bg-surface-50 dark:bg-surface-800 text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 border-2 border-surface-200 dark:border-surface-700'
+                  )
                   : cn(
-                      'px-4 py-3 rounded-xl text-sm font-medium',
-                      active
-                        ? 'bg-brand-50 text-brand-800 dark:bg-brand-900/30 dark:text-brand-400 shadow-sm'
-                        : 'text-surface-600 hover:bg-surface-50 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200'
-                    )
+                    'px-4 py-3 rounded-xl text-sm font-medium',
+                    active
+                      ? 'bg-brand-50 text-brand-800 dark:bg-brand-900/30 dark:text-brand-400 shadow-sm'
+                      : 'text-surface-600 hover:bg-surface-50 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200'
+                  )
               )}
             >
               <item.icon className={cn(
@@ -317,7 +317,7 @@ function SidebarContent({
             {theme === 'dark' ? 'حالت روشن' : 'حالت تاریک'}
           </button>
         )}
-        
+
         {!isCashier && (
           <Link
             to="/"
@@ -328,7 +328,7 @@ function SidebarContent({
             مشاهده منو
           </Link>
         )}
-        
+
         <button
           onClick={onLogout}
           className={cn(
