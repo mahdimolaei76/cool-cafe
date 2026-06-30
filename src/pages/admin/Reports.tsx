@@ -18,7 +18,7 @@ export default function Reports() {
   const [filterType, setFilterType] = useState('');
 
   const filteredOrders = useMemo(() => {
-    return orders.filter(o => {
+    return orders?.filter(o => {
       const d = dayjs(o.createdAt);
       if (d.isBefore(dayjs(dateFrom).startOf('day')) || d.isAfter(dayjs(dateTo).endOf('day'))) return false;
       if (filterStatus && o.status !== filterStatus) return false;
@@ -35,12 +35,12 @@ export default function Reports() {
   }, [orders, dateFrom, dateTo, filterStatus, filterType, filterCategory, menuItems]);
 
   const report = useMemo(() => {
-    const active = filteredOrders.filter(o => o.status !== 'cancelled');
+    const active = filteredOrders?.filter(o => o.status !== 'cancelled');
     const totalRevenue = active.reduce((s, o) => s + o.total, 0);
     const totalOrders = active.length;
     const avgOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0;
     const totalDiscount = active.reduce((s, o) => s + o.discount, 0);
-    const cancelled = filteredOrders.filter(o => o.status === 'cancelled').length;
+    const cancelled = filteredOrders?.filter(o => o.status === 'cancelled').length;
     return { totalRevenue, totalOrders, avgOrder, totalDiscount, cancelled };
   }, [filteredOrders]);
 

@@ -22,6 +22,11 @@ import (
 )
 
 func main() {
+    db.Connect()
+
+    runMigrations() // 👈 همیشه اجرا میشه
+
+    startServer()
 	_ = godotenv.Load()
 
 	// Connect to DB with retries

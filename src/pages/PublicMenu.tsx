@@ -25,15 +25,15 @@ export default function PublicMenu() {
 
   const filteredItems = useMemo(() => {
     let items = menuItems;
-    if (selectedCategory !== 'all') items = items.filter(i => i.categoryId === selectedCategory);
+    if (selectedCategory !== 'all') items = items?.filter(i => i.categoryId === selectedCategory);
     if (search) {
       const q = search.toLowerCase();
-      items = items.filter(i => i.name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q));
+      items = items?.filter(i => i.name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q));
     }
     return items;
   }, [menuItems, selectedCategory, search]);
 
-  const featuredItems = useMemo(() => menuItems.filter(i => i.isFeatured && i.isAvailable), [menuItems]);
+  const featuredItems = useMemo(() => menuItems?.filter(i => i.isFeatured && i.isAvailable), [menuItems]);
 
   useEffect(() => {
     if (catScrollRef.current) {

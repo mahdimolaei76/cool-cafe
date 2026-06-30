@@ -40,7 +40,7 @@ export default function Dashboard() {
     const days = 14;
     return Array.from({ length: days }).map((_, i) => {
       const date = dayjs().subtract(days - 1 - i, 'day');
-      const dayOrders = orders.filter(o =>
+      const dayOrders = orders?.filter(o =>
         dayjs(o.createdAt).format('YYYY-MM-DD') === date.format('YYYY-MM-DD') && o.status !== 'cancelled'
       );
       return {
@@ -52,8 +52,8 @@ export default function Dashboard() {
   }, [orders]);
 
   const categoryPerformance = useMemo(() => {
-    const catMap: Record<string, { name: string; revenue: number; count: number }> = {};
-    orders.filter(o => o.status !== 'cancelled').forEach(o => {
+    const catMap: Record<string, { name: string; revenue: number; count: number; }> = {};
+    orders?.filter(o => o.status !== 'cancelled').forEach(o => {
       o.items.forEach(item => {
         const mi = menuItems.find(m => m.id === item.menuItemId);
         const cat = mi ? categories.find(c => c.id === mi.categoryId) : null;

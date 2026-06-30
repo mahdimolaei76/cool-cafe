@@ -14,7 +14,7 @@ import type { Order, OrderStatus } from '@/types';
 dayjs.extend(relativeTime);
 dayjs.locale('fa');
 
-const statusMap: Record<string, { label: string; color: string; bgColor: string; textColor: string; next?: OrderStatus; nextLabel?: string }> = {
+const statusMap: Record<string, { label: string; color: string; bgColor: string; textColor: string; next?: OrderStatus; nextLabel?: string; }> = {
   pending: { label: 'در انتظار', color: 'bg-amber-500', bgColor: 'bg-amber-50 dark:bg-amber-900/20', textColor: 'text-amber-700 dark:text-amber-400', next: 'preparing', nextLabel: 'شروع آماده‌سازی' },
   preparing: { label: 'در حال آماده‌سازی', color: 'bg-blue-500', bgColor: 'bg-blue-50 dark:bg-blue-900/20', textColor: 'text-blue-700 dark:text-blue-400', next: 'ready', nextLabel: 'آماده شد' },
   ready: { label: 'آماده تحویل', color: 'bg-emerald-500', bgColor: 'bg-emerald-50 dark:bg-emerald-900/20', textColor: 'text-emerald-700 dark:text-emerald-400', next: 'delivered', nextLabel: 'تحویل داده شد' },
@@ -34,10 +34,10 @@ export default function CashierOrders() {
   };
 
   const filteredOrders = useMemo(() => {
-    let result = selectedStatus === 'all' ? activeOrders : orders.filter(o => o.status === selectedStatus);
+    let result = selectedStatus === 'all' ? activeOrders : orders?.filter(o => o.status === selectedStatus);
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(o => o.orderNumber.toLowerCase().includes(q) || o.customerFirstName.toLowerCase().includes(q) || o.customerLastName.toLowerCase().includes(q) || o.customerPhone.includes(q));
+      result = result?.filter(o => o.orderNumber.toLowerCase().includes(q) || o.customerFirstName.toLowerCase().includes(q) || o.customerLastName.toLowerCase().includes(q) || o.customerPhone.includes(q));
     }
     return result;
   }, [orders, activeOrders, selectedStatus, searchQuery]);
@@ -45,7 +45,7 @@ export default function CashierOrders() {
   // Daily stats
   const todayStats = useMemo(() => {
     const today = dayjs().startOf('day');
-    const todayOrders = orders.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled');
+    const todayOrders = orders?.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled');
     return {
       count: todayOrders.length,
       revenue: todayOrders.reduce((s, o) => s + o.total, 0),

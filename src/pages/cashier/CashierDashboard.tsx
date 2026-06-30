@@ -14,11 +14,11 @@ export default function CashierDashboard() {
   const today = dayjs().startOf('day');
 
   const stats = useMemo(() => {
-    const todayOrders = orders.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled');
-    const myOrders = todayOrders.filter(o => o.cashier === user?.name);
-    const pending = orders.filter(o => o.status === 'pending').length;
-    const preparing = orders.filter(o => o.status === 'preparing').length;
-    const ready = orders.filter(o => o.status === 'ready').length;
+    const todayOrders = orders?.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled');
+    const myOrders = todayOrders?.filter(o => o.cashier === user?.name);
+    const pending = orders?.filter(o => o.status === 'pending').length;
+    const preparing = orders?.filter(o => o.status === 'preparing').length;
+    const ready = orders?.filter(o => o.status === 'ready').length;
     return {
       todayRevenue: todayOrders.reduce((s, o) => s + o.total, 0),
       todayCount: todayOrders.length,
@@ -31,9 +31,9 @@ export default function CashierDashboard() {
 
   // Hourly chart
   const hourlyData = useMemo(() => {
-    const hours: Record<number, { revenue: number; count: number }> = {};
+    const hours: Record<number, { revenue: number; count: number; }> = {};
     for (let h = 7; h <= 22; h++) hours[h] = { revenue: 0, count: 0 };
-    orders.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled').forEach(o => {
+    orders?.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled').forEach(o => {
       const h = dayjs(o.createdAt).hour();
       if (hours[h]) { hours[h].revenue += o.total; hours[h].count++; }
     });
@@ -42,8 +42,8 @@ export default function CashierDashboard() {
 
   // Top items today
   const topItems = useMemo(() => {
-    const map: Record<string, { name: string; count: number }> = {};
-    orders.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled').forEach(o => {
+    const map: Record<string, { name: string; count: number; }> = {};
+    orders?.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled').forEach(o => {
       o.items.forEach(i => {
         if (!map[i.name]) map[i.name] = { name: i.name, count: 0 };
         map[i.name].count += i.quantity;

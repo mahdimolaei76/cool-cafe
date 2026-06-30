@@ -30,10 +30,10 @@ export default function MenuManagement() {
     let items = menuItems;
     if (search) {
       const q = search.toLowerCase();
-      items = items.filter(i => i.name.toLowerCase().includes(q));
+      items = items?.filter(i => i.name.toLowerCase().includes(q));
     }
     if (filterCategory) {
-      items = items.filter(i => i.categoryId === filterCategory);
+      items = items?.filter(i => i.categoryId === filterCategory);
     }
     return items;
   }, [menuItems, search, filterCategory]);
@@ -267,7 +267,7 @@ export default function MenuManagement() {
 
           <Input label="نام آیتم" placeholder="مثال: کاپوچینو" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
           <Textarea label="توضیحات" placeholder="توضیح کوتاه درباره این آیتم..." value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="قیمت (تومان)" type="number" placeholder="۰" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} />
             <Select label="دسته‌بندی" value={form.categoryId} onChange={e => setForm(p => ({ ...p, categoryId: e.target.value }))} options={categories.map(c => ({ value: c.id, label: `${c.icon} ${c.name}` }))} />

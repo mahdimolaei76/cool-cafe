@@ -28,12 +28,12 @@ export default function NewOrder() {
   const topSellingItems = useMemo(() => {
     const salesCount: Record<string, number> = {};
     orders.forEach(o => { if (o.status !== 'cancelled') o.items.forEach(item => { salesCount[item.menuItemId] = (salesCount[item.menuItemId] || 0) + item.quantity; }); });
-    return Object.entries(salesCount).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([id]) => menuItems.find(m => m.id === id)).filter(Boolean) as MenuItem[];
+    return Object.entries(salesCount).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([id]) => menuItems.find(m => m.id === id))?.filter(Boolean) as MenuItem[];
   }, [orders, menuItems]);
 
   const filteredItems = useMemo(() => {
-    let items = menuItems.filter(m => m.isAvailable);
-    if (selectedCategory !== 'all') items = items.filter(i => i.categoryId === selectedCategory);
+    let items = menuItems?.filter(m => m.isAvailable);
+    if (selectedCategory !== 'all') items = items?.filter(i => i.categoryId === selectedCategory);
     if (search) { const q = search.toLowerCase(); items = items.filter(m => m.name.toLowerCase().includes(q)); }
     return items;
   }, [menuItems, selectedCategory, search]);

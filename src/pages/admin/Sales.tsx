@@ -14,7 +14,7 @@ export default function Sales() {
   const [period, setPeriod] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
 
   const periodDays = { '7d': 7, '30d': 30, '90d': 90, '1y': 365 };
-  const activeOrders = useMemo(() => orders.filter(o => o.status !== 'cancelled'), [orders]);
+  const activeOrders = useMemo(() => orders?.filter(o => o.status !== 'cancelled'), [orders]);
 
   const periodOrders = useMemo(() => {
     const cutoff = dayjs().subtract(periodDays[period], 'day');
@@ -57,7 +57,7 @@ export default function Sales() {
   }, [periodOrders, menuItems, categories]);
 
   const topProducts = useMemo(() => {
-    const prodMap: Record<string, { name: string; sold: number; revenue: number }> = {};
+    const prodMap: Record<string, { name: string; sold: number; revenue: number; }> = {};
     periodOrders.forEach(o => {
       o.items.forEach(item => {
         if (!prodMap[item.name]) prodMap[item.name] = { name: item.name, sold: 0, revenue: 0 };
