@@ -26,7 +26,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
     if (!form.firstName.trim()) e.firstName = 'نام الزامی است';
     if (!form.phone.trim()) e.phone = 'شماره تماس الزامی است';
     setErrors(e);
-    return Object.keys(e).length === 0;
+    return Object.keys(e)?.length === 0;
   };
 
   const handleSubmit = async () => {
@@ -35,7 +35,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
       customerFirstName: form.firstName,
       customerLastName: form.lastName,
       customerPhone: form.phone,
-      items: items.map(ci => ({
+      items: items?.map(ci => ({
         id: crypto.randomUUID(), menuItemId: ci.menuItem.id, menuItem: ci.menuItem,
         name: ci.menuItem.name, price: ci.menuItem.price, quantity: ci.quantity,
         subtotal: ci.menuItem.price * ci.quantity,
@@ -80,7 +80,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                   <h2 className="font-bold text-surface-900 dark:text-surface-100">
                     {step === 'cart' ? 'سبد خرید' : step === 'info' ? 'اطلاعات شما' : 'ثبت شد!'}
                   </h2>
-                  <p className="text-xs text-surface-400">{items.length} محصول</p>
+                  <p className="text-xs text-surface-400">{items?.length} محصول</p>
                 </div>
               </div>
               <button onClick={handleClose} className="p-2.5 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
@@ -93,7 +93,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
               <AnimatePresence mode="wait">
                 {step === 'cart' && (
                   <motion.div key="cart" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-5">
-                    {items.length === 0 ? (
+                    {items?.length === 0 ? (
                       <div className="text-center py-20">
                         <div className="w-20 h-20 bg-surface-100 dark:bg-surface-800 rounded-3xl mx-auto mb-4 flex items-center justify-center">
                           <ShoppingBag className="w-10 h-10 text-surface-300 dark:text-surface-600" />
@@ -103,7 +103,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {items.map(ci => (
+                        {items?.map(ci => (
                           <motion.div key={ci.menuItem.id} layout className="flex gap-4 p-4 bg-surface-50 dark:bg-surface-800/50 rounded-2xl">
                             <img src={ci.menuItem.image} alt={ci.menuItem.name} className="w-20 h-20 rounded-xl object-cover flex-shrink-0" />
                             <div className="flex-1 min-w-0">
@@ -191,7 +191,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
             </div>
 
             {/* Footer */}
-            {step !== 'success' && items.length > 0 && (
+            {step !== 'success' && items?.length > 0 && (
               <div className="border-t-2 border-surface-100 dark:border-surface-800 p-5 space-y-4 bg-white dark:bg-surface-900">
                 <div className="flex items-center justify-between">
                   <span className="text-surface-500 font-medium">جمع کل</span>

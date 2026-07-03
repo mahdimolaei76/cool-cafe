@@ -8,7 +8,8 @@ import { useAuthStore } from '@/store/authStore';
 import Card from '@/components/ui/Card';
 
 export default function CashierDashboard() {
-  const { orders } = useAppStore();
+  const { orders: rawOrders } = useAppStore();
+  const orders = rawOrders ?? [];
   const user = useAuthStore(s => s.user);
 
   const today = dayjs().startOf('day');
@@ -16,15 +17,15 @@ export default function CashierDashboard() {
   const stats = useMemo(() => {
     const todayOrders = orders?.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled');
     const myOrders = todayOrders?.filter(o => o.cashier === user?.name);
-    const pending = orders?.filter(o => o.status === 'pending').length;
-    const preparing = orders?.filter(o => o.status === 'preparing').length;
-    const ready = orders?.filter(o => o.status === 'ready').length;
+    const pending = orders?.filter(o => o.status === 'pending')?.length;
+    const preparing = orders?.filter(o => o.status === 'preparing')?.length;
+    const ready = orders?.filter(o => o.status === 'ready')?.length;
     return {
       todayRevenue: todayOrders.reduce((s, o) => s + o.total, 0),
-      todayCount: todayOrders.length,
-      myCount: myOrders.length,
+      todayCount: todayOrders?.length,
+      myCount: myOrders?.length,
       myRevenue: myOrders.reduce((s, o) => s + o.total, 0),
-      avgOrder: todayOrders.length > 0 ? todayOrders.reduce((s, o) => s + o.total, 0) / todayOrders.length : 0,
+      avgOrder: todayOrders?.length > 0 ? todayOrders.reduce((s, o) => s + o.total, 0) / todayOrders?.length : 0,
       pending, preparing, ready,
     };
   }, [orders, today, user]);
@@ -37,7 +38,7 @@ export default function CashierDashboard() {
       const h = dayjs(o.createdAt).hour();
       if (hours[h]) { hours[h].revenue += o.total; hours[h].count++; }
     });
-    return Object.entries(hours).map(([h, d]) => ({ hour: `${h}:00`, revenue: Math.round(d.revenue / 1000), count: d.count }));
+    return Object.entries(hours)?.map(([h, d]) => ({ hour: `${h}:00`, revenue: Math.round(d.revenue / 1000), count: d.count }));
   }, [orders, today]);
 
   // Top items today
@@ -83,7 +84,7 @@ export default function CashierDashboard() {
           { label: 'سفارش‌های امروز', value: stats.todayCount, icon: ShoppingBag, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' },
           { label: 'سفارش‌های من', value: stats.myCount, icon: ArrowUpRight, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/30' },
           { label: 'میانگین سفارش', value: formatPrice(stats.avgOrder), icon: TrendingUp, color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/30' },
-        ].map((s, i) => (
+        ]?.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
             <Card>
               <div className="flex items-start justify-between">
@@ -123,9 +124,9 @@ export default function CashierDashboard() {
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
           <Card>
             <h3 className="font-bold text-surface-900 dark:text-surface-100 mb-4">پرفروش‌های امروز</h3>
-            {topItems.length > 0 ? (
+            {topItems?.length > 0 ? (
               <div className="space-y-3">
-                {topItems.map((item, i) => (
+                {topItems?.map((item, i) => (
                   <div key={item.name} className="flex items-center gap-3">
                     <span className="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand-600 flex items-center justify-center text-xs font-black">{i + 1}</span>
                     <span className="flex-1 text-sm font-medium text-surface-900 dark:text-surface-100 truncate">{item.name}</span>

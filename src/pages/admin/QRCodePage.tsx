@@ -80,7 +80,7 @@ export default function QRCodePage() {
                 { step: '۲', title: 'چاپ و نصب', desc: 'کد را روی کارت رومیزی، استیکر یا پوستر چاپ کرده و روی میزها قرار دهید.' },
                 { step: '۳', title: 'اسکن مشتری', desc: 'مشتریان با دوربین موبایل کد را اسکن کرده و وارد منو می‌شوند.' },
                 { step: '۴', title: 'سفارش آنلاین', desc: 'مشتری می‌تواند منو را ببیند، انتخاب کند و سفارش ثبت کند.' },
-              ].map(item => (
+              ]?.map(item => (
                 <div key={item.step} className="flex items-start gap-3">
                   <span className="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 flex items-center justify-center text-xs font-bold flex-shrink-0">{item.step}</span>
                   <div>

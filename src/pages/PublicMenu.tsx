@@ -10,7 +10,9 @@ import CartSheet from '@/components/menu/CartSheet';
 import MenuSidebar from '@/components/menu/MenuSidebar';
 
 export default function PublicMenu() {
-  const { menuItems, categories } = useAppStore();
+  const { menuItems: rawMenuItems, categories: rawCategories } = useAppStore();
+  const menuItems = rawMenuItems ?? [];
+  const categories = rawCategories ?? [];
   const cartItemCount = useCartStore(s => s.getItemCount());
   const cartTotal = useCartStore(s => s.getTotal());
   const [search, setSearch] = useState('');
@@ -46,13 +48,13 @@ export default function PublicMenu() {
     if (viewMode === 'list') {
       return (
         <div className="space-y-2">
-          {items.map((item, i) => <MenuItemRow key={item.id} item={item} index={startIndex + i} />)}
+          {items?.map((item, i) => <MenuItemRow key={item.id} item={item} index={startIndex + i} />)}
         </div>
       );
     }
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-        {items.map((item, i) => <MenuItemCard key={item.id} item={item} index={startIndex + i} />)}
+        {items?.map((item, i) => <MenuItemCard key={item.id} item={item} index={startIndex + i} />)}
       </div>
     );
   };
@@ -75,7 +77,7 @@ export default function PublicMenu() {
                 onClick={() => setSelectedCategory('all')}
                 className={cn('flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all', selectedCategory === 'all' ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25' : 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400')}
               >همه</button>
-              {activeCategories.map(cat => (
+              {activeCategories?.map(cat => (
                 <button
                   key={cat.id}
                   data-active={selectedCategory === cat.id}
@@ -117,7 +119,7 @@ export default function PublicMenu() {
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-3 sm:px-4 pb-36">
-        {selectedCategory === 'all' && !search && featuredItems.length > 0 && (
+        {selectedCategory === 'all' && !search && featuredItems?.length > 0 && (
           <section className="mt-6">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-lg">⭐</span>
@@ -128,15 +130,21 @@ export default function PublicMenu() {
         )}
 
         {selectedCategory === 'all' && !search ? (
-          activeCategories.map(cat => {
-            const catItems = menuItems.filter(i => i.categoryId === cat.id);
-            if (catItems.length === 0) return null;
+          menuItems.length === 0 ? (
+            <div className="text-center py-20">
+              <Search className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+              <p className="text-surface-500 font-bold">منو هنوز آماده نشده</p>
+              <p className="text-surface-400 text-sm mt-1">به زودی برمی‌گردیم!</p>
+            </div>
+          ) : activeCategories?.map(cat => {
+            const catItems = menuItems?.filter(i => i.categoryId === cat.id);
+            if (catItems?.length === 0) return null;
             return (
               <section key={cat.id} className="mt-10">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">{cat.icon}</span>
                   <h2 className="text-lg font-black text-surface-900 dark:text-surface-100">{cat.name}</h2>
-                  <span className="text-xs text-surface-400">({catItems.length})</span>
+                  <span className="text-xs text-surface-400">({catItems?.length})</span>
                 </div>
                 {renderItems(catItems)}
               </section>
@@ -144,9 +152,9 @@ export default function PublicMenu() {
           })
         ) : (
           <section className="mt-6">
-            {filteredItems.length > 0 ? (
+            {filteredItems?.length > 0 ? (
               <>
-                <p className="text-sm text-surface-500 mb-3">{filteredItems.length} محصول</p>
+                <p className="text-sm text-surface-500 mb-3">{filteredItems?.length} محصول</p>
                 {renderItems(filteredItems)}
               </>
             ) : (

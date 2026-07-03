@@ -58,7 +58,7 @@ export default function MenuSidebar({ open, onClose }: MenuSidebarProps) {
 
             {/* Navigation */}
             <nav className="flex-1 p-4 space-y-1">
-              {menuItems.map((item) => (
+              {menuItems?.map((item) => (
                 <a
                   key={item.label}
                   href={item.href}
@@ -69,7 +69,7 @@ export default function MenuSidebar({ open, onClose }: MenuSidebarProps) {
                   <span className="font-medium">{item.label}</span>
                 </a>
               ))}
-              
+
               <div className="pt-4 border-t border-surface-100 dark:border-surface-800 mt-4">
                 <Link
                   to="/admin"

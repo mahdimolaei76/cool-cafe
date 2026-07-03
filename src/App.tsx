@@ -26,7 +26,6 @@ export default function App() {
     if (theme === 'dark') document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
   }, [theme]);
-
   // Fetch data from API on mount (falls back to localStorage cache if offline)
   useEffect(() => {
     fetchCategories();

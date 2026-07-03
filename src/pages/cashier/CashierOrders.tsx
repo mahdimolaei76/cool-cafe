@@ -14,23 +14,24 @@ import type { Order, OrderStatus } from '@/types';
 dayjs.extend(relativeTime);
 dayjs.locale('fa');
 
-const statusMap: Record<string, { label: string; color: string; bgColor: string; textColor: string; next?: OrderStatus; nextLabel?: string; }> = {
-  pending: { label: 'در انتظار', color: 'bg-amber-500', bgColor: 'bg-amber-50 dark:bg-amber-900/20', textColor: 'text-amber-700 dark:text-amber-400', next: 'preparing', nextLabel: 'شروع آماده‌سازی' },
-  preparing: { label: 'در حال آماده‌سازی', color: 'bg-blue-500', bgColor: 'bg-blue-50 dark:bg-blue-900/20', textColor: 'text-blue-700 dark:text-blue-400', next: 'ready', nextLabel: 'آماده شد' },
-  ready: { label: 'آماده تحویل', color: 'bg-emerald-500', bgColor: 'bg-emerald-50 dark:bg-emerald-900/20', textColor: 'text-emerald-700 dark:text-emerald-400', next: 'delivered', nextLabel: 'تحویل داده شد' },
+const statusMap: Record<string, { label: string; color: string; bgColor: string; textColor: string; badgeVariant: 'warning' | 'info' | 'success'; next?: OrderStatus; nextLabel?: string; }> = {
+  pending: { label: 'در انتظار', color: 'bg-amber-500', bgColor: 'bg-amber-50 dark:bg-amber-900/20', textColor: 'text-amber-700 dark:text-amber-400', badgeVariant: 'warning', next: 'preparing', nextLabel: 'شروع آماده‌سازی' },
+  preparing: { label: 'در حال آماده‌سازی', color: 'bg-blue-500', bgColor: 'bg-blue-50 dark:bg-blue-900/20', textColor: 'text-blue-700 dark:text-blue-400', badgeVariant: 'info', next: 'ready', nextLabel: 'آماده شد' },
+  ready: { label: 'آماده تحویل', color: 'bg-emerald-500', bgColor: 'bg-emerald-50 dark:bg-emerald-900/20', textColor: 'text-emerald-700 dark:text-emerald-400', badgeVariant: 'success', next: 'delivered', nextLabel: 'تحویل داده شد' },
 };
 
 export default function CashierOrders() {
-  const { orders, updateOrderStatus } = useAppStore();
+  const { orders: rawOrders, updateOrderStatus } = useAppStore();
+  const orders = rawOrders ?? [];
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const activeOrders = orders?.filter(o => ['pending', 'preparing', 'ready'].includes(o.status));
   const statusCounts: Record<string, number> = {
-    pending: orders?.filter(o => o.status === 'pending').length || 0,
-    preparing: orders?.filter(o => o.status === 'preparing').length || 0,
-    ready: orders?.filter(o => o.status === 'ready').length || 0,
+    pending: orders?.filter(o => o.status === 'pending')?.length || 0,
+    preparing: orders?.filter(o => o.status === 'preparing')?.length || 0,
+    ready: orders?.filter(o => o.status === 'ready')?.length || 0,
   };
 
   const filteredOrders = useMemo(() => {
@@ -47,9 +48,9 @@ export default function CashierOrders() {
     const today = dayjs().startOf('day');
     const todayOrders = orders?.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled');
     return {
-      count: todayOrders.length,
+      count: todayOrders?.length,
       revenue: todayOrders.reduce((s, o) => s + o.total, 0),
-      avg: todayOrders.length > 0 ? todayOrders.reduce((s, o) => s + o.total, 0) / todayOrders.length : 0,
+      avg: todayOrders?.length > 0 ? todayOrders.reduce((s, o) => s + o.total, 0) / todayOrders?.length : 0,
     };
   }, [orders]);
 
@@ -63,7 +64,7 @@ export default function CashierOrders() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black text-surface-900 dark:text-surface-100">سفارش‌ها</h1>
-          <p className="text-sm text-surface-500">{activeOrders.length} سفارش فعال</p>
+          <p className="text-sm text-surface-500">{activeOrders?.length} سفارش فعال</p>
         </div>
       </div>
 
@@ -89,12 +90,12 @@ export default function CashierOrders() {
       {/* Status Filter */}
       <div className="flex gap-2 overflow-x-auto no-scrollbar">
         {[
-          { key: 'all', label: 'همه فعال', count: activeOrders.length },
+          { key: 'all', label: 'همه فعال', count: activeOrders?.length },
           { key: 'pending', label: 'در انتظار', count: statusCounts.pending },
           { key: 'preparing', label: 'آماده‌سازی', count: statusCounts.preparing },
           { key: 'ready', label: 'آماده', count: statusCounts.ready },
-          { key: 'delivered', label: 'تحویل شده', count: orders?.filter(o => o.status === 'delivered').length || 0 },
-        ].map(s => (
+          { key: 'delivered', label: 'تحویل شده', count: orders?.filter(o => o.status === 'delivered')?.length || 0 },
+        ]?.map(s => (
           <button key={s.key} onClick={() => setSelectedStatus(s.key)} className={cn(
             'flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap',
             selectedStatus === s.key ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25' : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 border border-surface-200 dark:border-surface-700'
@@ -114,7 +115,7 @@ export default function CashierOrders() {
       {/* Orders List */}
       <div className="space-y-3">
         <AnimatePresence mode="popLayout">
-          {filteredOrders.map((order, i) => {
+          {filteredOrders?.map((order, i) => {
             const config = statusMap[order.status];
             const isUrgent = dayjs().diff(dayjs(order.createdAt), 'minute') > 15 && order.status === 'pending';
             return (
@@ -125,13 +126,13 @@ export default function CashierOrders() {
                     <span className="font-mono text-sm font-black text-surface-900 dark:text-surface-100" dir="ltr">#{order.orderNumber.replace('COOL-', '')}</span>
                     {isUrgent && <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse"><Bell className="w-3 h-3 inline" /> فوری</span>}
                   </div>
-                  {config && <span className={cn('px-2 py-1 rounded-lg text-xs font-bold', config.bgColor, config.textColor)}>{config.label}</span>}
+                  {config && <Badge variant={config.badgeVariant} dot>{config.label}</Badge>}
                   {!config && <Badge variant={order.status === 'delivered' ? 'success' : 'danger'}>{order.status === 'delivered' ? 'تحویل شده' : 'لغو شده'}</Badge>}
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-bold text-surface-900 dark:text-surface-100 text-sm">{order.customerFirstName} {order.customerLastName}</p>
-                    <p className="text-xs text-surface-400 mt-0.5">{order.items.length} آیتم · {dayjs(order.createdAt).fromNow()}</p>
+                    <p className="text-xs text-surface-400 mt-0.5">{order.items?.length} آیتم · {dayjs(order.createdAt).fromNow()}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-lg font-black text-brand-600">{formatPrice(order.total)}</span>
@@ -146,7 +147,7 @@ export default function CashierOrders() {
             );
           })}
         </AnimatePresence>
-        {filteredOrders.length === 0 && (
+        {filteredOrders?.length === 0 && (
           <div className="text-center py-16">
             <CheckCircle2 className="w-12 h-12 text-surface-300 mx-auto mb-3" />
             <p className="font-bold text-surface-500">سفارشی نیست</p>
@@ -184,7 +185,7 @@ export default function CashierOrders() {
               </div>
             </div>
             <div className="space-y-2">
-              {selectedOrder.items.map(item => (
+              {selectedOrder.items?.map(item => (
                 <div key={item.id} className="flex items-center justify-between p-3 bg-surface-50 dark:bg-surface-800 rounded-xl">
                   <span className="text-sm"><span className="font-bold">{item.quantity}×</span> {item.name}</span>
                   <span className="font-bold text-sm">{formatPrice(item.subtotal)}</span>

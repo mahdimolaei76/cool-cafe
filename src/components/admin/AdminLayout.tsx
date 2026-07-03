@@ -32,14 +32,15 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { theme, toggleTheme, orders } = useAppStore();
+  const { theme, toggleTheme, orders: rawOrders } = useAppStore();
   const { user, logout } = useAuthStore();
+  const orders = rawOrders ?? [];
 
   const isCashier = user?.role === 'cashier';
   const navItems = isCashier ? cashierNavItems : adminNavItems;
 
-  const pendingOrdersCount = orders?.filter(o => ['pending', 'preparing'].includes(o.status)).length;
-  const activeOrdersCount = orders?.filter(o => ['pending', 'preparing', 'ready'].includes(o.status)).length;
+  const pendingOrdersCount = orders?.filter(o => ['pending', 'preparing'].includes(o.status))?.length;
+  const activeOrdersCount = orders?.filter(o => ['pending', 'preparing', 'ready'].includes(o.status))?.length;
 
   const isActive = (path: string, exact?: boolean) => {
     if (exact) return location.pathname === path;
@@ -92,10 +93,10 @@ export default function AdminLayout() {
                 {pendingOrdersCount} در انتظار
               </div>
               <div className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white rounded-full text-xs font-bold">
-                {orders.filter(o => o.status === 'preparing').length} در حال آماده‌سازی
+                {orders?.filter(o => o.status === 'preparing')?.length} در حال آماده‌سازی
               </div>
               <div className="flex-shrink-0 px-3 py-1.5 bg-emerald-600 text-white rounded-full text-xs font-bold">
-                {orders.filter(o => o.status === 'ready').length} آماده
+                {orders?.filter(o => o.status === 'ready')?.length} آماده
               </div>
             </div>
           </div>
@@ -255,7 +256,7 @@ function SidebarContent({
         "flex-1 overflow-y-auto",
         isCashier ? "py-6 px-4 space-y-3" : "py-4 px-3 space-y-1"
       )}>
-        {navItems.map(item => {
+        {navItems?.map(item => {
           const active = isActive(item.path, item.exact);
           const showBadge = item.badge && (
             isCashier ? activeOrdersCount > 0 : pendingOrdersCount > 0

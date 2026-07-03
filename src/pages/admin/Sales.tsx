@@ -10,7 +10,10 @@ import Card from '@/components/ui/Card';
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6', '#ec4899', '#64748b', '#d97706'];
 
 export default function Sales() {
-  const { orders, menuItems, categories } = useAppStore();
+  const { orders: rawOrders, menuItems: rawMenuItems, categories: rawCategories } = useAppStore();
+  const orders = rawOrders ?? [];
+  const menuItems = rawMenuItems ?? [];
+  const categories = rawCategories ?? [];
   const [period, setPeriod] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
 
   const periodDays = { '7d': 7, '30d': 30, '90d': 90, '1y': 365 };
@@ -18,27 +21,27 @@ export default function Sales() {
 
   const periodOrders = useMemo(() => {
     const cutoff = dayjs().subtract(periodDays[period], 'day');
-    return activeOrders.filter(o => dayjs(o.createdAt).isAfter(cutoff));
+    return activeOrders?.filter(o => dayjs(o.createdAt).isAfter(cutoff));
   }, [activeOrders, period]);
 
   const totalRevenue = periodOrders.reduce((s, o) => s + o.total, 0);
-  const totalOrdersCount = periodOrders.length;
+  const totalOrdersCount = periodOrders?.length;
   const avgOrderValue = totalOrdersCount > 0 ? totalRevenue / totalOrdersCount : 0;
-  const onlineOrders = periodOrders.filter(o => o.orderType === 'online');
-  const inPersonOrders = periodOrders.filter(o => o.orderType === 'in-person');
+  const onlineOrders = periodOrders?.filter(o => o.orderType === 'online');
+  const inPersonOrders = periodOrders?.filter(o => o.orderType === 'in-person');
   const onlineRevenue = onlineOrders.reduce((s, o) => s + o.total, 0);
   const inPersonRevenue = inPersonOrders.reduce((s, o) => s + o.total, 0);
 
   const revenueByDay = useMemo(() => {
     const days = periodDays[period];
-    return Array.from({ length: Math.min(days, 30) }).map((_, i) => {
+    return Array.from({ length: Math.min(days, 30) })?.map((_, i) => {
       const numDays = Math.min(days, 30);
       const date = dayjs().subtract(numDays - 1 - i, 'day');
       const dayOrders = periodOrders.filter(o => dayjs(o.createdAt).format('YYYY-MM-DD') === date.format('YYYY-MM-DD'));
       return {
         date: date.format('MM/DD'),
         revenue: Math.round(dayOrders.reduce((s, o) => s + o.total, 0) / 1000),
-        orders: dayOrders.length,
+        orders: dayOrders?.length,
       };
     });
   }, [periodOrders, period]);
@@ -53,7 +56,7 @@ export default function Sales() {
         catMap[name] = (catMap[name] || 0) + item.subtotal;
       });
     });
-    return Object.entries(catMap).map(([name, value]) => ({ name, value: Math.round(value / 1000) })).sort((a, b) => b.value - a.value);
+    return Object.entries(catMap)?.map(([name, value]) => ({ name, value: Math.round(value / 1000) })).sort((a, b) => b.value - a.value);
   }, [periodOrders, menuItems, categories]);
 
   const topProducts = useMemo(() => {
@@ -69,8 +72,8 @@ export default function Sales() {
   }, [periodOrders]);
 
   const orderTypeData = [
-    { name: 'آنلاین', value: onlineOrders.length, revenue: onlineRevenue },
-    { name: 'حضوری', value: inPersonOrders.length, revenue: inPersonRevenue },
+    { name: 'آنلاین', value: onlineOrders?.length, revenue: onlineRevenue },
+    { name: 'حضوری', value: inPersonOrders?.length, revenue: inPersonRevenue },
   ];
 
   return (
@@ -81,7 +84,7 @@ export default function Sales() {
           <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">تحلیل درآمد و عملکرد</p>
         </div>
         <div className="flex gap-1 bg-surface-100 dark:bg-surface-800 p-1 rounded-xl">
-          {(['7d', '30d', '90d', '1y'] as const).map(p => (
+          {(['7d', '30d', '90d', '1y'] as const)?.map(p => (
             <button key={p} onClick={() => setPeriod(p)} className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-all', period === p ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-100 shadow-sm' : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300')}>
               {p === '7d' ? '۷ روز' : p === '30d' ? '۳۰ روز' : p === '90d' ? '۹۰ روز' : '۱ سال'}
             </button>
@@ -96,7 +99,7 @@ export default function Sales() {
           { label: 'کل سفارش‌ها', value: totalOrdersCount, icon: ShoppingBag, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400' },
           { label: 'میانگین سفارش', value: formatPrice(avgOrderValue), icon: TrendingUp, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/30 dark:text-purple-400' },
           { label: 'درآمد آنلاین', value: formatPrice(onlineRevenue), icon: Users, color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400' },
-        ].map((s, i) => (
+        ]?.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
             <Card>
               <div className="flex items-start justify-between">
@@ -142,8 +145,8 @@ export default function Sales() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={categoryBreakdown} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" paddingAngle={2}>
-                  {categoryBreakdown.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  {categoryBreakdown?.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS?.length]} />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e4e4e7', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} formatter={(v) => `${Number(v)} هزار تومان`} />
@@ -151,15 +154,17 @@ export default function Sales() {
             </ResponsiveContainer>
           </div>
           <div className="space-y-2 mt-4">
-            {categoryBreakdown.slice(0, 5).map((c, i) => (
+            {categoryBreakdown.length > 0 ? categoryBreakdown.slice(0, 5).map((c, i) => (
               <div key={c.name} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS?.length] }} />
                   <span className="text-surface-600 dark:text-surface-400 text-xs">{c.name}</span>
                 </div>
                 <span className="font-medium text-surface-900 dark:text-surface-100 text-xs">{c.value} هزار</span>
               </div>
-            ))}
+            )) : (
+              <p className="text-sm text-surface-400 text-center py-4">داده‌ای برای این بازه زمانی ثبت نشده</p>
+            )}
           </div>
         </Card>
       </div>
@@ -169,7 +174,7 @@ export default function Sales() {
         <Card>
           <h3 className="font-semibold text-surface-900 dark:text-surface-100 mb-4">پرفروش‌ترین‌ها</h3>
           <div className="space-y-3">
-            {topProducts.slice(0, 8).map((p, i) => (
+            {topProducts.length > 0 ? topProducts.slice(0, 8).map((p, i) => (
               <div key={p.name} className="flex items-center gap-3">
                 <span className="w-6 h-6 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 flex items-center justify-center text-xs font-bold">{i + 1}</span>
                 <div className="flex-1 min-w-0">
@@ -178,7 +183,9 @@ export default function Sales() {
                 </div>
                 <span className="text-sm font-semibold text-surface-900 dark:text-surface-100">{formatPrice(p.revenue)}</span>
               </div>
-            ))}
+            )) : (
+              <p className="text-sm text-surface-400 text-center py-8">داده‌ای برای این بازه زمانی ثبت نشده</p>
+            )}
           </div>
         </Card>
 
@@ -199,12 +206,12 @@ export default function Sales() {
             <div className="p-3 bg-surface-50 dark:bg-surface-800/50 rounded-xl text-center">
               <p className="text-xs text-surface-400">آنلاین</p>
               <p className="text-lg font-bold text-surface-900 dark:text-surface-100 mt-1">{formatPrice(onlineRevenue)}</p>
-              <p className="text-xs text-surface-400">{onlineOrders.length} سفارش</p>
+              <p className="text-xs text-surface-400">{onlineOrders?.length} سفارش</p>
             </div>
             <div className="p-3 bg-surface-50 dark:bg-surface-800/50 rounded-xl text-center">
               <p className="text-xs text-surface-400">حضوری</p>
               <p className="text-lg font-bold text-surface-900 dark:text-surface-100 mt-1">{formatPrice(inPersonRevenue)}</p>
-              <p className="text-xs text-surface-400">{inPersonOrders.length} سفارش</p>
+              <p className="text-xs text-surface-400">{inPersonOrders?.length} سفارش</p>
             </div>
           </div>
         </Card>

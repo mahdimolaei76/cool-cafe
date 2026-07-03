@@ -24,13 +24,13 @@ export const useCartStore = create<CartStore>((set, get) => ({
   items: [],
   addItem: (menuItem) => set((s) => {
     const ex = s.items.find(i => i.menuItem.id === menuItem.id);
-    if (ex) return { items: s.items.map(i => i.menuItem.id === menuItem.id ? { ...i, quantity: i.quantity + 1 } : i) };
+    if (ex) return { items: s.items?.map(i => i.menuItem.id === menuItem.id ? { ...i, quantity: i.quantity + 1 } : i) };
     return { items: [...s.items, { menuItem, quantity: 1 }] };
   }),
-  removeItem: (id) => set(s => ({ items: s.items.filter(i => i.menuItem.id !== id) })),
+  removeItem: (id) => set(s => ({ items: s.items?.filter(i => i.menuItem.id !== id) })),
   updateQuantity: (id, qty) => {
-    if (qty <= 0) set(s => ({ items: s.items.filter(i => i.menuItem.id !== id) }));
-    else set(s => ({ items: s.items.map(i => i.menuItem.id === id ? { ...i, quantity: qty } : i) }));
+    if (qty <= 0) set(s => ({ items: s.items?.filter(i => i.menuItem.id !== id) }));
+    else set(s => ({ items: s.items?.map(i => i.menuItem.id === id ? { ...i, quantity: qty } : i) }));
   },
   clearCart: () => set({ items: [] }),
   getTotal: () => get().items.reduce((s, i) => s + i.menuItem.price * i.quantity, 0),
@@ -92,7 +92,7 @@ export const useAppStore = create<AppStore>()(
       fetchCategories: async () => {
         try {
           const data = await categoryApi.list();
-          set({ categories: data, apiOnline: true });
+          set({ categories: Array.isArray(data) ? data : [], apiOnline: true });
         } catch {
           set({ apiOnline: false });
         }
@@ -100,7 +100,7 @@ export const useAppStore = create<AppStore>()(
       fetchMenuItems: async () => {
         try {
           const data = await menuApi.list(false);
-          set({ menuItems: data, apiOnline: true });
+          set({ menuItems: Array.isArray(data) ? data : [], apiOnline: true });
         } catch {
           set({ apiOnline: false });
         }
@@ -108,7 +108,7 @@ export const useAppStore = create<AppStore>()(
       fetchOrders: async () => {
         try {
           const res = await orderApi.list({ limit: 200 });
-          set({ orders: res.orders || [], apiOnline: true });
+          set({ orders: Array.isArray(res?.orders) ? res.orders : [], apiOnline: true });
         } catch {
           set({ apiOnline: false });
         }
@@ -128,9 +128,9 @@ export const useAppStore = create<AppStore>()(
       updateCategory: async (id, data) => {
         try {
           const updated = await categoryApi.update(id, data);
-          set(s => ({ categories: s.categories.map(c => c.id === id ? { ...c, ...updated } : c) }));
+          set(s => ({ categories: s.categories?.map(c => c.id === id ? { ...c, ...updated } : c) }));
         } catch {
-          set(s => ({ categories: s.categories.map(c => c.id === id ? { ...c, ...data, updatedAt: new Date().toISOString() } : c) }));
+          set(s => ({ categories: s.categories?.map(c => c.id === id ? { ...c, ...data, updatedAt: new Date().toISOString() } : c) }));
         }
       },
       deleteCategory: async (id) => {
@@ -151,14 +151,14 @@ export const useAppStore = create<AppStore>()(
       updateMenuItem: async (id, data) => {
         try {
           const updated = await menuApi.update(id, data);
-          set(s => ({ menuItems: s.menuItems.map(m => m.id === id ? { ...m, ...updated } : m) }));
+          set(s => ({ menuItems: s.menuItems?.map(m => m.id === id ? { ...m, ...updated } : m) }));
         } catch {
-          set(s => ({ menuItems: s.menuItems.map(m => m.id === id ? { ...m, ...data } : m) }));
+          set(s => ({ menuItems: s.menuItems?.map(m => m.id === id ? { ...m, ...data } : m) }));
         }
       },
       deleteMenuItem: async (id) => {
         try { await menuApi.delete(id); } catch { /* continue */ }
-        set(s => ({ menuItems: s.menuItems.filter(m => m.id !== id) }));
+        set(s => ({ menuItems: s.menuItems?.filter(m => m.id !== id) }));
       },
 
       // ─── Orders ───
@@ -187,7 +187,7 @@ export const useAppStore = create<AppStore>()(
         } catch { /* continue */ }
         const now = new Date().toISOString();
         set(s => ({
-          orders: s.orders.map(o => o.id === id ? {
+          orders: s.orders?.map(o => o.id === id ? {
             ...o, status, updatedAt: now,
             timeline: [...(o.timeline || []), { status, timestamp: now, note }],
           } : o),
@@ -229,6 +229,19 @@ export const useAppStore = create<AppStore>()(
         theme: s.theme,
         settings: s.settings,
       }),
+      // Guard against corrupted/legacy cached data (e.g. `null` instead of `[]`
+      // from an older API response) so the very first render — before fetch*
+      // effects run — never crashes on .filter/.map/.length of a non-array.
+      merge: (persistedState, currentState) => {
+        const persisted = (persistedState ?? {}) as Partial<AppStore>;
+        return {
+          ...currentState,
+          ...persisted,
+          categories: Array.isArray(persisted.categories) ? persisted.categories : [],
+          menuItems: Array.isArray(persisted.menuItems) ? persisted.menuItems : [],
+          orders: Array.isArray(persisted.orders) ? persisted.orders : [],
+        };
+      },
     }
   )
 );

@@ -14,7 +14,9 @@ import EmptyState from '@/components/ui/EmptyState';
 import type { MenuItem } from '@/types';
 
 export default function MenuManagement() {
-  const { menuItems, categories, addMenuItem, updateMenuItem, deleteMenuItem, uploadImage } = useAppStore();
+  const { menuItems: rawMenuItems, categories: rawCategories, addMenuItem, updateMenuItem, deleteMenuItem, uploadImage } = useAppStore();
+  const menuItems = rawMenuItems ?? [];
+  const categories = rawCategories ?? [];
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -103,7 +105,7 @@ export default function MenuManagement() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">مدیریت منو</h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">{menuItems.length} آیتم</p>
+          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">{menuItems?.length} آیتم</p>
         </div>
         <Button onClick={openCreate} icon={<Plus className="w-4 h-4" />}>افزودن آیتم</Button>
       </div>
@@ -111,11 +113,11 @@ export default function MenuManagement() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'کل آیتم‌ها', value: menuItems.length, color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
-          { label: 'موجود', value: menuItems.filter(m => m.isAvailable).length, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' },
-          { label: 'ناموجود', value: menuItems.filter(m => !m.isAvailable).length, color: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
-          { label: 'ویژه', value: menuItems.filter(m => m.isFeatured).length, color: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' },
-        ].map(stat => (
+          { label: 'کل آیتم‌ها', value: menuItems?.length, color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
+          { label: 'موجود', value: menuItems?.filter(m => m.isAvailable)?.length, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' },
+          { label: 'ناموجود', value: menuItems?.filter(m => !m.isAvailable)?.length, color: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
+          { label: 'ویژه', value: menuItems?.filter(m => m.isFeatured)?.length, color: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' },
+        ]?.map(stat => (
           <div key={stat.label} className={`p-4 rounded-2xl ${stat.color}`}>
             <p className="text-2xl font-bold">{stat.value}</p>
             <p className="text-sm opacity-80">{stat.label}</p>
@@ -139,15 +141,15 @@ export default function MenuManagement() {
             value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
             placeholder="همه دسته‌ها"
-            options={categories.map(c => ({ value: c.id, label: `${c.icon} ${c.name}` }))}
+            options={categories?.map(c => ({ value: c.id, label: `${c.icon} ${c.name}` }))}
             className="sm:w-56"
           />
         </div>
 
-        {filtered.length > 0 ? (
+        {filtered?.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <AnimatePresence>
-              {filtered.map((item, index) => {
+              {filtered?.map((item, index) => {
                 const cat = categories.find(c => c.id === item.categoryId);
                 return (
                   <motion.div
@@ -197,7 +199,12 @@ export default function MenuManagement() {
             </AnimatePresence>
           </div>
         ) : (
-          <EmptyState icon={<Search className="w-6 h-6" />} title="موردی یافت نشد" description="جستجو یا فیلتر را تغییر دهید" />
+          <EmptyState
+            icon={<Search className="w-6 h-6" />}
+            title={menuItems.length === 0 ? 'هنوز آیتمی اضافه نشده' : 'موردی یافت نشد'}
+            description={menuItems.length === 0 ? 'برای شروع، اولین آیتم منو را اضافه کنید' : 'جستجو یا فیلتر را تغییر دهید'}
+            action={menuItems.length === 0 ? <Button onClick={openCreate} icon={<Plus className="w-4 h-4" />}>افزودن آیتم</Button> : undefined}
+          />
         )}
       </Card>
 
@@ -251,7 +258,7 @@ export default function MenuManagement() {
                 </Button>
                 <p className="text-xs text-surface-400">یا یک تصویر پیش‌فرض انتخاب کنید:</p>
                 <div className="flex gap-2 flex-wrap">
-                  {presetImages.map(img => (
+                  {presetImages?.map(img => (
                     <button
                       key={img.value}
                       onClick={() => setForm(p => ({ ...p, image: img.value }))}
@@ -270,7 +277,7 @@ export default function MenuManagement() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="قیمت (تومان)" type="number" placeholder="۰" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} />
-            <Select label="دسته‌بندی" value={form.categoryId} onChange={e => setForm(p => ({ ...p, categoryId: e.target.value }))} options={categories.map(c => ({ value: c.id, label: `${c.icon} ${c.name}` }))} />
+            <Select label="دسته‌بندی" value={form.categoryId} onChange={e => setForm(p => ({ ...p, categoryId: e.target.value }))} options={categories?.map(c => ({ value: c.id, label: `${c.icon} ${c.name}` }))} />
           </div>
 
           <div className="flex items-center gap-6 p-4 bg-surface-50 dark:bg-surface-800 rounded-xl">

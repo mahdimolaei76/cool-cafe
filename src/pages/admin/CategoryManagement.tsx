@@ -8,10 +8,13 @@ import Input from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import EmptyState from '@/components/ui/EmptyState';
 import type { Category } from '@/types';
 
 export default function CategoryManagement() {
-  const { categories, menuItems, addCategory, updateCategory, deleteCategory } = useAppStore();
+  const { categories: rawCategories, menuItems: rawMenuItems, addCategory, updateCategory, deleteCategory } = useAppStore();
+  const categories = rawCategories ?? [];
+  const menuItems = rawMenuItems ?? [];
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -22,7 +25,7 @@ export default function CategoryManagement() {
 
   const openCreate = () => {
     setEditingCat(null);
-    setForm({ name: '', slug: '', icon: '☕', order: categories.length + 1, isActive: true });
+    setForm({ name: '', slug: '', icon: '☕', order: categories?.length + 1, isActive: true });
     setModalOpen(true);
   };
   const openEdit = (cat: Category) => {
@@ -43,7 +46,7 @@ export default function CategoryManagement() {
     if (direction === 'up' && idx > 0) {
       updateCategory(sorted[idx].id, { order: sorted[idx - 1].order });
       updateCategory(sorted[idx - 1].id, { order: sorted[idx].order });
-    } else if (direction === 'down' && idx < sorted.length - 1) {
+    } else if (direction === 'down' && idx < sorted?.length - 1) {
       updateCategory(sorted[idx].id, { order: sorted[idx + 1].order });
       updateCategory(sorted[idx + 1].id, { order: sorted[idx].order });
     }
@@ -56,16 +59,24 @@ export default function CategoryManagement() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">دسته‌بندی‌ها</h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">{categories.length} دسته‌بندی · ترتیب نمایش در منوی مشتری</p>
+          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">{categories?.length} دسته‌بندی · ترتیب نمایش در منوی مشتری</p>
         </div>
         <Button onClick={openCreate} icon={<Plus className="w-4 h-4" />}>افزودن دسته‌بندی</Button>
       </div>
 
       <Card>
+        {sorted.length === 0 ? (
+          <EmptyState
+            icon={<Plus className="w-6 h-6" />}
+            title="هنوز دسته‌بندی‌ای ثبت نشده"
+            description="برای شروع، اولین دسته‌بندی منو را اضافه کنید"
+            action={<Button onClick={openCreate} icon={<Plus className="w-4 h-4" />}>افزودن دسته‌بندی</Button>}
+          />
+        ) : (
         <div className="space-y-2">
           <AnimatePresence>
-            {sorted.map((cat, idx) => {
-              const catItems = menuItems.filter(m => m.categoryId === cat.id);
+            {sorted?.map((cat, idx) => {
+              const catItems = menuItems?.filter(m => m.categoryId === cat.id);
               const isExpanded = expandedCat === cat.id;
               return (
                 <motion.div key={cat.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -73,7 +84,7 @@ export default function CategoryManagement() {
                     {/* Reorder Buttons */}
                     <div className="flex flex-col gap-0.5 flex-shrink-0">
                       <button onClick={() => moveCategory(cat.id, 'up')} disabled={idx === 0} className="p-0.5 text-surface-400 hover:text-surface-600 disabled:opacity-30"><ChevronUp className="w-4 h-4" /></button>
-                      <button onClick={() => moveCategory(cat.id, 'down')} disabled={idx === sorted.length - 1} className="p-0.5 text-surface-400 hover:text-surface-600 disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
+                      <button onClick={() => moveCategory(cat.id, 'down')} disabled={idx === sorted?.length - 1} className="p-0.5 text-surface-400 hover:text-surface-600 disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
                     </div>
                     <span className="text-2xl flex-shrink-0">{cat.icon}</span>
                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpandedCat(isExpanded ? null : cat.id)}>
@@ -81,7 +92,7 @@ export default function CategoryManagement() {
                         <h3 className="font-bold text-surface-900 dark:text-surface-100">{cat.name}</h3>
                         <Badge variant={cat.isActive ? 'success' : 'default'} dot>{cat.isActive ? 'فعال' : 'غیرفعال'}</Badge>
                       </div>
-                      <p className="text-xs text-surface-400 mt-0.5">{catItems.length} آیتم</p>
+                      <p className="text-xs text-surface-400 mt-0.5">{catItems?.length} آیتم</p>
                     </div>
                     <div className="flex items-center gap-1">
                       <button onClick={() => openEdit(cat)} className="p-2 rounded-lg text-surface-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"><Edit2 className="w-4 h-4" /></button>
@@ -90,15 +101,15 @@ export default function CategoryManagement() {
                   </div>
                   {/* Expanded — show items */}
                   <AnimatePresence>
-                    {isExpanded && catItems.length > 0 && (
+                    {isExpanded && catItems?.length > 0 && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                         <div className="pr-12 pl-4 py-2 space-y-1">
-                          {catItems.map(item => (
+                          {catItems?.map(item => (
                             <div key={item.id} className="flex items-center gap-3 p-2.5 bg-white dark:bg-surface-900 rounded-lg border border-surface-100 dark:border-surface-800">
                               <img src={item.image} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
                               <span className="flex-1 text-sm font-medium text-surface-900 dark:text-surface-100 truncate">{item.name}</span>
                               <span className="text-xs font-bold text-brand-600">{formatPrice(item.price)}</span>
-                              <Badge variant={item.isAvailable ? 'success' : 'danger'} className="text-[10px]">{item.isAvailable ? 'موجود' : 'ناموجود'}</Badge>
+                              <Badge variant={item.isAvailable ? 'success' : 'danger'}>{item.isAvailable ? 'موجود' : 'ناموجود'}</Badge>
                             </div>
                           ))}
                         </div>
@@ -110,6 +121,7 @@ export default function CategoryManagement() {
             })}
           </AnimatePresence>
         </div>
+        )}
       </Card>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editingCat ? 'ویرایش دسته‌بندی' : 'افزودن دسته‌بندی'}
@@ -124,7 +136,7 @@ export default function CategoryManagement() {
           <div>
             <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">آیکون</label>
             <div className="flex flex-wrap gap-2">
-              {emojiOptions.map(emoji => (
+              {emojiOptions?.map(emoji => (
                 <button key={emoji} type="button" onClick={() => setForm(p => ({ ...p, icon: emoji }))} className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all ${form.icon === emoji ? 'bg-brand-100 ring-2 ring-brand-500 dark:bg-brand-900/30' : 'bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700'}`}>{emoji}</button>
               ))}
             </div>

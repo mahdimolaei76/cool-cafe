@@ -13,7 +13,10 @@ import type { OrderType, PaymentMethod, MenuItem } from '@/types';
 interface CartEntry { menuItem: MenuItem; quantity: number; }
 
 export default function NewOrder() {
-  const { menuItems, categories, orders, addOrder } = useAppStore();
+  const { menuItems: rawMenuItems, categories: rawCategories, orders: rawOrders, addOrder } = useAppStore();
+  const menuItems = rawMenuItems ?? [];
+  const categories = rawCategories ?? [];
+  const orders = rawOrders ?? [];
   const user = useAuthStore(s => s.user);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -28,12 +31,12 @@ export default function NewOrder() {
   const topSellingItems = useMemo(() => {
     const salesCount: Record<string, number> = {};
     orders.forEach(o => { if (o.status !== 'cancelled') o.items.forEach(item => { salesCount[item.menuItemId] = (salesCount[item.menuItemId] || 0) + item.quantity; }); });
-    return Object.entries(salesCount).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([id]) => menuItems.find(m => m.id === id))?.filter(Boolean) as MenuItem[];
+    return Object.entries(salesCount).sort((a, b) => b[1] - a[1]).slice(0, 6)?.map(([id]) => menuItems.find(m => m.id === id))?.filter(Boolean) as MenuItem[];
   }, [orders, menuItems]);
 
   const filteredItems = useMemo(() => {
-    let items = menuItems?.filter(m => m.isAvailable);
-    if (selectedCategory !== 'all') items = items?.filter(i => i.categoryId === selectedCategory);
+    let items = menuItems.filter(m => m.isAvailable);
+    if (selectedCategory !== 'all') items = items.filter(i => i.categoryId === selectedCategory);
     if (search) { const q = search.toLowerCase(); items = items.filter(m => m.name.toLowerCase().includes(q)); }
     return items;
   }, [menuItems, selectedCategory, search]);
@@ -41,13 +44,13 @@ export default function NewOrder() {
   const addToCart = (item: MenuItem) => {
     setCart(prev => {
       const ex = prev.find(c => c.menuItem.id === item.id);
-      if (ex) return prev.map(c => c.menuItem.id === item.id ? { ...c, quantity: c.quantity + 1 } : c);
+      if (ex) return prev?.map(c => c.menuItem.id === item.id ? { ...c, quantity: c.quantity + 1 } : c);
       return [...prev, { menuItem: item, quantity: 1 }];
     });
   };
   const updateQty = (id: string, qty: number) => {
-    if (qty <= 0) setCart(prev => prev.filter(c => c.menuItem.id !== id));
-    else setCart(prev => prev.map(c => c.menuItem.id === id ? { ...c, quantity: qty } : c));
+    if (qty <= 0) setCart(prev => prev?.filter(c => c.menuItem.id !== id));
+    else setCart(prev => prev?.map(c => c.menuItem.id === id ? { ...c, quantity: qty } : c));
   };
 
   const subtotal = cart.reduce((s, c) => s + c.menuItem.price * c.quantity, 0);
@@ -55,10 +58,10 @@ export default function NewOrder() {
   const itemCount = cart.reduce((s, c) => s + c.quantity, 0);
 
   const handleSubmit = async () => {
-    if (cart.length === 0) return;
+    if (cart?.length === 0) return;
     const order = await addOrder({
       customerFirstName: form.firstName || 'مشتری', customerLastName: form.lastName || 'حضوری', customerPhone: form.phone,
-      items: cart.map(c => ({ id: crypto.randomUUID(), menuItemId: c.menuItem.id, menuItem: c.menuItem, name: c.menuItem.name, price: c.menuItem.price, quantity: c.quantity, subtotal: c.menuItem.price * c.quantity })),
+      items: cart?.map(c => ({ id: crypto.randomUUID(), menuItemId: c.menuItem.id, menuItem: c.menuItem, name: c.menuItem.name, price: c.menuItem.price, quantity: c.quantity, subtotal: c.menuItem.price * c.quantity })),
       subtotal, discount: form.discount, total, notes: form.notes, status: 'pending', orderType: form.orderType, paymentMethod: form.paymentMethod, cashier: user?.name || '',
     });
     setSuccess(order.orderNumber);
@@ -93,14 +96,14 @@ export default function NewOrder() {
       {/* ── Left: Menu ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top sellers */}
-        {topSellingItems.length > 0 && (
+        {topSellingItems?.length > 0 && (
           <div className="mb-4 p-3 bg-gradient-to-r from-brand-50 to-orange-50 dark:from-brand-900/20 dark:to-orange-900/20 rounded-2xl border border-brand-100 dark:border-brand-800">
             <div className="flex items-center gap-2 mb-2">
               <Flame className="w-4 h-4 text-brand-600" />
               <span className="text-sm font-bold text-brand-700 dark:text-brand-400">پرفروش‌ها</span>
             </div>
             <div className="flex gap-2 overflow-x-auto no-scrollbar">
-              {topSellingItems.map(item => {
+              {topSellingItems?.map(item => {
                 const inCart = cart.find(c => c.menuItem.id === item.id);
                 return (
                   <button key={item.id} onClick={() => addToCart(item)} className={cn('flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl transition-all text-right', inCart ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/30' : 'bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 hover:border-brand-400')}>
@@ -122,7 +125,7 @@ export default function NewOrder() {
           <button onClick={() => setSelectedCategory('all')} className={cn('flex-shrink-0 px-5 py-3 rounded-2xl text-sm font-bold transition-all', selectedCategory === 'all' ? 'bg-brand-600 text-white shadow-xl shadow-brand-500/30 scale-105' : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 border-2 border-surface-200 dark:border-surface-700')}>
             همه
           </button>
-          {activeCategories.map(cat => (
+          {activeCategories?.map(cat => (
             <button key={cat.id} onClick={() => setSelectedCategory(cat.id)} className={cn('flex-shrink-0 px-5 py-3 rounded-2xl text-sm font-bold transition-all whitespace-nowrap', selectedCategory === cat.id ? 'bg-brand-600 text-white shadow-xl shadow-brand-500/30 scale-105' : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 border-2 border-surface-200 dark:border-surface-700')}>
               <span className="ml-2 text-lg">{cat.icon}</span>{cat.name}
             </button>
@@ -137,6 +140,13 @@ export default function NewOrder() {
 
         {/* Items Grid */}
         <div className="flex-1 overflow-y-auto">
+          {filteredItems.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center py-16">
+              <Search className="w-12 h-12 text-surface-200 dark:text-surface-700 mb-3" />
+              <p className="text-surface-400 font-bold">موردی یافت نشد</p>
+              <p className="text-surface-300 dark:text-surface-600 text-sm mt-1">جستجو یا دسته‌بندی را تغییر دهید</p>
+            </div>
+          ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredItems.map(item => {
               const inCart = cart.find(c => c.menuItem.id === item.id);
@@ -155,6 +165,7 @@ export default function NewOrder() {
               );
             })}
           </div>
+          )}
         </div>
       </div>
 
@@ -166,19 +177,19 @@ export default function NewOrder() {
               <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center"><ShoppingCart className="w-6 h-6" /></div>
               <div><h3 className="font-black text-xl">سفارش جاری</h3><p className="text-white/70 text-sm">{itemCount} آیتم</p></div>
             </div>
-            {cart.length > 0 && <button onClick={() => setCart([])} className="p-2.5 bg-white/20 hover:bg-white/30 rounded-xl transition-colors"><Trash2 className="w-5 h-5" /></button>}
+            {cart?.length > 0 && <button onClick={() => setCart([])} className="p-2.5 bg-white/20 hover:bg-white/30 rounded-xl transition-colors"><Trash2 className="w-5 h-5" /></button>}
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           <AnimatePresence mode="popLayout">
-            {cart.length === 0 ? (
+            {cart?.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center py-12">
                 <ShoppingCart className="w-16 h-16 text-surface-200 dark:text-surface-700 mb-3" />
                 <p className="text-surface-400 font-bold">سبد خرید خالی</p>
                 <p className="text-surface-300 dark:text-surface-600 text-sm mt-1">محصولات رو از سمت چپ انتخاب کنید</p>
               </div>
-            ) : cart.map(c => (
+            ) : cart?.map(c => (
               <motion.div key={c.menuItem.id} layout initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex gap-4 p-4 bg-surface-50 dark:bg-surface-800/50 rounded-2xl">
                 <img src={c.menuItem.image} alt="" className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -200,15 +211,15 @@ export default function NewOrder() {
           </AnimatePresence>
         </div>
 
-        {cart.length > 0 && (
+        {cart?.length > 0 && (
           <div className="flex-shrink-0 border-t-2 border-surface-100 dark:border-surface-800 p-4 space-y-3">
             <div className="flex gap-2">
-              {[{ v: 'in-person', l: 'حضوری', i: User }, { v: 'online', l: 'آنلاین', i: Smartphone }].map(t => (
+              {[{ v: 'in-person', l: 'حضوری', i: User }, { v: 'online', l: 'آنلاین', i: Smartphone }]?.map(t => (
                 <button key={t.v} onClick={() => setForm(p => ({ ...p, orderType: t.v as OrderType }))} className={cn('flex-1 py-2.5 rounded-xl border-2 flex items-center justify-center gap-2 text-sm font-bold transition-all', form.orderType === t.v ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : 'border-surface-200 dark:border-surface-700 text-surface-500')}>
                   <t.i className="w-4 h-4" />{t.l}
                 </button>
               ))}
-              {[{ v: 'cash', l: 'نقد', i: Banknote }, { v: 'card', l: 'کارت', i: CreditCard }].map(p => (
+              {[{ v: 'cash', l: 'نقد', i: Banknote }, { v: 'card', l: 'کارت', i: CreditCard }]?.map(p => (
                 <button key={p.v} onClick={() => setForm(f => ({ ...f, paymentMethod: p.v as PaymentMethod }))} className={cn('flex-1 py-2.5 rounded-xl border-2 flex items-center justify-center gap-2 text-sm font-bold transition-all', form.paymentMethod === p.v ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : 'border-surface-200 dark:border-surface-700 text-surface-500')}>
                   <p.i className="w-4 h-4" />{p.l}
                 </button>
@@ -223,7 +234,7 @@ export default function NewOrder() {
           </div>
         )}
 
-        {cart.length > 0 && (
+        {cart?.length > 0 && (
           <div className="flex-shrink-0 p-5 bg-surface-50 dark:bg-surface-800/50 border-t-2 border-surface-100 dark:border-surface-800">
             <div className="flex items-center justify-between mb-4">
               {form.discount > 0 && <p className="text-xs text-emerald-600">تخفیف: -{formatPrice(form.discount)}</p>}

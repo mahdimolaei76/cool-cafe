@@ -16,7 +16,7 @@ import type { Order, OrderStatus } from '@/types';
 dayjs.extend(relativeTime);
 dayjs.locale('fa');
 
-const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'info' | 'success' | 'default' | 'danger'; icon: typeof Clock; color: string; bgColor: string }> = {
+const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'info' | 'success' | 'default' | 'danger'; icon: typeof Clock; color: string; bgColor: string; }> = {
   pending: { label: 'در انتظار', variant: 'warning', icon: Clock, color: 'text-amber-600', bgColor: 'bg-amber-50 dark:bg-amber-900/30' },
   preparing: { label: 'در حال آماده‌سازی', variant: 'info', icon: ChefHat, color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-900/30' },
   ready: { label: 'آماده تحویل', variant: 'success', icon: CheckCircle2, color: 'text-emerald-600', bgColor: 'bg-emerald-50 dark:bg-emerald-900/30' },
@@ -28,18 +28,19 @@ const typeLabels: Record<string, string> = { 'in-person': 'حضوری', 'online'
 const paymentLabels: Record<string, string> = { 'cash': 'نقدی', 'card': 'کارت', 'other': 'سایر' };
 
 export default function OrderManagement() {
-  const { orders, updateOrderStatus } = useAppStore();
+  const { orders: rawOrders, updateOrderStatus } = useAppStore();
+  const orders = rawOrders ?? [];
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');
-  
+
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [confirmAction, setConfirmAction] = useState<{ orderId: string; status: OrderStatus } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ orderId: string; status: OrderStatus; } | null>(null);
 
   const filtered = useMemo(() => {
     let result = orders;
     if (search) {
       const q = search.toLowerCase();
-      result = result.filter(o =>
+      result = result?.filter(o =>
         o.orderNumber.toLowerCase().includes(q) ||
         o.customerFirstName.toLowerCase().includes(q) ||
         o.customerLastName.toLowerCase().includes(q) ||
@@ -47,7 +48,7 @@ export default function OrderManagement() {
       );
     }
     if (statusFilter) {
-      result = result.filter(o => o.status === statusFilter);
+      result = result?.filter(o => o.status === statusFilter);
     }
     return result;
   }, [orders, search, statusFilter]);
@@ -75,7 +76,7 @@ export default function OrderManagement() {
   }, [orders]);
 
   // Active orders (pending, preparing, ready)
-  const activeOrders = filtered.filter(o => ['pending', 'preparing', 'ready'].includes(o.status));
+  const activeOrders = filtered?.filter(o => ['pending', 'preparing', 'ready'].includes(o.status));
 
   return (
     <div className="space-y-6">
@@ -94,11 +95,11 @@ export default function OrderManagement() {
 
       {/* Status Quick Filters */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        {(['', 'pending', 'preparing', 'ready', 'delivered'] as const).map(status => {
+        {(['', 'pending', 'preparing', 'ready', 'delivered'] as const)?.map(status => {
           const config = status ? statusConfig[status] : null;
-          const count = status ? (statusCounts[status] || 0) : orders.length;
+          const count = status ? (statusCounts[status] || 0) : orders?.length;
           const isActive = statusFilter === status;
-          
+
           return (
             <button
               key={status || 'all'}
@@ -142,12 +143,12 @@ export default function OrderManagement() {
       </div>
 
       {/* Active Orders Grid */}
-      {activeOrders.length > 0 && !statusFilter && (
+      {activeOrders?.length > 0 && !statusFilter && (
         <div>
           <h2 className="text-lg font-bold text-surface-900 dark:text-surface-100 mb-4">سفارش‌های فعال</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <AnimatePresence>
-              {activeOrders.slice(0, 6).map((order, index) => (
+              {activeOrders.slice(0, 6)?.map((order, index) => (
                 <OrderCard
                   key={order.id}
                   order={order}
@@ -166,7 +167,7 @@ export default function OrderManagement() {
       <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-800 overflow-hidden">
         <div className="p-4 border-b border-surface-100 dark:border-surface-800">
           <h3 className="font-semibold text-surface-900 dark:text-surface-100">
-            {statusFilter ? statusConfig[statusFilter].label : 'همه سفارش‌ها'} ({filtered.length})
+            {statusFilter ? statusConfig[statusFilter].label : 'همه سفارش‌ها'} ({filtered?.length})
           </h3>
         </div>
         <div className="overflow-x-auto">
@@ -183,7 +184,7 @@ export default function OrderManagement() {
               </tr>
             </thead>
             <tbody>
-              {filtered.slice(0, 20).map(order => (
+              {filtered.length > 0 ? filtered.slice(0, 20).map(order => (
                 <tr
                   key={order.id}
                   onClick={() => setSelectedOrder(order)}
@@ -228,7 +229,13 @@ export default function OrderManagement() {
                     )}
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-sm text-surface-400">
+                    {search || statusFilter ? 'سفارشی با این فیلتر یافت نشد' : 'هنوز سفارشی ثبت نشده است'}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -261,7 +268,7 @@ function OrderCard({ order, index, onView, onStatusChange, nextStatus }: {
   nextStatus?: OrderStatus;
 }) {
   const config = statusConfig[order.status];
-  
+
   return (
     <motion.div
       layout
@@ -290,7 +297,7 @@ function OrderCard({ order, index, onView, onStatusChange, nextStatus }: {
 
       <div className="mb-3">
         <p className="font-medium text-surface-900 dark:text-surface-100">{order.customerFirstName} {order.customerLastName}</p>
-        <p className="text-xs text-surface-400">{order.items.length} آیتم</p>
+        <p className="text-xs text-surface-400">{order.items?.length} آیتم</p>
       </div>
 
       <div className="flex items-center justify-between">
@@ -363,9 +370,9 @@ function OrderDetail({ order, onStatusChange, nextStatus }: {
 
       {/* Items */}
       <div>
-        <p className="text-sm font-medium text-surface-500 mb-3">آیتم‌ها ({order.items.length})</p>
+        <p className="text-sm font-medium text-surface-500 mb-3">آیتم‌ها ({order.items?.length})</p>
         <div className="space-y-2">
-          {order.items.map(item => (
+          {order.items?.map(item => (
             <div key={item.id} className="flex items-center justify-between p-3 bg-surface-50 dark:bg-surface-800/50 rounded-xl">
               <div className="flex items-center gap-3">
                 <span className="w-8 h-8 bg-brand-100 dark:bg-brand-900/30 rounded-lg flex items-center justify-center text-sm font-bold text-brand-700 dark:text-brand-400">
@@ -412,7 +419,7 @@ function OrderDetail({ order, onStatusChange, nextStatus }: {
       <div>
         <p className="text-sm font-medium text-surface-500 mb-3">تاریخچه</p>
         <div className="space-y-3">
-          {order.timeline.map((event, i) => {
+          {order.timeline?.map((event, i) => {
             const eventConfig = statusConfig[event.status];
             return (
               <div key={i} className="flex items-start gap-3">

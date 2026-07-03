@@ -8,9 +8,13 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Badge from '@/components/ui/Badge';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default function Reports() {
-  const { orders, categories, menuItems } = useAppStore();
+  const { orders: rawOrders, categories: rawCategories, menuItems: rawMenuItems } = useAppStore();
+  const orders = rawOrders ?? [];
+  const categories = rawCategories ?? [];
+  const menuItems = rawMenuItems ?? [];
   const [dateFrom, setDateFrom] = useState(dayjs().subtract(30, 'day').format('YYYY-MM-DD'));
   const [dateTo, setDateTo] = useState(dayjs().format('YYYY-MM-DD'));
   const [filterCategory, setFilterCategory] = useState('');
@@ -37,16 +41,16 @@ export default function Reports() {
   const report = useMemo(() => {
     const active = filteredOrders?.filter(o => o.status !== 'cancelled');
     const totalRevenue = active.reduce((s, o) => s + o.total, 0);
-    const totalOrders = active.length;
+    const totalOrders = active?.length;
     const avgOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0;
     const totalDiscount = active.reduce((s, o) => s + o.discount, 0);
-    const cancelled = filteredOrders?.filter(o => o.status === 'cancelled').length;
+    const cancelled = filteredOrders?.filter(o => o.status === 'cancelled')?.length;
     return { totalRevenue, totalOrders, avgOrder, totalDiscount, cancelled };
   }, [filteredOrders]);
 
   const exportCSV = () => {
     const headers = ['شماره سفارش', 'تاریخ', 'مشتری', 'وضعیت', 'نوع', 'پرداخت', 'جمع', 'تخفیف', 'نهایی', 'آیتم‌ها'];
-    const rows = filteredOrders.map(o => [
+    const rows = filteredOrders?.map(o => [
       o.orderNumber,
       dayjs(o.createdAt).format('YYYY-MM-DD HH:mm'),
       `${o.customerFirstName} ${o.customerLastName}`,
@@ -56,10 +60,10 @@ export default function Reports() {
       o.subtotal,
       o.discount,
       o.total,
-      o.items.map(i => `${i.name}×${i.quantity}`).join('; '),
+      o.items?.map(i => `${i.name}×${i.quantity}`).join('; '),
     ]);
 
-    const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
+    const csv = '\uFEFF' + [headers.join(','), ...rows?.map(r => r?.map(c => `"${c}"`).join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -95,7 +99,7 @@ export default function Reports() {
         </div>
 
         <div className="flex gap-2 mb-4 flex-wrap">
-          {[{ key: 'today', label: 'امروز' }, { key: 'week', label: 'این هفته' }, { key: 'month', label: 'این ماه' }].map(p => (
+          {[{ key: 'today', label: 'امروز' }, { key: 'week', label: 'این هفته' }, { key: 'month', label: 'این ماه' }]?.map(p => (
             <button key={p.key} onClick={() => setPreset(p.key as 'today' | 'week' | 'month')} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors">
               {p.label}
             </button>
@@ -105,7 +109,7 @@ export default function Reports() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <Input label="از تاریخ" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
           <Input label="تا تاریخ" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
-          <Select label="دسته‌بندی" value={filterCategory} onChange={e => setFilterCategory(e.target.value)} placeholder="همه" options={categories.map(c => ({ value: c.id, label: c.name }))} />
+          <Select label="دسته‌بندی" value={filterCategory} onChange={e => setFilterCategory(e.target.value)} placeholder="همه" options={categories?.map(c => ({ value: c.id, label: c.name }))} />
           <Select label="وضعیت" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} placeholder="همه" options={[
             { value: 'pending', label: 'در انتظار' },
             { value: 'preparing', label: 'در حال آماده‌سازی' },
@@ -128,7 +132,7 @@ export default function Reports() {
           { label: 'میانگین', value: formatPrice(report.avgOrder) },
           { label: 'تخفیف‌ها', value: formatPrice(report.totalDiscount) },
           { label: 'لغو شده', value: report.cancelled },
-        ].map((s, i) => (
+        ]?.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
             <Card>
               <p className="text-xs text-surface-400">{s.label}</p>
@@ -141,9 +145,16 @@ export default function Reports() {
       {/* Orders table */}
       <Card>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-surface-900 dark:text-surface-100">سفارش‌ها ({filteredOrders.length})</h3>
+          <h3 className="font-semibold text-surface-900 dark:text-surface-100">سفارش‌ها ({filteredOrders?.length})</h3>
         </div>
         <div className="overflow-x-auto">
+          {filteredOrders.length === 0 ? (
+            <EmptyState
+              icon={<Filter className="w-6 h-6" />}
+              title="سفارشی یافت نشد"
+              description="بازه زمانی یا فیلترها را تغییر دهید"
+            />
+          ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-surface-100 dark:border-surface-800">
@@ -170,6 +181,7 @@ export default function Reports() {
               ))}
             </tbody>
           </table>
+          )}
         </div>
         {filteredOrders.length > 50 && (
           <p className="text-xs text-surface-400 text-center mt-4">نمایش ۵۰ سفارش از {filteredOrders.length}. برای دیدن همه، خروجی بگیرید.</p>

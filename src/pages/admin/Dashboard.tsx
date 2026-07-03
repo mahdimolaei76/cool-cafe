@@ -9,7 +9,11 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 
 export default function Dashboard() {
-  const { orders, menuItems, categories } = useAppStore();
+  const { orders: rawOrders, menuItems: rawMenuItems, categories: rawCategories } = useAppStore();
+  // Normalize once: guarantees every .filter/.map/.length below always has a real array to work with.
+  const orders = rawOrders ?? [];
+  const menuItems = rawMenuItems ?? [];
+  const categories = rawCategories ?? [];
 
   const metrics = useMemo(() => {
     const today = dayjs().startOf('day');
@@ -22,23 +26,23 @@ export default function Dashboard() {
     const yesterdayRevenue = yesterdayOrders.reduce((s, o) => s + o.total, 0);
     const activeOrders = orders?.filter(o => o.status !== 'cancelled');
     const totalRevenue = activeOrders.reduce((s, o) => s + o.total, 0);
-    const pendingOrders = orders?.filter(o => o.status === 'pending').length;
+    const pendingOrders = orders?.filter(o => o.status === 'pending')?.length;
 
     return {
       totalRevenue,
-      totalOrders: activeOrders.length,
-      averageOrderValue: activeOrders.length > 0 ? totalRevenue / activeOrders.length : 0,
+      totalOrders: activeOrders?.length,
+      averageOrderValue: activeOrders?.length > 0 ? totalRevenue / activeOrders?.length : 0,
       todayRevenue,
-      todayOrders: todayOrders.length,
+      todayOrders: todayOrders?.length,
       pendingOrders,
       revenueChange: yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100 : 0,
-      ordersChange: yesterdayOrders.length > 0 ? ((todayOrders.length - yesterdayOrders.length) / yesterdayOrders.length) * 100 : 0,
+      ordersChange: yesterdayOrders?.length > 0 ? ((todayOrders?.length - yesterdayOrders?.length) / yesterdayOrders?.length) * 100 : 0,
     };
   }, [orders]);
 
   const revenueChart = useMemo(() => {
     const days = 14;
-    return Array.from({ length: days }).map((_, i) => {
+    return Array.from({ length: days })?.map((_, i) => {
       const date = dayjs().subtract(days - 1 - i, 'day');
       const dayOrders = orders?.filter(o =>
         dayjs(o.createdAt).format('YYYY-MM-DD') === date.format('YYYY-MM-DD') && o.status !== 'cancelled'
@@ -46,7 +50,7 @@ export default function Dashboard() {
       return {
         date: date.format('MM/DD'),
         revenue: Math.round(dayOrders.reduce((s, o) => s + o.total, 0) / 1000),
-        orders: dayOrders.length,
+        orders: dayOrders?.length,
       };
     });
   }, [orders]);
@@ -101,7 +105,7 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((stat, i) => (
+        {statCards?.map((stat, i) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}
@@ -214,7 +218,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {recentOrders.map(order => (
+                {recentOrders.length > 0 ? recentOrders.map(order => (
                   <tr key={order.id} className="border-b border-surface-50 dark:border-surface-800/50 hover:bg-surface-50 dark:hover:bg-surface-800/30 transition-colors">
                     <td className="py-3 px-3 font-mono text-xs font-medium text-surface-900 dark:text-surface-100" dir="ltr">{order.orderNumber}</td>
                     <td className="py-3 px-3 text-surface-600 dark:text-surface-400">{order.customerFirstName} {order.customerLastName}</td>
@@ -222,7 +226,11 @@ export default function Dashboard() {
                     <td className="py-3 px-3 font-medium text-surface-900 dark:text-surface-100">{formatPrice(order.total)}</td>
                     <td className="py-3 px-3 text-surface-400 text-xs" dir="ltr">{dayjs(order.createdAt).format('MM/DD HH:mm')}</td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={5} className="py-10 text-center text-sm text-surface-400">هنوز سفارشی ثبت نشده است</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
