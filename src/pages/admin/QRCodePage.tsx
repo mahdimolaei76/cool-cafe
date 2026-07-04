@@ -37,8 +37,8 @@ export default function QRCodePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">کد QR</h1>
-        <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">ساخت کد QR برای منوی دیجیتال</p>
+        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">کد QR</h1>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">ساخت کد QR برای منوی دیجیتال</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -50,15 +50,15 @@ export default function QRCodePage() {
             <div className="w-16 h-16 bg-brand-50 dark:bg-brand-900/30 rounded-2xl flex items-center justify-center mb-4">
               <QrCode className="w-8 h-8 text-brand-700 dark:text-brand-400" />
             </div>
-            <h2 className="text-xl font-bold text-surface-900 dark:text-surface-100">کد QR منوی دیجیتال</h2>
-            <p className="text-sm text-surface-500 dark:text-surface-400 mt-2 max-w-sm">
+            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">کد QR منوی دیجیتال</h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2 max-w-sm">
               این کد را چاپ کنید و روی میزها قرار دهید. مشتریان با اسکن کد می‌توانند منو را ببینند و سفارش دهند.
             </p>
 
-            <div ref={qrRef} className="mt-8 p-6 bg-white rounded-2xl shadow-sm border border-surface-100">
+            <div ref={qrRef} className="mt-8 p-6 bg-white rounded-2xl shadow-sm border border-zinc-100">
               <QRCode value={menuUrl} size={220} level="H" fgColor="#991b1b" />
             </div>
-            <p className="mt-4 text-xs text-surface-400 font-mono break-all max-w-[300px]" dir="ltr">{menuUrl}</p>
+            <p className="mt-4 text-xs text-zinc-400 font-mono break-all max-w-[300px]" dir="ltr">{menuUrl}</p>
 
             <div className="flex gap-3 mt-6">
               <Button onClick={downloadQR} icon={<Download className="w-4 h-4" />}>دانلود PNG</Button>
@@ -73,7 +73,7 @@ export default function QRCodePage() {
           transition={{ delay: 0.1 }}
         >
           <Card>
-            <h3 className="font-semibold text-surface-900 dark:text-surface-100 mb-4">راهنما</h3>
+            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-4">راهنما</h3>
             <div className="space-y-4">
               {[
                 { step: '۱', title: 'دانلود کد', desc: 'روی دکمه دانلود کلیک کنید تا کد QR به صورت تصویر ذخیره شود.' },
@@ -84,8 +84,8 @@ export default function QRCodePage() {
                 <div key={item.step} className="flex items-start gap-3">
                   <span className="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 flex items-center justify-center text-xs font-bold flex-shrink-0">{item.step}</span>
                   <div>
-                    <p className="text-sm font-medium text-surface-900 dark:text-surface-100">{item.title}</p>
-                    <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">{item.desc}</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{item.title}</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{item.desc}</p>
                   </div>
                 </div>
               ))}
@@ -93,8 +93,8 @@ export default function QRCodePage() {
           </Card>
 
           <Card className="mt-4">
-            <h3 className="font-semibold text-surface-900 dark:text-surface-100 mb-3">نکات</h3>
-            <ul className="space-y-2 text-sm text-surface-600 dark:text-surface-400">
+            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">نکات</h3>
+            <ul className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
               <li className="flex items-start gap-2"><span className="text-brand-500 mt-0.5">•</span> حداقل اندازه چاپ: ۵×۵ سانتی‌متر</li>
               <li className="flex items-start gap-2"><span className="text-brand-500 mt-0.5">•</span> کنتراست مناسب بین کد و پس‌زمینه</li>
               <li className="flex items-start gap-2"><span className="text-brand-500 mt-0.5">•</span> قبل از چاپ با چند دستگاه تست کنید</li>

@@ -49,7 +49,7 @@ export default function Modal({ open, onClose, title, children, footer, size = '
             exit={{ opacity: 0, y: 40 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
-              'relative w-full bg-white dark:bg-surface-900 shadow-2xl flex flex-col',
+              'relative w-full bg-white dark:bg-zinc-900 shadow-2xl flex flex-col',
               'rounded-t-3xl sm:rounded-2xl',
               'max-h-[90vh] sm:max-h-[85vh]',
               sizes[size],
@@ -58,16 +58,16 @@ export default function Modal({ open, onClose, title, children, footer, size = '
           >
             {/* Drag handle (mobile) */}
             <div className="sm:hidden flex justify-center pt-2 pb-1">
-              <div className="w-10 h-1 rounded-full bg-surface-300 dark:bg-surface-600" />
+              <div className="w-10 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
             </div>
 
             {/* Header — sticky */}
             {title && (
-              <div className="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800 flex-shrink-0">
-                <h2 className="text-lg font-bold text-surface-900 dark:text-surface-100">{title}</h2>
+              <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex-shrink-0">
+                <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-xl text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 dark:hover:text-surface-300 transition-colors"
+                  className="p-2 rounded-xl text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -81,7 +81,7 @@ export default function Modal({ open, onClose, title, children, footer, size = '
 
             {/* Footer — sticky bottom */}
             {footer && (
-              <div className="flex-shrink-0 border-t border-surface-100 dark:border-surface-800 px-6 py-4 bg-white dark:bg-surface-900">
+              <div className="flex-shrink-0 border-t border-zinc-100 dark:border-zinc-800 px-6 py-4 bg-white dark:bg-zinc-900">
                 {footer}
               </div>
             )}

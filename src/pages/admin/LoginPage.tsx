@@ -29,7 +29,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-white dark:bg-surface-950">
+    <div className="min-h-screen flex bg-white dark:bg-zinc-950">
       {/* Left Side - Decorative */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 relative overflow-hidden items-center justify-center p-12">
         <div className="absolute inset-0">
@@ -75,12 +75,12 @@ export default function LoginPage() {
             <div className="w-20 h-20 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-brand-500/30">
               <Coffee className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-3xl font-black text-surface-900 dark:text-surface-100">کافه COOL</h1>
+            <h1 className="text-3xl font-black text-zinc-900 dark:text-zinc-100">کافه COOL</h1>
           </div>
 
           <div className="hidden lg:block mb-10">
-            <h1 className="text-3xl font-black text-surface-900 dark:text-surface-100">خوش آمدید! 👋</h1>
-            <p className="text-surface-500 dark:text-surface-400 mt-2">وارد پنل مدیریت شوید</p>
+            <h1 className="text-3xl font-black text-zinc-900 dark:text-zinc-100">خوش آمدید! 👋</h1>
+            <p className="text-zinc-500 dark:text-zinc-400 mt-2">وارد پنل مدیریت شوید</p>
           </div>
 
           {/* Error */}
@@ -93,19 +93,19 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-surface-700 dark:text-surface-300">نام کاربری</label>
+              <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">نام کاربری</label>
               <div className="relative">
-                <User className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
-                <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="admin" className="w-full pr-12 pl-4 py-4 rounded-2xl border-2 border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-base" required />
+                <User className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="admin" className="w-full pr-12 pl-4 py-4 rounded-2xl border-2 border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-base" required />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-surface-700 dark:text-surface-300">رمز عبور</label>
+              <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">رمز عبور</label>
               <div className="relative">
-                <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
-                <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="w-full pr-12 pl-14 py-4 rounded-2xl border-2 border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-base" required />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 transition-colors">
+                <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="w-full pr-12 pl-14 py-4 rounded-2xl border-2 border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-base" required />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors">
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
@@ -117,16 +117,16 @@ export default function LoginPage() {
           </form>
 
           {/* Demo Info */}
-          <div className="mt-8 p-5 bg-surface-50 dark:bg-surface-800/50 rounded-2xl border border-surface-200 dark:border-surface-700">
-            <p className="text-xs text-center text-surface-400 mb-3 font-bold">اطلاعات آزمایشی</p>
+          <div className="mt-8 p-5 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200 dark:border-zinc-700">
+            <p className="text-xs text-center text-zinc-400 mb-3 font-bold">اطلاعات آزمایشی</p>
             <div className="grid grid-cols-2 gap-3">
-              <button type="button" onClick={() => { setUsername('admin'); setPassword('admin123'); }} className="p-3 bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 hover:border-brand-400 transition-colors text-center group">
-                <p className="text-xs text-surface-400 group-hover:text-brand-500">مدیر</p>
-                <p className="font-mono text-sm font-bold text-surface-700 dark:text-surface-300 mt-0.5" dir="ltr">admin</p>
+              <button type="button" onClick={() => { setUsername('admin'); setPassword('admin123'); }} className="p-3 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-brand-400 transition-colors text-center group">
+                <p className="text-xs text-zinc-400 group-hover:text-brand-500">مدیر</p>
+                <p className="font-mono text-sm font-bold text-zinc-700 dark:text-zinc-300 mt-0.5" dir="ltr">admin</p>
               </button>
-              <button type="button" onClick={() => { setUsername('cashier'); setPassword('cash123'); }} className="p-3 bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 hover:border-brand-400 transition-colors text-center group">
-                <p className="text-xs text-surface-400 group-hover:text-brand-500">صندوق‌دار</p>
-                <p className="font-mono text-sm font-bold text-surface-700 dark:text-surface-300 mt-0.5" dir="ltr">cashier</p>
+              <button type="button" onClick={() => { setUsername('cashier'); setPassword('cash123'); }} className="p-3 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-brand-400 transition-colors text-center group">
+                <p className="text-xs text-zinc-400 group-hover:text-brand-500">صندوق‌دار</p>
+                <p className="font-mono text-sm font-bold text-zinc-700 dark:text-zinc-300 mt-0.5" dir="ltr">cashier</p>
               </button>
             </div>
           </div>

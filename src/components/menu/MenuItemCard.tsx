@@ -21,10 +21,10 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
       transition={{ duration: 0.5, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
     >
       <div className={cn(
-        'bg-white dark:bg-surface-900 rounded-3xl overflow-hidden transition-all duration-300',
+        'bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden transition-all duration-300',
         'shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)]',
-        'border border-surface-100/80 dark:border-surface-800',
-        'dark:hover:border-surface-700',
+        'border border-zinc-100/80 dark:border-zinc-800',
+        'dark:hover:border-zinc-700',
         inCart && 'ring-2 ring-brand-500 border-brand-200 dark:border-brand-800',
         !item.isAvailable && 'opacity-50 grayscale pointer-events-none'
       )}>
@@ -72,10 +72,10 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
 
         {/* Details */}
         <div className="p-4">
-          <h3 className="font-bold text-surface-900 dark:text-surface-100 text-base leading-tight">
+          <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base leading-tight">
             {item.name}
           </h3>
-          <p className="mt-1.5 text-[13px] text-surface-500 dark:text-surface-400 line-clamp-2 leading-relaxed min-h-[2.6em]">
+          <p className="mt-1.5 text-[13px] text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed min-h-[2.6em]">
             {item.description}
           </p>
 
@@ -92,7 +92,7 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
               <div className="flex items-center gap-1 bg-brand-50 dark:bg-brand-900/30 rounded-xl p-1 border border-brand-200 dark:border-brand-800">
                 <button
                   onClick={() => updateQuantity(item.id, cartItem.quantity - 1)}
-                  className="w-8 h-8 rounded-lg bg-white dark:bg-surface-800 flex items-center justify-center text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors shadow-sm"
+                  className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors shadow-sm"
                 >
                   <Minus className="w-4 h-4" strokeWidth={3} />
                 </button>
@@ -101,7 +101,7 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
                 </span>
                 <button
                   onClick={() => updateQuantity(item.id, cartItem.quantity + 1)}
-                  className="w-8 h-8 rounded-lg bg-white dark:bg-surface-800 flex items-center justify-center text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors shadow-sm"
+                  className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors shadow-sm"
                 >
                   <Plus className="w-4 h-4" strokeWidth={3} />
                 </button>

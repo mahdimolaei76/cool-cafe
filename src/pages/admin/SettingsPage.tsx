@@ -21,8 +21,8 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">تنظیمات</h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">مدیریت تنظیمات کافه</p>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">تنظیمات</h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">مدیریت تنظیمات کافه</p>
         </div>
         <Button onClick={handleSave} icon={saved ? undefined : <Save className="w-4 h-4" />}>
           {saved ? '✓ ذخیره شد!' : 'ذخیره تغییرات'}
@@ -37,8 +37,8 @@ export default function SettingsPage() {
                 <Store className="w-5 h-5 text-brand-700 dark:text-brand-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-surface-900 dark:text-surface-100">اطلاعات کافه</h3>
-                <p className="text-xs text-surface-400">مشخصات اصلی کافه</p>
+                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">اطلاعات کافه</h3>
+                <p className="text-xs text-zinc-400">مشخصات اصلی کافه</p>
               </div>
             </div>
             <div className="space-y-4">
@@ -57,31 +57,31 @@ export default function SettingsPage() {
                 <Palette className="w-5 h-5 text-purple-700 dark:text-purple-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-surface-900 dark:text-surface-100">ظاهر</h3>
-                <p className="text-xs text-surface-400">تنظیمات ظاهری</p>
+                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">ظاهر</h3>
+                <p className="text-xs text-zinc-400">تنظیمات ظاهری</p>
               </div>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">تم</label>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">تم</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => { if (theme === 'dark') toggleTheme(); }}
-                    className={`p-4 rounded-xl border-2 transition-all ${theme === 'light' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}
+                    className={`p-4 rounded-xl border-2 transition-all ${theme === 'light' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300'}`}
                   >
-                    <div className="w-full h-16 bg-white rounded-lg border border-surface-200 mb-2 flex items-center justify-center">
-                      <div className="w-8 h-2 bg-surface-200 rounded" />
+                    <div className="w-full h-16 bg-white rounded-lg border border-zinc-200 mb-2 flex items-center justify-center">
+                      <div className="w-8 h-2 bg-zinc-200 rounded" />
                     </div>
-                    <p className="text-sm font-medium text-surface-900 dark:text-surface-100">روشن</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">روشن</p>
                   </button>
                   <button
                     onClick={() => { if (theme === 'light') toggleTheme(); }}
-                    className={`p-4 rounded-xl border-2 transition-all ${theme === 'dark' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}
+                    className={`p-4 rounded-xl border-2 transition-all ${theme === 'dark' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300'}`}
                   >
-                    <div className="w-full h-16 bg-surface-900 rounded-lg border border-surface-700 mb-2 flex items-center justify-center">
-                      <div className="w-8 h-2 bg-surface-700 rounded" />
+                    <div className="w-full h-16 bg-zinc-900 rounded-lg border border-zinc-700 mb-2 flex items-center justify-center">
+                      <div className="w-8 h-2 bg-zinc-700 rounded" />
                     </div>
-                    <p className="text-sm font-medium text-surface-900 dark:text-surface-100">تاریک</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">تاریک</p>
                   </button>
                 </div>
               </div>
@@ -89,11 +89,11 @@ export default function SettingsPage() {
           </Card>
 
           <Card className="mt-4">
-            <h3 className="font-semibold text-surface-900 dark:text-surface-100 mb-3">درباره</h3>
-            <div className="space-y-2 text-sm text-surface-500 dark:text-surface-400">
-              <div className="flex justify-between"><span>نسخه</span><span className="font-mono text-surface-900 dark:text-surface-100" dir="ltr">1.0.0</span></div>
-              <div className="flex justify-between"><span>پلتفرم</span><span className="text-surface-900 dark:text-surface-100">سیستم مدیریت کافه COOL</span></div>
-              <div className="flex justify-between"><span>مجوز</span><span className="text-surface-900 dark:text-surface-100">تجاری</span></div>
+            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">درباره</h3>
+            <div className="space-y-2 text-sm text-zinc-500 dark:text-zinc-400">
+              <div className="flex justify-between"><span>نسخه</span><span className="font-mono text-zinc-900 dark:text-zinc-100" dir="ltr">1.0.0</span></div>
+              <div className="flex justify-between"><span>پلتفرم</span><span className="text-zinc-900 dark:text-zinc-100">سیستم مدیریت کافه COOL</span></div>
+              <div className="flex justify-between"><span>مجوز</span><span className="text-zinc-900 dark:text-zinc-100">تجاری</span></div>
             </div>
           </Card>
         </motion.div>

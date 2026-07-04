@@ -10,7 +10,7 @@ export default function Skeleton({ className }: SkeletonProps) {
 
 export function MenuItemSkeleton() {
   return (
-    <div className="rounded-2xl bg-white dark:bg-surface-900 border border-surface-100 dark:border-surface-800 overflow-hidden">
+    <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 overflow-hidden">
       <Skeleton className="w-full h-48 rounded-none" />
       <div className="p-4 space-y-3">
         <Skeleton className="h-5 w-3/4" />

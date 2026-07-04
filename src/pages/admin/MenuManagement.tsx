@@ -104,8 +104,8 @@ export default function MenuManagement() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">مدیریت منو</h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">{menuItems?.length} آیتم</p>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">مدیریت منو</h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{menuItems?.length} آیتم</p>
         </div>
         <Button onClick={openCreate} icon={<Plus className="w-4 h-4" />}>افزودن آیتم</Button>
       </div>
@@ -128,13 +128,13 @@ export default function MenuManagement() {
       <Card>
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="flex-1 relative">
-            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
             <input
               type="text"
               placeholder="جستجو..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pr-12 pl-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+              className="w-full pr-12 pl-4 py-3 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
             />
           </div>
           <Select
@@ -159,9 +159,9 @@ export default function MenuManagement() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ delay: index * 0.02 }}
-                    className={`bg-white dark:bg-surface-800 rounded-2xl border border-surface-200 dark:border-surface-700 overflow-hidden group ${!item.isAvailable && 'opacity-60'}`}
+                    className={`bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 overflow-hidden group ${!item.isAvailable && 'opacity-60'}`}
                   >
-                    <div className="relative aspect-[4/3] bg-surface-100 dark:bg-surface-700">
+                    <div className="relative aspect-[4/3] bg-zinc-100 dark:bg-zinc-700">
                       <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                       <div className="absolute top-2 right-2 flex gap-1">
                         {item.isFeatured && (
@@ -174,23 +174,23 @@ export default function MenuManagement() {
                         )}
                       </div>
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <button onClick={() => updateMenuItem(item.id, { isAvailable: !item.isAvailable })} className="p-2.5 bg-white rounded-xl hover:bg-surface-100 transition-colors">
-                          {item.isAvailable ? <EyeOff className="w-4 h-4 text-surface-600" /> : <Eye className="w-4 h-4 text-surface-600" />}
+                        <button onClick={() => updateMenuItem(item.id, { isAvailable: !item.isAvailable })} className="p-2.5 bg-white rounded-xl hover:bg-zinc-100 transition-colors">
+                          {item.isAvailable ? <EyeOff className="w-4 h-4 text-zinc-600" /> : <Eye className="w-4 h-4 text-zinc-600" />}
                         </button>
-                        <button onClick={() => openEdit(item)} className="p-2.5 bg-white rounded-xl hover:bg-surface-100 transition-colors">
+                        <button onClick={() => openEdit(item)} className="p-2.5 bg-white rounded-xl hover:bg-zinc-100 transition-colors">
                           <Edit2 className="w-4 h-4 text-blue-600" />
                         </button>
-                        <button onClick={() => setDeleteId(item.id)} className="p-2.5 bg-white rounded-xl hover:bg-surface-100 transition-colors">
+                        <button onClick={() => setDeleteId(item.id)} className="p-2.5 bg-white rounded-xl hover:bg-zinc-100 transition-colors">
                           <Trash2 className="w-4 h-4 text-red-600" />
                         </button>
                       </div>
                     </div>
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="font-bold text-surface-900 dark:text-surface-100">{item.name}</h3>
+                        <h3 className="font-bold text-zinc-900 dark:text-zinc-100">{item.name}</h3>
                         <Badge className="flex-shrink-0">{cat?.icon}</Badge>
                       </div>
-                      <p className="text-xs text-surface-500 dark:text-surface-400 line-clamp-2 mb-3">{item.description}</p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">{item.description}</p>
                       <p className="text-lg font-bold text-brand-700 dark:text-brand-400">{formatPrice(item.price)}</p>
                     </div>
                   </motion.div>
@@ -220,9 +220,9 @@ export default function MenuManagement() {
         <div className="p-6 space-y-5">
           {/* Image Upload */}
           <div>
-            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">تصویر</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">تصویر</label>
             <div className="flex gap-4">
-              <div className="w-32 h-32 rounded-2xl border-2 border-dashed border-surface-300 dark:border-surface-600 overflow-hidden bg-surface-50 dark:bg-surface-800 flex-shrink-0">
+              <div className="w-32 h-32 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 overflow-hidden bg-zinc-50 dark:bg-zinc-800 flex-shrink-0">
                 {form.image ? (
                   <div className="relative w-full h-full group">
                     <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
@@ -234,7 +234,7 @@ export default function MenuManagement() {
                     </button>
                   </div>
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-surface-400">
+                  <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400">
                     <Image className="w-8 h-8 mb-1" />
                     <span className="text-xs">بدون تصویر</span>
                   </div>
@@ -256,13 +256,13 @@ export default function MenuManagement() {
                 >
                   آپلود تصویر
                 </Button>
-                <p className="text-xs text-surface-400">یا یک تصویر پیش‌فرض انتخاب کنید:</p>
+                <p className="text-xs text-zinc-400">یا یک تصویر پیش‌فرض انتخاب کنید:</p>
                 <div className="flex gap-2 flex-wrap">
                   {presetImages?.map(img => (
                     <button
                       key={img.value}
                       onClick={() => setForm(p => ({ ...p, image: img.value }))}
-                      className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${form.image === img.value ? 'border-brand-500 ring-2 ring-brand-500/30' : 'border-surface-200 dark:border-surface-700'}`}
+                      className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${form.image === img.value ? 'border-brand-500 ring-2 ring-brand-500/30' : 'border-zinc-200 dark:border-zinc-700'}`}
                     >
                       <img src={img.value} alt={img.label} className="w-full h-full object-cover" />
                     </button>
@@ -280,19 +280,19 @@ export default function MenuManagement() {
             <Select label="دسته‌بندی" value={form.categoryId} onChange={e => setForm(p => ({ ...p, categoryId: e.target.value }))} options={categories?.map(c => ({ value: c.id, label: `${c.icon} ${c.name}` }))} />
           </div>
 
-          <div className="flex items-center gap-6 p-4 bg-surface-50 dark:bg-surface-800 rounded-xl">
+          <div className="flex items-center gap-6 p-4 bg-zinc-50 dark:bg-zinc-800 rounded-xl">
             <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={form.isAvailable} onChange={e => setForm(p => ({ ...p, isAvailable: e.target.checked }))} className="w-5 h-5 rounded border-surface-300 text-brand-600 focus:ring-brand-500" />
+              <input type="checkbox" checked={form.isAvailable} onChange={e => setForm(p => ({ ...p, isAvailable: e.target.checked }))} className="w-5 h-5 rounded border-zinc-300 text-brand-600 focus:ring-brand-500" />
               <div>
-                <span className="text-sm font-medium text-surface-700 dark:text-surface-300">موجود</span>
-                <p className="text-xs text-surface-400">این آیتم در منو نمایش داده شود</p>
+                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">موجود</span>
+                <p className="text-xs text-zinc-400">این آیتم در منو نمایش داده شود</p>
               </div>
             </label>
             <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={form.isFeatured} onChange={e => setForm(p => ({ ...p, isFeatured: e.target.checked }))} className="w-5 h-5 rounded border-surface-300 text-brand-600 focus:ring-brand-500" />
+              <input type="checkbox" checked={form.isFeatured} onChange={e => setForm(p => ({ ...p, isFeatured: e.target.checked }))} className="w-5 h-5 rounded border-zinc-300 text-brand-600 focus:ring-brand-500" />
               <div>
-                <span className="text-sm font-medium text-surface-700 dark:text-surface-300">ویژه</span>
-                <p className="text-xs text-surface-400">در بخش پیشنهاد ویژه نمایش داده شود</p>
+                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">ویژه</span>
+                <p className="text-xs text-zinc-400">در بخش پیشنهاد ویژه نمایش داده شود</p>
               </div>
             </label>
           </div>

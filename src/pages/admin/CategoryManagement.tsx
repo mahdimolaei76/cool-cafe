@@ -58,8 +58,8 @@ export default function CategoryManagement() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">دسته‌بندی‌ها</h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">{categories?.length} دسته‌بندی · ترتیب نمایش در منوی مشتری</p>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">دسته‌بندی‌ها</h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{categories?.length} دسته‌بندی · ترتیب نمایش در منوی مشتری</p>
         </div>
         <Button onClick={openCreate} icon={<Plus className="w-4 h-4" />}>افزودن دسته‌بندی</Button>
       </div>
@@ -73,54 +73,54 @@ export default function CategoryManagement() {
             action={<Button onClick={openCreate} icon={<Plus className="w-4 h-4" />}>افزودن دسته‌بندی</Button>}
           />
         ) : (
-        <div className="space-y-2">
-          <AnimatePresence>
-            {sorted?.map((cat, idx) => {
-              const catItems = menuItems?.filter(m => m.categoryId === cat.id);
-              const isExpanded = expandedCat === cat.id;
-              return (
-                <motion.div key={cat.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <div className="flex items-center gap-3 p-4 rounded-xl bg-surface-50 dark:bg-surface-800/50 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors group">
-                    {/* Reorder Buttons */}
-                    <div className="flex flex-col gap-0.5 flex-shrink-0">
-                      <button onClick={() => moveCategory(cat.id, 'up')} disabled={idx === 0} className="p-0.5 text-surface-400 hover:text-surface-600 disabled:opacity-30"><ChevronUp className="w-4 h-4" /></button>
-                      <button onClick={() => moveCategory(cat.id, 'down')} disabled={idx === sorted?.length - 1} className="p-0.5 text-surface-400 hover:text-surface-600 disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
-                    </div>
-                    <span className="text-2xl flex-shrink-0">{cat.icon}</span>
-                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpandedCat(isExpanded ? null : cat.id)}>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-surface-900 dark:text-surface-100">{cat.name}</h3>
-                        <Badge variant={cat.isActive ? 'success' : 'default'} dot>{cat.isActive ? 'فعال' : 'غیرفعال'}</Badge>
+          <div className="space-y-2">
+            <AnimatePresence>
+              {sorted?.map((cat, idx) => {
+                const catItems = menuItems?.filter(m => m.categoryId === cat.id);
+                const isExpanded = expandedCat === cat.id;
+                return (
+                  <motion.div key={cat.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group">
+                      {/* Reorder Buttons */}
+                      <div className="flex flex-col gap-0.5 flex-shrink-0">
+                        <button onClick={() => moveCategory(cat.id, 'up')} disabled={idx === 0} className="p-0.5 text-zinc-400 hover:text-zinc-600 disabled:opacity-30"><ChevronUp className="w-4 h-4" /></button>
+                        <button onClick={() => moveCategory(cat.id, 'down')} disabled={idx === sorted?.length - 1} className="p-0.5 text-zinc-400 hover:text-zinc-600 disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
                       </div>
-                      <p className="text-xs text-surface-400 mt-0.5">{catItems?.length} آیتم</p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => openEdit(cat)} className="p-2 rounded-lg text-surface-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => setDeleteId(cat.id)} className="p-2 rounded-lg text-surface-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  </div>
-                  {/* Expanded — show items */}
-                  <AnimatePresence>
-                    {isExpanded && catItems?.length > 0 && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                        <div className="pr-12 pl-4 py-2 space-y-1">
-                          {catItems?.map(item => (
-                            <div key={item.id} className="flex items-center gap-3 p-2.5 bg-white dark:bg-surface-900 rounded-lg border border-surface-100 dark:border-surface-800">
-                              <img src={item.image} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
-                              <span className="flex-1 text-sm font-medium text-surface-900 dark:text-surface-100 truncate">{item.name}</span>
-                              <span className="text-xs font-bold text-brand-600">{formatPrice(item.price)}</span>
-                              <Badge variant={item.isAvailable ? 'success' : 'danger'}>{item.isAvailable ? 'موجود' : 'ناموجود'}</Badge>
-                            </div>
-                          ))}
+                      <span className="text-2xl flex-shrink-0">{cat.icon}</span>
+                      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpandedCat(isExpanded ? null : cat.id)}>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-zinc-900 dark:text-zinc-100">{cat.name}</h3>
+                          <Badge variant={cat.isActive ? 'success' : 'default'} dot>{cat.isActive ? 'فعال' : 'غیرفعال'}</Badge>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
+                        <p className="text-xs text-zinc-400 mt-0.5">{catItems?.length} آیتم</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => openEdit(cat)} className="p-2 rounded-lg text-zinc-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={() => setDeleteId(cat.id)} className="p-2 rounded-lg text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                    {/* Expanded — show items */}
+                    <AnimatePresence>
+                      {isExpanded && catItems?.length > 0 && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                          <div className="pr-12 pl-4 py-2 space-y-1">
+                            {catItems?.map(item => (
+                              <div key={item.id} className="flex items-center gap-3 p-2.5 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-100 dark:border-zinc-800">
+                                <img src={item.image} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
+                                <span className="flex-1 text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{item.name}</span>
+                                <span className="text-xs font-bold text-brand-600">{formatPrice(item.price)}</span>
+                                <Badge variant={item.isAvailable ? 'success' : 'danger'}>{item.isAvailable ? 'موجود' : 'ناموجود'}</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
         )}
       </Card>
 
@@ -134,17 +134,17 @@ export default function CategoryManagement() {
         <div className="p-6 space-y-4">
           <Input label="نام" placeholder="نام دسته‌بندی" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
           <div>
-            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">آیکون</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">آیکون</label>
             <div className="flex flex-wrap gap-2">
               {emojiOptions?.map(emoji => (
-                <button key={emoji} type="button" onClick={() => setForm(p => ({ ...p, icon: emoji }))} className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all ${form.icon === emoji ? 'bg-brand-100 ring-2 ring-brand-500 dark:bg-brand-900/30' : 'bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700'}`}>{emoji}</button>
+                <button key={emoji} type="button" onClick={() => setForm(p => ({ ...p, icon: emoji }))} className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all ${form.icon === emoji ? 'bg-brand-100 ring-2 ring-brand-500 dark:bg-brand-900/30' : 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}>{emoji}</button>
               ))}
             </div>
           </div>
           <Input label="ترتیب نمایش" type="number" value={String(form.order)} onChange={e => setForm(p => ({ ...p, order: parseInt(e.target.value) || 0 }))} />
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={form.isActive} onChange={e => setForm(p => ({ ...p, isActive: e.target.checked }))} className="w-4 h-4 rounded" />
-            <span className="text-sm text-surface-700 dark:text-surface-300">فعال</span>
+            <span className="text-sm text-zinc-700 dark:text-zinc-300">فعال</span>
           </label>
         </div>
       </Modal>

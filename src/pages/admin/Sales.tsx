@@ -80,12 +80,12 @@ export default function Sales() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">فروش و حسابداری</h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">تحلیل درآمد و عملکرد</p>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">فروش و حسابداری</h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">تحلیل درآمد و عملکرد</p>
         </div>
-        <div className="flex gap-1 bg-surface-100 dark:bg-surface-800 p-1 rounded-xl">
+        <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
           {(['7d', '30d', '90d', '1y'] as const)?.map(p => (
-            <button key={p} onClick={() => setPeriod(p)} className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-all', period === p ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-100 shadow-sm' : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300')}>
+            <button key={p} onClick={() => setPeriod(p)} className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-all', period === p ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300')}>
               {p === '7d' ? '۷ روز' : p === '30d' ? '۳۰ روز' : p === '90d' ? '۹۰ روز' : '۱ سال'}
             </button>
           ))}
@@ -104,8 +104,8 @@ export default function Sales() {
             <Card>
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-surface-400">{s.label}</p>
-                  <p className="mt-2 text-xl font-bold text-surface-900 dark:text-surface-100">{s.value}</p>
+                  <p className="text-xs font-medium text-zinc-400">{s.label}</p>
+                  <p className="mt-2 text-xl font-bold text-zinc-900 dark:text-zinc-100">{s.value}</p>
                 </div>
                 <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center', s.color)}>
                   <s.icon className="w-4 h-4" />
@@ -119,7 +119,7 @@ export default function Sales() {
       {/* Revenue Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
-          <h3 className="font-semibold text-surface-900 dark:text-surface-100 mb-4">روند درآمد (هزار تومان)</h3>
+          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-4">روند درآمد (هزار تومان)</h3>
           <div className="h-[300px]" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={revenueByDay}>
@@ -140,7 +140,7 @@ export default function Sales() {
         </Card>
 
         <Card>
-          <h3 className="font-semibold text-surface-900 dark:text-surface-100 mb-4">بر اساس دسته‌بندی</h3>
+          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-4">بر اساس دسته‌بندی</h3>
           <div className="h-[200px]" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -158,12 +158,12 @@ export default function Sales() {
               <div key={c.name} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS?.length] }} />
-                  <span className="text-surface-600 dark:text-surface-400 text-xs">{c.name}</span>
+                  <span className="text-zinc-600 dark:text-zinc-400 text-xs">{c.name}</span>
                 </div>
-                <span className="font-medium text-surface-900 dark:text-surface-100 text-xs">{c.value} هزار</span>
+                <span className="font-medium text-zinc-900 dark:text-zinc-100 text-xs">{c.value} هزار</span>
               </div>
             )) : (
-              <p className="text-sm text-surface-400 text-center py-4">داده‌ای برای این بازه زمانی ثبت نشده</p>
+              <p className="text-sm text-zinc-400 text-center py-4">داده‌ای برای این بازه زمانی ثبت نشده</p>
             )}
           </div>
         </Card>
@@ -172,25 +172,25 @@ export default function Sales() {
       {/* Best selling & order types */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
-          <h3 className="font-semibold text-surface-900 dark:text-surface-100 mb-4">پرفروش‌ترین‌ها</h3>
+          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-4">پرفروش‌ترین‌ها</h3>
           <div className="space-y-3">
             {topProducts.length > 0 ? topProducts.slice(0, 8).map((p, i) => (
               <div key={p.name} className="flex items-center gap-3">
                 <span className="w-6 h-6 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 flex items-center justify-center text-xs font-bold">{i + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-surface-900 dark:text-surface-100 truncate">{p.name}</p>
-                  <p className="text-xs text-surface-400">{p.sold} فروش</p>
+                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{p.name}</p>
+                  <p className="text-xs text-zinc-400">{p.sold} فروش</p>
                 </div>
-                <span className="text-sm font-semibold text-surface-900 dark:text-surface-100">{formatPrice(p.revenue)}</span>
+                <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{formatPrice(p.revenue)}</span>
               </div>
             )) : (
-              <p className="text-sm text-surface-400 text-center py-8">داده‌ای برای این بازه زمانی ثبت نشده</p>
+              <p className="text-sm text-zinc-400 text-center py-8">داده‌ای برای این بازه زمانی ثبت نشده</p>
             )}
           </div>
         </Card>
 
         <Card>
-          <h3 className="font-semibold text-surface-900 dark:text-surface-100 mb-4">نوع سفارش</h3>
+          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-4">نوع سفارش</h3>
           <div className="h-[200px]" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={orderTypeData}>
@@ -203,15 +203,15 @@ export default function Sales() {
             </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-2 gap-4 mt-4">
-            <div className="p-3 bg-surface-50 dark:bg-surface-800/50 rounded-xl text-center">
-              <p className="text-xs text-surface-400">آنلاین</p>
-              <p className="text-lg font-bold text-surface-900 dark:text-surface-100 mt-1">{formatPrice(onlineRevenue)}</p>
-              <p className="text-xs text-surface-400">{onlineOrders?.length} سفارش</p>
+            <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl text-center">
+              <p className="text-xs text-zinc-400">آنلاین</p>
+              <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-1">{formatPrice(onlineRevenue)}</p>
+              <p className="text-xs text-zinc-400">{onlineOrders?.length} سفارش</p>
             </div>
-            <div className="p-3 bg-surface-50 dark:bg-surface-800/50 rounded-xl text-center">
-              <p className="text-xs text-surface-400">حضوری</p>
-              <p className="text-lg font-bold text-surface-900 dark:text-surface-100 mt-1">{formatPrice(inPersonRevenue)}</p>
-              <p className="text-xs text-surface-400">{inPersonOrders?.length} سفارش</p>
+            <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl text-center">
+              <p className="text-xs text-zinc-400">حضوری</p>
+              <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-1">{formatPrice(inPersonRevenue)}</p>
+              <p className="text-xs text-zinc-400">{inPersonOrders?.length} سفارش</p>
             </div>
           </div>
         </Card>

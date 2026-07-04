@@ -18,7 +18,7 @@ export default function Card({ children, className, hover = false, onClick, padd
   return (
     <Comp
       className={cn(
-        'bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800',
+        'bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800',
         'shadow-sm',
         padding && 'p-6',
         onClick && 'cursor-pointer',

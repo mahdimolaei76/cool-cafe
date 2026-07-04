@@ -99,8 +99,8 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">داشبورد</h1>
-        <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">خلاصه وضعیت امروز کافه</p>
+        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">داشبورد</h1>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">خلاصه وضعیت امروز کافه</p>
       </div>
 
       {/* Stats */}
@@ -115,8 +115,8 @@ export default function Dashboard() {
             <Card>
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-surface-500 dark:text-surface-400">{stat.label}</p>
-                  <p className="mt-2 text-xl font-bold text-surface-900 dark:text-surface-100">{stat.value}</p>
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{stat.label}</p>
+                  <p className="mt-2 text-xl font-bold text-zinc-900 dark:text-zinc-100">{stat.value}</p>
                   {stat.change !== null && (
                     <div className="flex items-center gap-1 mt-1.5">
                       {stat.change >= 0 ? (
@@ -150,8 +150,8 @@ export default function Dashboard() {
           <Card>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="font-semibold text-surface-900 dark:text-surface-100">روند درآمد</h3>
-                <p className="text-xs text-surface-400 mt-0.5">۱۴ روز گذشته (هزار تومان)</p>
+                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">روند درآمد</h3>
+                <p className="text-xs text-zinc-400 mt-0.5">۱۴ روز گذشته (هزار تومان)</p>
               </div>
             </div>
             <div className="h-[280px]" dir="ltr">
@@ -183,7 +183,7 @@ export default function Dashboard() {
           transition={{ delay: 0.5 }}
         >
           <Card>
-            <h3 className="font-semibold text-surface-900 dark:text-surface-100 mb-4">بر اساس دسته‌بندی</h3>
+            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-4">بر اساس دسته‌بندی</h3>
             <div className="h-[280px]" dir="ltr">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={categoryPerformance} layout="vertical" margin={{ left: 0 }}>
@@ -205,30 +205,30 @@ export default function Dashboard() {
         transition={{ delay: 0.6 }}
       >
         <Card>
-          <h3 className="font-semibold text-surface-900 dark:text-surface-100 mb-4">سفارش‌های اخیر</h3>
+          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-4">سفارش‌های اخیر</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-surface-100 dark:border-surface-800">
-                  <th className="text-right py-3 px-3 text-xs font-medium text-surface-400">شماره</th>
-                  <th className="text-right py-3 px-3 text-xs font-medium text-surface-400">مشتری</th>
-                  <th className="text-right py-3 px-3 text-xs font-medium text-surface-400">وضعیت</th>
-                  <th className="text-right py-3 px-3 text-xs font-medium text-surface-400">مبلغ</th>
-                  <th className="text-right py-3 px-3 text-xs font-medium text-surface-400">زمان</th>
+                <tr className="border-b border-zinc-100 dark:border-zinc-800">
+                  <th className="text-right py-3 px-3 text-xs font-medium text-zinc-400">شماره</th>
+                  <th className="text-right py-3 px-3 text-xs font-medium text-zinc-400">مشتری</th>
+                  <th className="text-right py-3 px-3 text-xs font-medium text-zinc-400">وضعیت</th>
+                  <th className="text-right py-3 px-3 text-xs font-medium text-zinc-400">مبلغ</th>
+                  <th className="text-right py-3 px-3 text-xs font-medium text-zinc-400">زمان</th>
                 </tr>
               </thead>
               <tbody>
                 {recentOrders.length > 0 ? recentOrders.map(order => (
-                  <tr key={order.id} className="border-b border-surface-50 dark:border-surface-800/50 hover:bg-surface-50 dark:hover:bg-surface-800/30 transition-colors">
-                    <td className="py-3 px-3 font-mono text-xs font-medium text-surface-900 dark:text-surface-100" dir="ltr">{order.orderNumber}</td>
-                    <td className="py-3 px-3 text-surface-600 dark:text-surface-400">{order.customerFirstName} {order.customerLastName}</td>
+                  <tr key={order.id} className="border-b border-zinc-50 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
+                    <td className="py-3 px-3 font-mono text-xs font-medium text-zinc-900 dark:text-zinc-100" dir="ltr">{order.orderNumber}</td>
+                    <td className="py-3 px-3 text-zinc-600 dark:text-zinc-400">{order.customerFirstName} {order.customerLastName}</td>
                     <td className="py-3 px-3"><Badge variant={statusColors[order.status]} dot>{statusLabels[order.status]}</Badge></td>
-                    <td className="py-3 px-3 font-medium text-surface-900 dark:text-surface-100">{formatPrice(order.total)}</td>
-                    <td className="py-3 px-3 text-surface-400 text-xs" dir="ltr">{dayjs(order.createdAt).format('MM/DD HH:mm')}</td>
+                    <td className="py-3 px-3 font-medium text-zinc-900 dark:text-zinc-100">{formatPrice(order.total)}</td>
+                    <td className="py-3 px-3 text-zinc-400 text-xs" dir="ltr">{dayjs(order.createdAt).format('MM/DD HH:mm')}</td>
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={5} className="py-10 text-center text-sm text-surface-400">هنوز سفارشی ثبت نشده است</td>
+                    <td colSpan={5} className="py-10 text-center text-sm text-zinc-400">هنوز سفارشی ثبت نشده است</td>
                   </tr>
                 )}
               </tbody>

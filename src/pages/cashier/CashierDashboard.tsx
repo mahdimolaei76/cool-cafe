@@ -56,10 +56,10 @@ export default function CashierDashboard() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-black text-surface-900 dark:text-surface-100">
+        <h1 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
           سلام {user?.name} 👋
         </h1>
-        <p className="text-sm text-surface-500 mt-1">خلاصه امروز · {dayjs().format('dddd، D MMMM')}</p>
+        <p className="text-sm text-zinc-500 mt-1">خلاصه امروز · {dayjs().format('dddd، D MMMM')}</p>
       </div>
 
       {/* Active orders alert */}
@@ -89,8 +89,8 @@ export default function CashierDashboard() {
             <Card>
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs text-surface-400 font-medium">{s.label}</p>
-                  <p className="mt-1.5 text-xl font-black text-surface-900 dark:text-surface-100">{s.value}</p>
+                  <p className="text-xs text-zinc-400 font-medium">{s.label}</p>
+                  <p className="mt-1.5 text-xl font-black text-zinc-900 dark:text-zinc-100">{s.value}</p>
                 </div>
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${s.color}`}>
                   <s.icon className="w-4 h-4" />
@@ -105,7 +105,7 @@ export default function CashierDashboard() {
         {/* Hourly chart */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="lg:col-span-2">
           <Card>
-            <h3 className="font-bold text-surface-900 dark:text-surface-100 mb-4">فروش ساعتی (هزار تومان)</h3>
+            <h3 className="font-bold text-zinc-900 dark:text-zinc-100 mb-4">فروش ساعتی (هزار تومان)</h3>
             <div className="h-[220px]" dir="ltr">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={hourlyData}>
@@ -123,19 +123,19 @@ export default function CashierDashboard() {
         {/* Top items today */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
           <Card>
-            <h3 className="font-bold text-surface-900 dark:text-surface-100 mb-4">پرفروش‌های امروز</h3>
+            <h3 className="font-bold text-zinc-900 dark:text-zinc-100 mb-4">پرفروش‌های امروز</h3>
             {topItems?.length > 0 ? (
               <div className="space-y-3">
                 {topItems?.map((item, i) => (
                   <div key={item.name} className="flex items-center gap-3">
                     <span className="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand-600 flex items-center justify-center text-xs font-black">{i + 1}</span>
-                    <span className="flex-1 text-sm font-medium text-surface-900 dark:text-surface-100 truncate">{item.name}</span>
-                    <span className="text-sm font-bold text-surface-500">{item.count}×</span>
+                    <span className="flex-1 text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{item.name}</span>
+                    <span className="text-sm font-bold text-zinc-500">{item.count}×</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-surface-400 text-center py-8">هنوز فروشی ثبت نشده</p>
+              <p className="text-sm text-zinc-400 text-center py-8">هنوز فروشی ثبت نشده</p>
             )}
           </Card>
         </motion.div>

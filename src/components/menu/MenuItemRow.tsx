@@ -21,8 +21,8 @@ export default function MenuItemRow({ item, index }: Props) {
       transition={{ duration: 0.3, delay: index * 0.03 }}
       className={cn(
         'flex items-center gap-4 p-3 rounded-2xl transition-all',
-        'bg-white dark:bg-surface-900 border border-surface-100 dark:border-surface-800',
-        'hover:shadow-md hover:border-surface-200 dark:hover:border-surface-700',
+        'bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800',
+        'hover:shadow-md hover:border-zinc-200 dark:hover:border-zinc-700',
         inCart && 'ring-2 ring-brand-500/50 border-brand-200 dark:border-brand-800 bg-brand-50/50 dark:bg-brand-950/20',
         !item.isAvailable && 'opacity-40 pointer-events-none'
       )}
@@ -39,10 +39,10 @@ export default function MenuItemRow({ item, index }: Props) {
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="font-bold text-surface-900 dark:text-surface-100 text-sm sm:text-base truncate">
+            <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm sm:text-base truncate">
               {item.name}
             </h3>
-            <p className="text-xs text-surface-500 dark:text-surface-400 line-clamp-1 mt-0.5 hidden sm:block">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-1 mt-0.5 hidden sm:block">
               {item.description}
             </p>
           </div>
@@ -59,14 +59,14 @@ export default function MenuItemRow({ item, index }: Props) {
           </span>
 
           {inCart ? (
-            <div className="flex items-center gap-1 bg-white dark:bg-surface-800 rounded-xl p-0.5 border border-surface-200 dark:border-surface-700 shadow-sm">
+            <div className="flex items-center gap-1 bg-white dark:bg-zinc-800 rounded-xl p-0.5 border border-zinc-200 dark:border-zinc-700 shadow-sm">
               <button
                 onClick={() => updateQuantity(item.id, cartItem.quantity - 1)}
                 className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-colors"
               >
                 <Minus className="w-3.5 h-3.5" strokeWidth={3} />
               </button>
-              <span className="w-6 text-center font-black text-sm text-surface-900 dark:text-surface-100">{cartItem.quantity}</span>
+              <span className="w-6 text-center font-black text-sm text-zinc-900 dark:text-zinc-100">{cartItem.quantity}</span>
               <button
                 onClick={() => updateQuantity(item.id, cartItem.quantity + 1)}
                 className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-brand-50 hover:text-brand-600 transition-colors"

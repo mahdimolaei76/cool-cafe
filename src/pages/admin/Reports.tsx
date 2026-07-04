@@ -85,8 +85,8 @@ export default function Reports() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">گزارش‌ها</h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">گزارش‌گیری و خروجی اکسل</p>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">گزارش‌ها</h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">گزارش‌گیری و خروجی اکسل</p>
         </div>
         <Button onClick={exportCSV} icon={<Download className="w-4 h-4" />} variant="outline">خروجی CSV</Button>
       </div>
@@ -94,13 +94,13 @@ export default function Reports() {
       {/* Filters */}
       <Card>
         <div className="flex items-center gap-2 mb-4">
-          <Filter className="w-4 h-4 text-surface-400" />
-          <h3 className="font-medium text-surface-900 dark:text-surface-100">فیلترها</h3>
+          <Filter className="w-4 h-4 text-zinc-400" />
+          <h3 className="font-medium text-zinc-900 dark:text-zinc-100">فیلترها</h3>
         </div>
 
         <div className="flex gap-2 mb-4 flex-wrap">
           {[{ key: 'today', label: 'امروز' }, { key: 'week', label: 'این هفته' }, { key: 'month', label: 'این ماه' }]?.map(p => (
-            <button key={p.key} onClick={() => setPreset(p.key as 'today' | 'week' | 'month')} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors">
+            <button key={p.key} onClick={() => setPreset(p.key as 'today' | 'week' | 'month')} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
               {p.label}
             </button>
           ))}
@@ -135,8 +135,8 @@ export default function Reports() {
         ]?.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
             <Card>
-              <p className="text-xs text-surface-400">{s.label}</p>
-              <p className="text-xl font-bold text-surface-900 dark:text-surface-100 mt-1">{s.value}</p>
+              <p className="text-xs text-zinc-400">{s.label}</p>
+              <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mt-1">{s.value}</p>
             </Card>
           </motion.div>
         ))}
@@ -145,7 +145,7 @@ export default function Reports() {
       {/* Orders table */}
       <Card>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-surface-900 dark:text-surface-100">سفارش‌ها ({filteredOrders?.length})</h3>
+          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">سفارش‌ها ({filteredOrders?.length})</h3>
         </div>
         <div className="overflow-x-auto">
           {filteredOrders.length === 0 ? (
@@ -155,36 +155,36 @@ export default function Reports() {
               description="بازه زمانی یا فیلترها را تغییر دهید"
             />
           ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-surface-100 dark:border-surface-800">
-                <th className="text-right py-3 px-3 text-xs font-medium text-surface-400">شماره</th>
-                <th className="text-right py-3 px-3 text-xs font-medium text-surface-400 hidden sm:table-cell">مشتری</th>
-                <th className="text-right py-3 px-3 text-xs font-medium text-surface-400">وضعیت</th>
-                <th className="text-right py-3 px-3 text-xs font-medium text-surface-400 hidden md:table-cell">نوع</th>
-                <th className="text-right py-3 px-3 text-xs font-medium text-surface-400 hidden md:table-cell">پرداخت</th>
-                <th className="text-right py-3 px-3 text-xs font-medium text-surface-400">مبلغ</th>
-                <th className="text-right py-3 px-3 text-xs font-medium text-surface-400 hidden lg:table-cell">تاریخ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOrders.slice(0, 50).map(o => (
-                <tr key={o.id} className="border-b border-surface-50 dark:border-surface-800/50 hover:bg-surface-50 dark:hover:bg-surface-800/30 transition-colors">
-                  <td className="py-3 px-3 font-mono text-xs font-medium text-surface-900 dark:text-surface-100" dir="ltr">{o.orderNumber}</td>
-                  <td className="py-3 px-3 hidden sm:table-cell text-surface-600 dark:text-surface-400">{o.customerFirstName} {o.customerLastName}</td>
-                  <td className="py-3 px-3"><Badge variant={o.status === 'delivered' ? 'success' : o.status === 'cancelled' ? 'danger' : o.status === 'pending' ? 'warning' : 'info'} dot>{statusLabels[o.status]}</Badge></td>
-                  <td className="py-3 px-3 hidden md:table-cell text-surface-600 dark:text-surface-400">{o.orderType === 'online' ? 'آنلاین' : 'حضوری'}</td>
-                  <td className="py-3 px-3 hidden md:table-cell text-surface-600 dark:text-surface-400">{o.paymentMethod === 'cash' ? 'نقدی' : o.paymentMethod === 'card' ? 'کارت' : 'سایر'}</td>
-                  <td className="py-3 px-3 font-semibold text-surface-900 dark:text-surface-100">{formatPrice(o.total)}</td>
-                  <td className="py-3 px-3 hidden lg:table-cell text-surface-400 text-xs" dir="ltr">{dayjs(o.createdAt).format('MM/DD HH:mm')}</td>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-zinc-100 dark:border-zinc-800">
+                  <th className="text-right py-3 px-3 text-xs font-medium text-zinc-400">شماره</th>
+                  <th className="text-right py-3 px-3 text-xs font-medium text-zinc-400 hidden sm:table-cell">مشتری</th>
+                  <th className="text-right py-3 px-3 text-xs font-medium text-zinc-400">وضعیت</th>
+                  <th className="text-right py-3 px-3 text-xs font-medium text-zinc-400 hidden md:table-cell">نوع</th>
+                  <th className="text-right py-3 px-3 text-xs font-medium text-zinc-400 hidden md:table-cell">پرداخت</th>
+                  <th className="text-right py-3 px-3 text-xs font-medium text-zinc-400">مبلغ</th>
+                  <th className="text-right py-3 px-3 text-xs font-medium text-zinc-400 hidden lg:table-cell">تاریخ</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredOrders.slice(0, 50).map(o => (
+                  <tr key={o.id} className="border-b border-zinc-50 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
+                    <td className="py-3 px-3 font-mono text-xs font-medium text-zinc-900 dark:text-zinc-100" dir="ltr">{o.orderNumber}</td>
+                    <td className="py-3 px-3 hidden sm:table-cell text-zinc-600 dark:text-zinc-400">{o.customerFirstName} {o.customerLastName}</td>
+                    <td className="py-3 px-3"><Badge variant={o.status === 'delivered' ? 'success' : o.status === 'cancelled' ? 'danger' : o.status === 'pending' ? 'warning' : 'info'} dot>{statusLabels[o.status]}</Badge></td>
+                    <td className="py-3 px-3 hidden md:table-cell text-zinc-600 dark:text-zinc-400">{o.orderType === 'online' ? 'آنلاین' : 'حضوری'}</td>
+                    <td className="py-3 px-3 hidden md:table-cell text-zinc-600 dark:text-zinc-400">{o.paymentMethod === 'cash' ? 'نقدی' : o.paymentMethod === 'card' ? 'کارت' : 'سایر'}</td>
+                    <td className="py-3 px-3 font-semibold text-zinc-900 dark:text-zinc-100">{formatPrice(o.total)}</td>
+                    <td className="py-3 px-3 hidden lg:table-cell text-zinc-400 text-xs" dir="ltr">{dayjs(o.createdAt).format('MM/DD HH:mm')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
         {filteredOrders.length > 50 && (
-          <p className="text-xs text-surface-400 text-center mt-4">نمایش ۵۰ سفارش از {filteredOrders.length}. برای دیدن همه، خروجی بگیرید.</p>
+          <p className="text-xs text-zinc-400 text-center mt-4">نمایش ۵۰ سفارش از {filteredOrders.length}. برای دیدن همه، خروجی بگیرید.</p>
         )}
       </Card>
     </div>

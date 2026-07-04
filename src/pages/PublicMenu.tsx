@@ -60,14 +60,14 @@ export default function PublicMenu() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-50 dark:bg-surface-950">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <MenuHero />
 
       {/* Sticky Nav */}
-      <div className="sticky top-0 z-30 bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl border-b border-surface-200/60 dark:border-surface-800">
+      <div className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border-b border-zinc-200/60 dark:border-zinc-800">
         <div className="max-w-5xl mx-auto px-3 sm:px-4">
           <div className="flex items-center gap-2 py-2.5">
-            <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 flex-shrink-0">
+            <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex-shrink-0">
               <Menu className="w-5 h-5" />
             </button>
 
@@ -75,14 +75,14 @@ export default function PublicMenu() {
               <button
                 data-active={selectedCategory === 'all'}
                 onClick={() => setSelectedCategory('all')}
-                className={cn('flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all', selectedCategory === 'all' ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25' : 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400')}
+                className={cn('flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all', selectedCategory === 'all' ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400')}
               >همه</button>
               {activeCategories?.map(cat => (
                 <button
                   key={cat.id}
                   data-active={selectedCategory === cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={cn('flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap', selectedCategory === cat.id ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25' : 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400')}
+                  className={cn('flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap', selectedCategory === cat.id ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400')}
                 >
                   <span className="ml-1">{cat.icon}</span>{cat.name}
                 </button>
@@ -92,12 +92,12 @@ export default function PublicMenu() {
             {/* View Toggle */}
             <button
               onClick={() => setViewMode(v => v === 'grid' ? 'list' : 'grid')}
-              className="p-2 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-500 flex-shrink-0"
+              className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex-shrink-0"
             >
               {viewMode === 'grid' ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
             </button>
 
-            <button onClick={() => setShowSearch(!showSearch)} className="p-2 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-500 flex-shrink-0">
+            <button onClick={() => setShowSearch(!showSearch)} className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex-shrink-0">
               {showSearch ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
             </button>
           </div>
@@ -107,8 +107,8 @@ export default function PublicMenu() {
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                 <div className="pb-2.5">
                   <div className="relative">
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
-                    <input type="text" placeholder="جستجو..." value={search} onChange={e => setSearch(e.target.value)} autoFocus className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-800 text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30" />
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                    <input type="text" placeholder="جستجو..." value={search} onChange={e => setSearch(e.target.value)} autoFocus className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30" />
                   </div>
                 </div>
               </motion.div>
@@ -123,7 +123,7 @@ export default function PublicMenu() {
           <section className="mt-6">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-lg">⭐</span>
-              <h2 className="text-lg font-black text-surface-900 dark:text-surface-100">پیشنهاد ویژه</h2>
+              <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-100">پیشنهاد ویژه</h2>
             </div>
             {renderItems(featuredItems.slice(0, 6))}
           </section>
@@ -132,9 +132,9 @@ export default function PublicMenu() {
         {selectedCategory === 'all' && !search ? (
           menuItems.length === 0 ? (
             <div className="text-center py-20">
-              <Search className="w-10 h-10 text-surface-300 mx-auto mb-3" />
-              <p className="text-surface-500 font-bold">منو هنوز آماده نشده</p>
-              <p className="text-surface-400 text-sm mt-1">به زودی برمی‌گردیم!</p>
+              <Search className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
+              <p className="text-zinc-500 font-bold">منو هنوز آماده نشده</p>
+              <p className="text-zinc-400 text-sm mt-1">به زودی برمی‌گردیم!</p>
             </div>
           ) : activeCategories?.map(cat => {
             const catItems = menuItems?.filter(i => i.categoryId === cat.id);
@@ -143,8 +143,8 @@ export default function PublicMenu() {
               <section key={cat.id} className="mt-10">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">{cat.icon}</span>
-                  <h2 className="text-lg font-black text-surface-900 dark:text-surface-100">{cat.name}</h2>
-                  <span className="text-xs text-surface-400">({catItems?.length})</span>
+                  <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-100">{cat.name}</h2>
+                  <span className="text-xs text-zinc-400">({catItems?.length})</span>
                 </div>
                 {renderItems(catItems)}
               </section>
@@ -154,13 +154,13 @@ export default function PublicMenu() {
           <section className="mt-6">
             {filteredItems?.length > 0 ? (
               <>
-                <p className="text-sm text-surface-500 mb-3">{filteredItems?.length} محصول</p>
+                <p className="text-sm text-zinc-500 mb-3">{filteredItems?.length} محصول</p>
                 {renderItems(filteredItems)}
               </>
             ) : (
               <div className="text-center py-20">
-                <Search className="w-10 h-10 text-surface-300 mx-auto mb-3" />
-                <p className="text-surface-500 font-bold">موردی یافت نشد</p>
+                <Search className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
+                <p className="text-zinc-500 font-bold">موردی یافت نشد</p>
               </div>
             )}
           </section>

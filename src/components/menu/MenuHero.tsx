@@ -3,7 +3,7 @@ import { Clock, Wifi } from 'lucide-react';
 
 export default function MenuHero() {
   return (
-    <div className="relative h-[50vh] min-h-[400px] overflow-hidden bg-surface-950">
+    <div className="relative h-[50vh] min-h-[400px] overflow-hidden bg-zinc-950">
       {/* Background Image */}
       <div className="absolute inset-0">
         <img
@@ -11,7 +11,7 @@ export default function MenuHero() {
           alt="کافه COOL"
           className="w-full h-full object-cover scale-110 blur-[1px]"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-surface-50 dark:to-surface-950" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-zinc-50 dark:to-zinc-950" />
       </div>
 
       {/* Content */}

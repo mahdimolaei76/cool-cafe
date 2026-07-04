@@ -11,7 +11,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="space-y-1.5">
         {label && (
-          <label htmlFor={id} className="block text-sm font-medium text-surface-700 dark:text-surface-300">
+          <label htmlFor={id} className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
             {label}
           </label>
         )}
@@ -19,11 +19,11 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={id}
           className={cn(
-            'w-full rounded-xl border border-surface-200 bg-white px-4 py-2.5 text-sm text-surface-900',
-            'placeholder:text-surface-400',
+            'w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900',
+            'placeholder:text-zinc-400',
             'focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500',
             'transition-all duration-200 resize-none',
-            'dark:bg-surface-900 dark:border-surface-700 dark:text-surface-100',
+            'dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100',
             error && 'border-danger',
             className
           )}

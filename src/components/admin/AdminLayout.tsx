@@ -53,15 +53,15 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-50 dark:bg-surface-950">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       {/* Mobile Header - بزرگتر برای cashier */}
       <div className={cn(
-        "lg:hidden sticky top-0 z-30 bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl border-b border-surface-200 dark:border-surface-800",
+        "lg:hidden sticky top-0 z-30 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800",
         isCashier && "bg-brand-50 dark:bg-brand-950/30 border-brand-200 dark:border-brand-900"
       )}>
         <div className="flex items-center justify-between px-4 h-16">
-          <button onClick={() => setSidebarOpen(true)} className="p-3 -mr-2 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors relative">
-            <Menu className="w-6 h-6 text-surface-700 dark:text-surface-300" />
+          <button onClick={() => setSidebarOpen(true)} className="p-3 -mr-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors relative">
+            <Menu className="w-6 h-6 text-zinc-700 dark:text-zinc-300" />
             {isCashier && activeOrdersCount > 0 && (
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-brand-600 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
                 {activeOrdersCount}
@@ -71,7 +71,7 @@ export default function AdminLayout() {
           <div className="flex items-center gap-2">
             <span className={cn(
               "font-bold text-lg",
-              isCashier ? "text-brand-800 dark:text-brand-400" : "text-surface-900 dark:text-surface-100"
+              isCashier ? "text-brand-800 dark:text-brand-400" : "text-zinc-900 dark:text-zinc-100"
             )}>
               {isCashier ? 'صندوق' : 'COOL'}
             </span>
@@ -81,8 +81,8 @@ export default function AdminLayout() {
               </span>
             )}
           </div>
-          <button onClick={toggleTheme} className="p-2.5 -ml-2 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
-            {theme === 'dark' ? <Sun className="w-5 h-5 text-surface-400" /> : <Moon className="w-5 h-5 text-surface-400" />}
+          <button onClick={toggleTheme} className="p-2.5 -ml-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+            {theme === 'dark' ? <Sun className="w-5 h-5 text-zinc-400" /> : <Moon className="w-5 h-5 text-zinc-400" />}
           </button>
         </div>
         {/* نمایش سریع سفارش‌های فعال برای cashier */}
@@ -176,13 +176,13 @@ function SidebarContent({
 }) {
   return (
     <div className={cn(
-      "h-full bg-white dark:bg-surface-900 border-l border-surface-100 dark:border-surface-800 flex flex-col",
+      "h-full bg-white dark:bg-zinc-900 border-l border-zinc-100 dark:border-zinc-800 flex flex-col",
       isCashier && "border-l-4 border-l-brand-500"
     )}>
       {/* Logo */}
       <div className={cn(
         "flex items-center justify-between px-6",
-        isCashier ? "h-20 bg-gradient-to-r from-brand-600 to-brand-700" : "h-16 border-b border-surface-100 dark:border-surface-800"
+        isCashier ? "h-20 bg-gradient-to-r from-brand-600 to-brand-700" : "h-16 border-b border-zinc-100 dark:border-zinc-800"
       )}>
         <Link to={isCashier ? "/cashier" : "/admin"} className="flex items-center gap-3" onClick={onClose}>
           <div className={cn(
@@ -194,13 +194,13 @@ function SidebarContent({
           <div>
             <span className={cn(
               "font-bold block",
-              isCashier ? "text-white text-lg" : "text-surface-900 dark:text-surface-100"
+              isCashier ? "text-white text-lg" : "text-zinc-900 dark:text-zinc-100"
             )}>
               {isCashier ? 'صندوق' : 'کافه COOL'}
             </span>
             <span className={cn(
               "text-xs",
-              isCashier ? "text-white/80" : "text-surface-400"
+              isCashier ? "text-white/80" : "text-zinc-400"
             )}>
               {isCashier ? 'پنل صندوق‌دار' : 'پنل مدیریت'}
             </span>
@@ -209,7 +209,7 @@ function SidebarContent({
         {onClose && (
           <button onClick={onClose} className={cn(
             "p-2 rounded-xl transition-colors lg:hidden",
-            isCashier ? "hover:bg-white/20 text-white" : "hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-400"
+            isCashier ? "hover:bg-white/20 text-white" : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400"
           )}>
             <X className="w-5 h-5" />
           </button>
@@ -218,12 +218,12 @@ function SidebarContent({
 
       {/* User Info */}
       {user && (
-        <div className="px-4 py-4 border-b border-surface-100 dark:border-surface-800">
+        <div className="px-4 py-4 border-b border-zinc-100 dark:border-zinc-800">
           <div className={cn(
             "flex items-center gap-3 p-3 rounded-xl",
             isCashier
               ? "bg-brand-50 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-800"
-              : "bg-surface-50 dark:bg-surface-800/50"
+              : "bg-zinc-50 dark:bg-zinc-800/50"
           )}>
             <div className={cn(
               "w-11 h-11 rounded-full flex items-center justify-center",
@@ -234,10 +234,10 @@ function SidebarContent({
               <User className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-surface-900 dark:text-surface-100 truncate">{user.name}</p>
+              <p className="font-bold text-zinc-900 dark:text-zinc-100 truncate">{user.name}</p>
               <p className={cn(
                 "text-xs",
-                isCashier ? "text-brand-600 dark:text-brand-400 font-medium" : "text-surface-400"
+                isCashier ? "text-brand-600 dark:text-brand-400 font-medium" : "text-zinc-400"
               )}>
                 {user.role === 'admin' ? 'مدیر سیستم' : 'صندوق‌دار'}
               </p>
@@ -275,19 +275,19 @@ function SidebarContent({
                     'px-5 py-4 rounded-2xl text-base font-bold',
                     active
                       ? 'bg-brand-600 text-white shadow-xl shadow-brand-500/30 scale-105'
-                      : 'bg-surface-50 dark:bg-surface-800 text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 border-2 border-surface-200 dark:border-surface-700'
+                      : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 border-2 border-zinc-200 dark:border-zinc-700'
                   )
                   : cn(
                     'px-4 py-3 rounded-xl text-sm font-medium',
                     active
                       ? 'bg-brand-50 text-brand-800 dark:bg-brand-900/30 dark:text-brand-400 shadow-sm'
-                      : 'text-surface-600 hover:bg-surface-50 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200'
+                      : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
                   )
               )}
             >
               <item.icon className={cn(
                 isCashier ? 'w-6 h-6' : 'w-5 h-5',
-                active ? (isCashier ? 'text-white' : 'text-brand-700 dark:text-brand-400') : 'text-surface-400'
+                active ? (isCashier ? 'text-white' : 'text-brand-700 dark:text-brand-400') : 'text-zinc-400'
               )} />
               <span className="flex-1">{item.label}</span>
               {showBadge && (
@@ -308,13 +308,13 @@ function SidebarContent({
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-surface-100 dark:border-surface-800 space-y-2">
+      <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
         {!isCashier && (
           <button
             onClick={toggleTheme}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-surface-600 hover:bg-surface-50 dark:text-surface-400 dark:hover:bg-surface-800 w-full transition-colors"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800 w-full transition-colors"
           >
-            {theme === 'dark' ? <Sun className="w-5 h-5 text-surface-400" /> : <Moon className="w-5 h-5 text-surface-400" />}
+            {theme === 'dark' ? <Sun className="w-5 h-5 text-zinc-400" /> : <Moon className="w-5 h-5 text-zinc-400" />}
             {theme === 'dark' ? 'حالت روشن' : 'حالت تاریک'}
           </button>
         )}
@@ -323,9 +323,9 @@ function SidebarContent({
           <Link
             to="/"
             target="_blank"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-surface-600 hover:bg-surface-50 dark:text-surface-400 dark:hover:bg-surface-800 w-full transition-colors"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800 w-full transition-colors"
           >
-            <ExternalLink className="w-5 h-5 text-surface-400" />
+            <ExternalLink className="w-5 h-5 text-zinc-400" />
             مشاهده منو
           </Link>
         )}
@@ -335,7 +335,7 @@ function SidebarContent({
           className={cn(
             "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium w-full transition-colors",
             isCashier
-              ? "text-surface-700 hover:bg-surface-100 dark:text-surface-300 dark:hover:bg-surface-800"
+              ? "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
               : "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
           )}
         >
