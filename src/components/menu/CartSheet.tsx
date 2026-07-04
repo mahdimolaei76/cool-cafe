@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { X, Minus, Plus, ShoppingBag, ArrowLeft, Trash2, Check, Phone, User, MessageSquare } from 'lucide-react';
 import { useCartStore, useAppStore, formatPrice } from '@/store';
 import Button from '@/components/ui/Button';
+import { iranianMobileError } from '@/utils/phone';
 import type { OrderType, PaymentMethod } from '@/types';
 
 interface CartSheetProps {
@@ -17,35 +19,59 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
   const addOrder = useAppStore(s => s.addOrder);
   const [step, setStep] = useState<Step>('cart');
   const [orderNumber, setOrderNumber] = useState('');
+  const [trackingCode, setTrackingCode] = useState('');
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', notes: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
   const total = getTotal();
 
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.firstName.trim()) e.firstName = 'نام الزامی است';
-    if (!form.phone.trim()) e.phone = 'شماره تماس الزامی است';
+    const phoneError = iranianMobileError(form.phone, true);
+    if (phoneError) e.phone = phoneError;
     setErrors(e);
     return Object.keys(e)?.length === 0;
   };
 
   const handleSubmit = async () => {
-    if (!validate()) return;
-    const order = await addOrder({
-      customerFirstName: form.firstName,
-      customerLastName: form.lastName,
-      customerPhone: form.phone,
-      items: items?.map(ci => ({
-        id: crypto.randomUUID(), menuItemId: ci.menuItem.id, menuItem: ci.menuItem,
-        name: ci.menuItem.name, price: ci.menuItem.price, quantity: ci.quantity,
-        subtotal: ci.menuItem.price * ci.quantity,
-      })),
-      subtotal: total, discount: 0, total, notes: form.notes,
-      status: 'pending', orderType: 'online' as OrderType, paymentMethod: 'cash' as PaymentMethod, cashier: '',
-    });
-    setOrderNumber(order.orderNumber);
-    clearCart();
-    setStep('success');
+    if (submitting) return; // guard against double-submit from a fast double-tap
+    if (items?.length === 0) {
+      toast.error('سبد خرید شما خالی است');
+      return;
+    }
+    if (!validate()) {
+      toast.error('لطفاً اطلاعات را کامل و صحیح وارد کنید');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const order = await addOrder({
+        customerFirstName: form.firstName,
+        customerLastName: form.lastName,
+        customerPhone: form.phone,
+        items: items?.map(ci => ({
+          id: crypto.randomUUID(), menuItemId: ci.menuItem.id, menuItem: ci.menuItem,
+          name: ci.menuItem.name, price: ci.menuItem.price, quantity: ci.quantity,
+          subtotal: ci.menuItem.price * ci.quantity,
+        })),
+        subtotal: total, discount: 0, total, notes: form.notes,
+        status: 'pending', orderType: 'online' as OrderType, paymentMethod: 'cash' as PaymentMethod, cashier: '',
+      });
+      setOrderNumber(order.orderNumber);
+      setTrackingCode(order.trackingCode);
+      clearCart();
+      setStep('success');
+      toast.success('سفارش شما با موفقیت ثبت شد');
+    } catch (err) {
+      // addOrder already falls back to an offline order on network errors,
+      // so reaching here means something genuinely unexpected happened —
+      // tell the customer instead of leaving them staring at nothing.
+      toast.error('ثبت سفارش با خطا مواجه شد. لطفاً دوباره تلاش کنید.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleClose = () => {
@@ -116,11 +142,11 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                               <p className="text-sm text-brand-600 font-bold mt-0.5">{formatPrice(ci.menuItem.price)}</p>
                               <div className="flex items-center justify-between mt-3">
                                 <div className="flex items-center gap-1 bg-white dark:bg-zinc-700 rounded-xl p-1 border border-zinc-200 dark:border-zinc-600 shadow-sm">
-                                  <button onClick={() => updateQuantity(ci.menuItem.id, ci.quantity - 1)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 transition-colors">
+                                  <button onClick={() => updateQuantity(ci.menuItem.id, ci.quantity - 1)} className="w-11 h-11 rounded-lg flex items-center justify-center hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 transition-colors">
                                     {ci.quantity === 1 ? <Trash2 className="w-3.5 h-3.5" /> : <Minus className="w-4 h-4" />}
                                   </button>
                                   <span className="w-7 text-center font-black text-base text-zinc-900 dark:text-zinc-100">{ci.quantity}</span>
-                                  <button onClick={() => updateQuantity(ci.menuItem.id, ci.quantity + 1)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-900/20 transition-colors">
+                                  <button onClick={() => updateQuantity(ci.menuItem.id, ci.quantity + 1)} className="w-11 h-11 rounded-lg flex items-center justify-center hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-900/20 transition-colors">
                                     <Plus className="w-4 h-4" />
                                   </button>
                                 </div>
@@ -184,7 +210,13 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                       <p className="text-xs text-zinc-400 mb-1">شماره سفارش</p>
                       <p className="text-3xl font-black text-brand-600 font-mono tracking-wider" dir="ltr">{orderNumber}</p>
                     </div>
-                    <p className="mt-4 text-xs text-zinc-400">این شماره رو نگه دار برای پیگیری</p>
+                    {trackingCode && (
+                      <div className="mt-3 p-4 bg-brand-50 dark:bg-brand-900/20 rounded-2xl">
+                        <p className="text-xs text-brand-700 dark:text-brand-400 mb-1">کد پیگیری</p>
+                        <p className="text-xl font-black text-brand-700 dark:text-brand-400 font-mono tracking-widest" dir="ltr">{trackingCode}</p>
+                      </div>
+                    )}
+                    <p className="mt-4 text-xs text-zinc-400">این کد رو نگه دار برای پیگیری سفارش</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -203,8 +235,8 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                   </Button>
                 ) : (
                   <div className="flex gap-3">
-                    <Button variant="outline" onClick={() => setStep('cart')} className="flex-1 !py-4 !rounded-2xl !font-bold">بازگشت</Button>
-                    <Button className="flex-1 !py-4 !rounded-2xl !font-bold !bg-brand-600 hover:!bg-brand-700" onClick={handleSubmit}>ثبت سفارش</Button>
+                    <Button variant="outline" onClick={() => setStep('cart')} className="flex-1 !py-4 !rounded-2xl !font-bold" disabled={submitting}>بازگشت</Button>
+                    <Button className="flex-1 !py-4 !rounded-2xl !font-bold !bg-brand-600 hover:!bg-brand-700" onClick={handleSubmit} loading={submitting}>ثبت سفارش</Button>
                   </div>
                 )}
               </div>

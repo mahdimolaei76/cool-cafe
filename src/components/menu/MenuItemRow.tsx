@@ -62,14 +62,16 @@ export default function MenuItemRow({ item, index }: Props) {
             <div className="flex items-center gap-1 bg-white dark:bg-zinc-800 rounded-xl p-0.5 border border-zinc-200 dark:border-zinc-700 shadow-sm">
               <button
                 onClick={() => updateQuantity(item.id, cartItem.quantity - 1)}
-                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-colors"
+                aria-label="کاهش تعداد"
+                className="w-11 h-11 rounded-lg flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-colors"
               >
                 <Minus className="w-3.5 h-3.5" strokeWidth={3} />
               </button>
               <span className="w-6 text-center font-black text-sm text-zinc-900 dark:text-zinc-100">{cartItem.quantity}</span>
               <button
                 onClick={() => updateQuantity(item.id, cartItem.quantity + 1)}
-                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-brand-50 hover:text-brand-600 transition-colors"
+                aria-label="افزایش تعداد"
+                className="w-11 h-11 rounded-lg flex items-center justify-center hover:bg-brand-50 hover:text-brand-600 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" strokeWidth={3} />
               </button>
@@ -77,7 +79,7 @@ export default function MenuItemRow({ item, index }: Props) {
           ) : (
             <button
               onClick={() => addItem(item)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 transition-colors shadow-sm active:scale-95"
+              className="flex items-center gap-1 px-3 min-h-11 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 transition-colors shadow-sm active:scale-95"
             >
               <Plus className="w-3.5 h-3.5" strokeWidth={3} />
               افزودن

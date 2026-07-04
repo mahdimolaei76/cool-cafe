@@ -92,7 +92,8 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
               <div className="flex items-center gap-1 bg-brand-50 dark:bg-brand-900/30 rounded-xl p-1 border border-brand-200 dark:border-brand-800">
                 <button
                   onClick={() => updateQuantity(item.id, cartItem.quantity - 1)}
-                  className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors shadow-sm"
+                  aria-label="کاهش تعداد"
+                  className="w-11 h-11 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors shadow-sm"
                 >
                   <Minus className="w-4 h-4" strokeWidth={3} />
                 </button>
@@ -101,7 +102,8 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
                 </span>
                 <button
                   onClick={() => updateQuantity(item.id, cartItem.quantity + 1)}
-                  className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors shadow-sm"
+                  aria-label="افزایش تعداد"
+                  className="w-11 h-11 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors shadow-sm"
                 >
                   <Plus className="w-4 h-4" strokeWidth={3} />
                 </button>
@@ -111,7 +113,7 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
               <motion.button
                 whileTap={{ scale: 0.92 }}
                 onClick={() => addItem(item)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-bold hover:bg-brand-700 transition-colors shadow-md shadow-brand-500/20 active:shadow-sm"
+                className="flex items-center gap-2 px-4 min-h-11 bg-brand-600 text-white rounded-xl text-sm font-bold hover:bg-brand-700 transition-colors shadow-md shadow-brand-500/20 active:shadow-sm"
               >
                 <Plus className="w-4 h-4" strokeWidth={3} />
                 <span className="md:hidden">+</span>

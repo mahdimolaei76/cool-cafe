@@ -36,7 +36,28 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Toaster position="top-center" toastOptions={{ style: { background: theme === 'dark' ? '#27272a' : '#fff', color: theme === 'dark' ? '#f4f4f5' : '#18181b', border: theme === 'dark' ? '1px solid #3f3f46' : '1px solid #e4e4e7', borderRadius: '12px' } }} />
+      <Toaster
+        position="top-center"
+        gap={8}
+        offset={16}
+        mobileOffset={12}
+        className="!z-[9999]"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: theme === 'dark' ? '#27272a' : '#fff',
+            color: theme === 'dark' ? '#f4f4f5' : '#18181b',
+            border: theme === 'dark' ? '1px solid #3f3f46' : '1px solid #e4e4e7',
+            borderRadius: '12px',
+            width: 'calc(100vw - 32px)',
+            maxWidth: '380px',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            padding: '12px 14px',
+            fontSize: '14px',
+          },
+        }}
+      />
       <Routes>
         <Route path="/" element={<PublicMenu />} />
         <Route path="/track" element={<OrderTracking />} />

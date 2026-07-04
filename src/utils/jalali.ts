@@ -105,16 +105,17 @@ function d2j(jdn: number): JalaliDate {
 
   if (k >= 0) {
     if (k <= 185) {
-      jm = 1 + div(k, 31);
+      jm = div(k, 31) + 1;
       jd = mod(k, 31) + 1;
       return { jy, jm, jd };
     }
     k -= 186;
   } else {
     jy -= 1;
-    k += 365 + r.leap;
+    k += 179;
+    if (r.leap === 1) k += 1;
   }
-  jm = 7 + div(k, 30);
+  jm = div(k, 30) + 7;
   jd = mod(k, 30) + 1;
   return { jy, jm, jd };
 }

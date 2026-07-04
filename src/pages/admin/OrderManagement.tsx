@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { Search, Clock, CheckCircle2, XCircle, Truck, ChefHat, RefreshCw, Phone, Receipt, User } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
@@ -25,7 +26,7 @@ const typeLabels: Record<string, string> = { 'in-person': 'حضوری', 'online'
 const paymentLabels: Record<string, string> = { 'cash': 'نقدی', 'card': 'کارت', 'other': 'سایر' };
 
 export default function OrderManagement() {
-  const { orders: rawOrders, updateOrderStatus } = useAppStore();
+  const { orders: rawOrders, updateOrderStatus, loading } = useAppStore();
   const orders = rawOrders ?? [];
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');
@@ -57,6 +58,7 @@ export default function OrderManagement() {
       if (selectedOrder && selectedOrder.id === confirmAction.orderId) {
         setSelectedOrder(prev => prev ? { ...prev, status: confirmAction.status } : null);
       }
+      toast.success('وضعیت سفارش بروزرسانی شد');
     }
   };
 
@@ -181,7 +183,15 @@ export default function OrderManagement() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length > 0 ? filtered.slice(0, 20).map(order => (
+              {loading && rawOrders?.length === 0 ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b border-zinc-50 dark:border-zinc-800/50">
+                    <td colSpan={7} className="py-3 px-4">
+                      <div className="h-4 bg-zinc-100 dark:bg-zinc-800 rounded animate-pulse" />
+                    </td>
+                  </tr>
+                ))
+              ) : filtered.length > 0 ? filtered.slice(0, 20).map(order => (
                 <tr
                   key={order.id}
                   onClick={() => setSelectedOrder(order)}

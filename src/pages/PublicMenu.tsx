@@ -10,7 +10,7 @@ import CartSheet from '@/components/menu/CartSheet';
 import MenuSidebar from '@/components/menu/MenuSidebar';
 
 export default function PublicMenu() {
-  const { menuItems: rawMenuItems, categories: rawCategories } = useAppStore();
+  const { menuItems: rawMenuItems, categories: rawCategories, loading } = useAppStore();
   const menuItems = rawMenuItems ?? [];
   const categories = rawCategories ?? [];
   const cartItemCount = useCartStore(s => s.getItemCount());
@@ -82,7 +82,7 @@ export default function PublicMenu() {
       <div className="sticky top-0 z-30 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border-b border-zinc-200/60 dark:border-zinc-800">
         <div className="max-w-5xl mx-auto px-3 sm:px-4">
           <div className="flex items-center gap-2 py-2.5">
-            <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex-shrink-0">
+            <button onClick={() => setSidebarOpen(true)} aria-label="منو" className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex-shrink-0">
               <Menu className="w-5 h-5" />
             </button>
 
@@ -110,13 +110,14 @@ export default function PublicMenu() {
 
             {/* View Toggle */}
             <button
-              onClick={() => setViewMode(v => v === 'grid' ? 'list' : 'grid')}
-              className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex-shrink-0"
+              onClick={() => setViewMode((v: 'grid' | 'list') => v === 'grid' ? 'list' : 'grid')}
+              aria-label="تغییر نمای نمایش"
+              className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex-shrink-0"
             >
               {viewMode === 'grid' ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
             </button>
 
-            <button onClick={() => setShowSearch(!showSearch)} className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex-shrink-0">
+            <button onClick={() => setShowSearch(!showSearch)} aria-label="جستجو" className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex-shrink-0">
               {showSearch ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
             </button>
           </div>
@@ -150,11 +151,32 @@ export default function PublicMenu() {
 
         {selectedCategory === 'all' && !search ? (
           menuItems.length === 0 ? (
-            <div className="text-center py-20">
-              <Search className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
-              <p className="text-zinc-500 font-bold">منو هنوز آماده نشده</p>
-              <p className="text-zinc-400 text-sm mt-1">به زودی برمی‌گردیم!</p>
-            </div>
+            loading ? (
+              <div className="space-y-10 mt-6">
+                {[1, 2].map(section => (
+                  <div key={section}>
+                    <div className="h-5 w-32 bg-zinc-200 dark:bg-zinc-800 rounded mb-4 animate-pulse" />
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="rounded-2xl overflow-hidden animate-pulse">
+                          <div className="aspect-square bg-zinc-200 dark:bg-zinc-800" />
+                          <div className="p-3 space-y-2 bg-white dark:bg-zinc-900">
+                            <div className="h-3 w-3/4 bg-zinc-200 dark:bg-zinc-800 rounded" />
+                            <div className="h-3 w-1/2 bg-zinc-200 dark:bg-zinc-800 rounded" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20">
+                <Search className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
+                <p className="text-zinc-500 font-bold">منو هنوز آماده نشده</p>
+                <p className="text-zinc-400 text-sm mt-1">به زودی برمی‌گردیم!</p>
+              </div>
+            )
           ) : activeCategories?.map(cat => {
             const catItems = menuItems?.filter(i => i.categoryId === cat.id);
             if (catItems?.length === 0) return null;

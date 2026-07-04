@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { CheckCircle2, Bell, Search, DollarSign, ShoppingBag, TrendingUp, X } from 'lucide-react';
 import dayjs from 'dayjs';
 import { cn } from '@/utils/cn';
@@ -19,7 +20,7 @@ const statusMap: Record<string, { label: string; color: string; bgColor: string;
 };
 
 export default function CashierOrders() {
-  const { orders: rawOrders, updateOrderStatus } = useAppStore();
+  const { orders: rawOrders, updateOrderStatus, loading } = useAppStore();
   const orders = rawOrders ?? [];
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,6 +56,7 @@ export default function CashierOrders() {
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
     updateOrderStatus(orderId, newStatus);
     setSelectedOrder(null);
+    toast.success('وضعیت سفارش بروزرسانی شد');
   };
 
   return (
@@ -112,45 +114,67 @@ export default function CashierOrders() {
 
       {/* Orders List */}
       <div className="space-y-3">
-        <AnimatePresence mode="popLayout">
-          {filteredOrders?.map((order, i) => {
-            const config = statusMap[order.status];
-            const isUrgent = dayjs().diff(dayjs(order.createdAt), 'minute') > 15 && order.status === 'pending';
-            return (
-              <motion.div key={order.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.03 }} onClick={() => setSelectedOrder(order)}
-                className={cn('bg-white dark:bg-zinc-800 rounded-2xl border p-4 cursor-pointer transition-all hover:shadow-lg', isUrgent ? 'border-red-300 dark:border-red-800' : 'border-zinc-200 dark:border-zinc-700')}>
+        {loading && rawOrders?.length === 0 ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-4 animate-pulse">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-black text-zinc-900 dark:text-zinc-100" dir="ltr">#{order.orderNumber.replace('COOL-', '')}</span>
-                    {isUrgent && <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse"><Bell className="w-3 h-3 inline" /> فوری</span>}
-                  </div>
-                  {config && <Badge variant={config.badgeVariant} dot>{config.label}</Badge>}
-                  {!config && <Badge variant={order.status === 'delivered' ? 'success' : 'danger'}>{order.status === 'delivered' ? 'تحویل شده' : 'لغو شده'}</Badge>}
+                  <div className="h-4 w-20 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                  <div className="h-5 w-16 bg-zinc-200 dark:bg-zinc-700 rounded-full" />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{order.customerFirstName} {order.customerLastName}</p>
-                    <p className="text-xs text-zinc-400 mt-0.5">{order.items?.length} آیتم · {fromNowFa(order.createdAt)}</p>
+                  <div className="space-y-2">
+                    <div className="h-4 w-28 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                    <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-700 rounded" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-black text-brand-600">{formatPrice(order.total)}</span>
-                    {config?.next && (
-                      <Button size="sm" onClick={(e) => { e.stopPropagation(); handleStatusChange(order.id, config.next!); }} className="!rounded-lg !py-1.5">
-                        {config.nextLabel}
-                      </Button>
-                    )}
-                  </div>
+                  <div className="h-6 w-16 bg-zinc-200 dark:bg-zinc-700 rounded" />
                 </div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-        {filteredOrders?.length === 0 && (
-          <div className="text-center py-16">
-            <CheckCircle2 className="w-12 h-12 text-zinc-300 mx-auto mb-3" />
-            <p className="font-bold text-zinc-500">سفارشی نیست</p>
-            <p className="text-sm text-zinc-400 mt-1">{searchQuery ? 'جستجو نتیجه‌ای نداشت' : 'همه پردازش شده‌اند'}</p>
+              </div>
+            ))}
           </div>
+        ) : (
+          <>
+            <AnimatePresence mode="popLayout">
+              {filteredOrders?.map((order, i) => {
+                const config = statusMap[order.status];
+                const isUrgent = dayjs().diff(dayjs(order.createdAt), 'minute') > 15 && order.status === 'pending';
+                return (
+                  <motion.div key={order.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.03 }} onClick={() => setSelectedOrder(order)}
+                    className={cn('bg-white dark:bg-zinc-800 rounded-2xl border p-4 cursor-pointer transition-all hover:shadow-lg', isUrgent ? 'border-red-300 dark:border-red-800' : 'border-zinc-200 dark:border-zinc-700')}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-black text-zinc-900 dark:text-zinc-100" dir="ltr">#{order.orderNumber.replace('COOL-', '')}</span>
+                        {isUrgent && <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse"><Bell className="w-3 h-3 inline" /> فوری</span>}
+                      </div>
+                      {config && <Badge variant={config.badgeVariant} dot>{config.label}</Badge>}
+                      {!config && <Badge variant={order.status === 'delivered' ? 'success' : 'danger'}>{order.status === 'delivered' ? 'تحویل شده' : 'لغو شده'}</Badge>}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{order.customerFirstName} {order.customerLastName}</p>
+                        <p className="text-xs text-zinc-400 mt-0.5">{order.items?.length} آیتم · {fromNowFa(order.createdAt)}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-black text-brand-600">{formatPrice(order.total)}</span>
+                        {config?.next && (
+                          <Button size="sm" onClick={(e) => { e.stopPropagation(); handleStatusChange(order.id, config.next!); }} className="!rounded-lg !py-1.5">
+                            {config.nextLabel}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+            {filteredOrders?.length === 0 && (
+              <div className="text-center py-16">
+                <CheckCircle2 className="w-12 h-12 text-zinc-300 mx-auto mb-3" />
+                <p className="font-bold text-zinc-500">سفارشی نیست</p>
+                <p className="text-sm text-zinc-400 mt-1">{searchQuery ? 'جستجو نتیجه‌ای نداشت' : 'همه پردازش شده‌اند'}</p>
+              </div>
+            )}
+          </>
         )}
       </div>
 

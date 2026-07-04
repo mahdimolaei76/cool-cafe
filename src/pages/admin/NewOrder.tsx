@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { Plus, Minus, Trash2, Search, Check, ShoppingCart, User, CreditCard, Banknote, Smartphone, Receipt, Flame, Zap } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
@@ -74,12 +75,15 @@ export default function NewOrder() {
         subtotal, discount: form.discount, total, notes: form.notes, status: 'pending', orderType: form.orderType, paymentMethod: form.paymentMethod, cashier: user?.name || '',
       });
       setSuccess(order.orderNumber);
+      toast.success('سفارش با موفقیت ثبت شد');
     } catch (err) {
       // addOrder already falls back to an offline order on network errors,
       // so reaching here means something unexpected happened — surface it
       // instead of leaving the cashier staring at a button that appears to
       // do nothing.
-      setSubmitError(err instanceof Error ? err.message : 'ثبت سفارش با خطا مواجه شد. دوباره تلاش کنید.');
+      const message = err instanceof Error ? err.message : 'ثبت سفارش با خطا مواجه شد. دوباره تلاش کنید.';
+      setSubmitError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

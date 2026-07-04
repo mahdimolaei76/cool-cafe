@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import { useAppStore, formatPrice } from '@/store';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import JalaliDatePicker from '@/components/ui/JalaliDatePicker';
 import Select from '@/components/ui/Select';
 import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/ui/EmptyState';
@@ -108,14 +108,8 @@ export default function Reports() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          <div>
-            <Input label="از تاریخ" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-            <p className="text-xs text-zinc-400 mt-1">{formatJalali(dateFrom)}</p>
-          </div>
-          <div>
-            <Input label="تا تاریخ" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
-            <p className="text-xs text-zinc-400 mt-1">{formatJalali(dateTo)}</p>
-          </div>
+          <JalaliDatePicker label="از تاریخ" value={dateFrom} onChange={setDateFrom} />
+          <JalaliDatePicker label="تا تاریخ" value={dateTo} onChange={setDateTo} />
           <Select label="دسته‌بندی" value={filterCategory} onChange={e => setFilterCategory(e.target.value)} placeholder="همه" options={categories?.map(c => ({ value: c.id, label: c.name }))} />
           <Select label="وضعیت" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} placeholder="همه" options={[
             { value: 'pending', label: 'در انتظار' },

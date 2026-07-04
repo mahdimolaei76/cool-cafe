@@ -109,7 +109,7 @@ export default function AdminLayout() {
         {sidebarOpen && (
           <div className="lg:hidden fixed inset-0 z-40">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-            <motion.div initial={{ x: 280 }} animate={{ x: 0 }} exit={{ x: 280 }} transition={{ type: 'spring', damping: 30, stiffness: 300 }} className="absolute right-0 top-0 bottom-0 w-[300px]">
+            <motion.div initial={{ x: 280 }} animate={{ x: 0 }} exit={{ x: 280 }} transition={{ type: 'spring', damping: 30, stiffness: 300 }} className="absolute right-0 top-0 bottom-0 w-[85vw] max-w-[300px]">
               <SidebarContent
                 onClose={() => setSidebarOpen(false)}
                 isActive={isActive}

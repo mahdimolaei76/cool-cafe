@@ -60,6 +60,7 @@ interface AppStore {
   orders: Order[];
   theme: 'light' | 'dark';
   loading: boolean;
+  loadingCount: number;
   apiOnline: boolean;
 
   // Fetch from API
@@ -101,6 +102,7 @@ export const useAppStore = create<AppStore>()(
       orders: [],
       theme: 'light',
       loading: false,
+      loadingCount: 0,
       apiOnline: false,
       settings: { name: 'کافه COOL', phone: '۰۲۱-۱۲۳۴۵۶۷۸', email: 'info@coolcafe.ir', address: 'تهران، خیابان ولیعصر' },
 
@@ -114,19 +116,25 @@ export const useAppStore = create<AppStore>()(
         }
       },
       fetchMenuItems: async () => {
+        set(s => ({ loading: true, loadingCount: s.loadingCount + 1 }));
         try {
           const data = await menuApi.list(false);
           set({ menuItems: Array.isArray(data) ? data : [], apiOnline: true });
         } catch {
           set({ apiOnline: false });
+        } finally {
+          set(s => ({ loadingCount: s.loadingCount - 1, loading: s.loadingCount - 1 > 0 }));
         }
       },
       fetchOrders: async () => {
+        set(s => ({ loading: true, loadingCount: s.loadingCount + 1 }));
         try {
           const res = await orderApi.list({ limit: 200 });
           set({ orders: Array.isArray(res?.orders) ? res.orders : [], apiOnline: true });
         } catch {
           set({ apiOnline: false });
+        } finally {
+          set(s => ({ loadingCount: s.loadingCount - 1, loading: s.loadingCount - 1 > 0 }));
         }
       },
 
