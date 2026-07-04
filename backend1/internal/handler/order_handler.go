@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -117,40 +116,6 @@ func (h *OrderHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		respondError(w, http.StatusInternalServerError, "Failed to update order status")
-		return
-	}
-
-	respondJSON(w, http.StatusOK, order)
-}
-
-// TrackOrderRequest is the payload for the public order-tracking lookup.
-type TrackOrderRequest struct {
-	TrackingCode string `json:"trackingCode"`
-	Phone        string `json:"phone"`
-}
-
-// Track handles the public "track my order" lookup. It requires both the
-// tracking code and the phone number used when the order was placed, so a
-// tracking code alone (e.g. visible on a receipt) can't be used to pull up
-// someone else's order.
-func (h *OrderHandler) Track(w http.ResponseWriter, r *http.Request) {
-	var input TrackOrderRequest
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		respondError(w, http.StatusBadRequest, "Invalid request body")
-		return
-	}
-
-	code := strings.ToUpper(strings.TrimSpace(input.TrackingCode))
-	phone := strings.TrimSpace(input.Phone)
-
-	if code == "" || phone == "" {
-		respondError(w, http.StatusBadRequest, "کد پیگیری و شماره تماس الزامی است")
-		return
-	}
-
-	order, err := h.orderService.TrackOrder(r.Context(), code, phone)
-	if err != nil {
-		respondError(w, http.StatusNotFound, "سفارشی با این مشخصات یافت نشد")
 		return
 	}
 

@@ -2,17 +2,15 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Bell, Search, DollarSign, ShoppingBag, TrendingUp, X } from 'lucide-react';
 import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/fa';
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import Banner from '@/components/ui/Banner';
+import ScrollRow from '@/components/ui/ScrollRow';
 import Modal from '@/components/ui/Modal';
 import type { Order, OrderStatus } from '@/types';
-
-dayjs.extend(relativeTime);
-dayjs.locale('fa');
+import { fromNowFa, formatJalaliDateTime } from '@/utils/jalali';
 
 const statusMap: Record<string, { label: string; color: string; bgColor: string; textColor: string; badgeVariant: 'warning' | 'info' | 'success'; next?: OrderStatus; nextLabel?: string; }> = {
   pending: { label: 'در انتظار', color: 'bg-amber-500', bgColor: 'bg-amber-50 dark:bg-amber-900/20', textColor: 'text-amber-700 dark:text-amber-400', badgeVariant: 'warning', next: 'preparing', nextLabel: 'شروع آماده‌سازی' },
@@ -88,7 +86,7 @@ export default function CashierOrders() {
       </div>
 
       {/* Status Filter */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar">
+      <ScrollRow trackClassName="gap-2">
         {[
           { key: 'all', label: 'همه فعال', count: activeOrders?.length },
           { key: 'pending', label: 'در انتظار', count: statusCounts.pending },
@@ -97,13 +95,13 @@ export default function CashierOrders() {
           { key: 'delivered', label: 'تحویل شده', count: orders?.filter(o => o.status === 'delivered')?.length || 0 },
         ]?.map(s => (
           <button key={s.key} onClick={() => setSelectedStatus(s.key)} className={cn(
-            'flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap',
-            selectedStatus === s.key ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25' : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700'
+            'flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap border',
+            selectedStatus === s.key ? 'bg-brand-600 border-brand-600 text-white shadow-md shadow-brand-500/25' : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700'
           )}>
             {s.label} {s.count > 0 && <span className={cn('mr-1 px-1.5 py-0.5 rounded-full text-xs', selectedStatus === s.key ? 'bg-white/20' : 'bg-zinc-100 dark:bg-zinc-700')}>{s.count}</span>}
           </button>
         ))}
-      </div>
+      </ScrollRow>
 
       {/* Search */}
       <div className="relative">
@@ -132,7 +130,7 @@ export default function CashierOrders() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{order.customerFirstName} {order.customerLastName}</p>
-                    <p className="text-xs text-zinc-400 mt-0.5">{order.items?.length} آیتم · {dayjs(order.createdAt).fromNow()}</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">{order.items?.length} آیتم · {fromNowFa(order.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-lg font-black text-brand-600">{formatPrice(order.total)}</span>
@@ -172,7 +170,7 @@ export default function CashierOrders() {
           <div className="p-5 space-y-4">
             <div className={cn('p-3 rounded-xl', statusMap[selectedOrder.status]?.bgColor || 'bg-zinc-100')}>
               <p className={cn('font-bold', statusMap[selectedOrder.status]?.textColor || 'text-zinc-600')}>{statusMap[selectedOrder.status]?.label || selectedOrder.status}</p>
-              <p className="text-xs text-zinc-400 mt-0.5">{dayjs(selectedOrder.createdAt).format('YYYY/MM/DD - HH:mm')}</p>
+              <p className="text-xs text-zinc-400 mt-0.5">{formatJalaliDateTime(selectedOrder.createdAt)}</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-xl">
@@ -197,9 +195,7 @@ export default function CashierOrders() {
               <span className="text-2xl font-black text-brand-600">{formatPrice(selectedOrder.total)}</span>
             </div>
             {selectedOrder.notes && (
-              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
-                <p className="text-sm text-amber-700 dark:text-amber-400">{selectedOrder.notes}</p>
-              </div>
+              <Banner variant="warning">{selectedOrder.notes}</Banner>
             )}
           </div>
         )}

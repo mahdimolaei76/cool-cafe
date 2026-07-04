@@ -9,6 +9,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/ui/EmptyState';
+import { formatJalali } from '@/utils/jalali';
 
 export default function Reports() {
   const { orders: rawOrders, categories: rawCategories, menuItems: rawMenuItems } = useAppStore();
@@ -52,7 +53,7 @@ export default function Reports() {
     const headers = ['شماره سفارش', 'تاریخ', 'مشتری', 'وضعیت', 'نوع', 'پرداخت', 'جمع', 'تخفیف', 'نهایی', 'آیتم‌ها'];
     const rows = filteredOrders?.map(o => [
       o.orderNumber,
-      dayjs(o.createdAt).format('YYYY-MM-DD HH:mm'),
+      formatJalali(o.createdAt, 'YYYY/MM/DD HH:mm'),
       `${o.customerFirstName} ${o.customerLastName}`,
       o.status,
       o.orderType,
@@ -68,7 +69,7 @@ export default function Reports() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `گزارش-${dateFrom}-تا-${dateTo}.csv`;
+    a.download = `گزارش-${formatJalali(dateFrom, 'YYYY-MM-DD')}-تا-${formatJalali(dateTo, 'YYYY-MM-DD')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -107,8 +108,14 @@ export default function Reports() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          <Input label="از تاریخ" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-          <Input label="تا تاریخ" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+          <div>
+            <Input label="از تاریخ" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+            <p className="text-xs text-zinc-400 mt-1">{formatJalali(dateFrom)}</p>
+          </div>
+          <div>
+            <Input label="تا تاریخ" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+            <p className="text-xs text-zinc-400 mt-1">{formatJalali(dateTo)}</p>
+          </div>
           <Select label="دسته‌بندی" value={filterCategory} onChange={e => setFilterCategory(e.target.value)} placeholder="همه" options={categories?.map(c => ({ value: c.id, label: c.name }))} />
           <Select label="وضعیت" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} placeholder="همه" options={[
             { value: 'pending', label: 'در انتظار' },
@@ -176,7 +183,7 @@ export default function Reports() {
                     <td className="py-3 px-3 hidden md:table-cell text-zinc-600 dark:text-zinc-400">{o.orderType === 'online' ? 'آنلاین' : 'حضوری'}</td>
                     <td className="py-3 px-3 hidden md:table-cell text-zinc-600 dark:text-zinc-400">{o.paymentMethod === 'cash' ? 'نقدی' : o.paymentMethod === 'card' ? 'کارت' : 'سایر'}</td>
                     <td className="py-3 px-3 font-semibold text-zinc-900 dark:text-zinc-100">{formatPrice(o.total)}</td>
-                    <td className="py-3 px-3 hidden lg:table-cell text-zinc-400 text-xs" dir="ltr">{dayjs(o.createdAt).format('MM/DD HH:mm')}</td>
+                    <td className="py-3 px-3 hidden lg:table-cell text-zinc-400 text-xs">{formatJalali(o.createdAt, 'MM/DD HH:mm')}</td>
                   </tr>
                 ))}
               </tbody>

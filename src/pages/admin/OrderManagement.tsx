@@ -1,20 +1,17 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Clock, CheckCircle2, XCircle, Truck, ChefHat, RefreshCw, Phone, Receipt, User } from 'lucide-react';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/fa';
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
 import Button from '@/components/ui/Button';
+import { fromNowFa, formatJalaliDateTime, formatJalali } from '@/utils/jalali';
 
 import Badge from '@/components/ui/Badge';
+import Banner from '@/components/ui/Banner';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import type { Order, OrderStatus } from '@/types';
 
-dayjs.extend(relativeTime);
-dayjs.locale('fa');
 
 const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'info' | 'success' | 'default' | 'danger'; icon: typeof Clock; color: string; bgColor: string; }> = {
   pending: { label: 'در انتظار', variant: 'warning', icon: Clock, color: 'text-amber-600', bgColor: 'bg-amber-50 dark:bg-amber-900/30' },
@@ -215,7 +212,7 @@ export default function OrderManagement() {
                     {formatPrice(order.total)}
                   </td>
                   <td className="py-3 px-4 hidden lg:table-cell text-zinc-400 text-xs">
-                    {dayjs(order.createdAt).fromNow()}
+                    {fromNowFa(order.createdAt)}
                   </td>
                   <td className="py-3 px-4" onClick={e => e.stopPropagation()}>
                     {nextStatus[order.status] && (
@@ -288,7 +285,7 @@ function OrderCard({ order, index, onView, onStatusChange, nextStatus }: {
           <span className="font-mono text-sm font-bold text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-800 px-2 py-1 rounded" dir="ltr">
             {order.orderNumber}
           </span>
-          <p className="text-xs text-zinc-400 mt-2">{dayjs(order.createdAt).fromNow()}</p>
+          <p className="text-xs text-zinc-400 mt-2">{fromNowFa(order.createdAt)}</p>
         </div>
         <div className={cn('p-2 rounded-xl', config.bgColor)}>
           <config.icon className={cn('w-5 h-5', config.color)} />
@@ -330,7 +327,7 @@ function OrderDetail({ order, onStatusChange, nextStatus }: {
         <config.icon className={cn('w-6 h-6', config.color)} />
         <div>
           <p className={cn('font-bold', config.color)}>{config.label}</p>
-          <p className="text-xs text-zinc-500">{dayjs(order.createdAt).format('YYYY/MM/DD - HH:mm')}</p>
+          <p className="text-xs text-zinc-500">{formatJalaliDateTime(order.createdAt)}</p>
         </div>
       </div>
 
@@ -409,10 +406,7 @@ function OrderDetail({ order, onStatusChange, nextStatus }: {
 
       {/* Notes */}
       {order.notes && (
-        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
-          <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">یادداشت</p>
-          <p className="text-sm text-amber-800 dark:text-amber-300">{order.notes}</p>
-        </div>
+        <Banner variant="warning" title="یادداشت">{order.notes}</Banner>
       )}
 
       {/* Timeline */}
@@ -426,7 +420,7 @@ function OrderDetail({ order, onStatusChange, nextStatus }: {
                 <div className={cn('w-3 h-3 rounded-full mt-1 flex-shrink-0', eventConfig.bgColor, 'ring-4 ring-white dark:ring-zinc-900')} style={{ backgroundColor: eventConfig.color.replace('text-', '') }} />
                 <div>
                   <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{eventConfig.label}</p>
-                  <p className="text-xs text-zinc-400" dir="ltr">{dayjs(event.timestamp).format('HH:mm:ss - YYYY/MM/DD')}</p>
+                  <p className="text-xs text-zinc-400">{formatJalali(event.timestamp, 'HH:mm:ss - YYYY/MM/DD')}</p>
                 </div>
               </div>
             );

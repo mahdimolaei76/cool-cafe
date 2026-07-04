@@ -8,7 +8,10 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Modal from '@/components/ui/Modal';
+import Banner from '@/components/ui/Banner';
+import ScrollRow from '@/components/ui/ScrollRow';
 import type { OrderType, PaymentMethod, MenuItem } from '@/types';
+import { iranianMobileError } from '@/utils/phone';
 
 interface CartEntry { menuItem: MenuItem; quantity: number; }
 
@@ -57,14 +60,29 @@ export default function NewOrder() {
   const total = Math.max(0, subtotal - form.discount);
   const itemCount = cart.reduce((s, c) => s + c.quantity, 0);
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
   const handleSubmit = async () => {
     if (cart?.length === 0) return;
-    const order = await addOrder({
-      customerFirstName: form.firstName || 'مشتری', customerLastName: form.lastName || 'حضوری', customerPhone: form.phone,
-      items: cart?.map(c => ({ id: crypto.randomUUID(), menuItemId: c.menuItem.id, menuItem: c.menuItem, name: c.menuItem.name, price: c.menuItem.price, quantity: c.quantity, subtotal: c.menuItem.price * c.quantity })),
-      subtotal, discount: form.discount, total, notes: form.notes, status: 'pending', orderType: form.orderType, paymentMethod: form.paymentMethod, cashier: user?.name || '',
-    });
-    setSuccess(order.orderNumber);
+    setSubmitError(null);
+    setSubmitting(true);
+    try {
+      const order = await addOrder({
+        customerFirstName: form.firstName || 'مشتری', customerLastName: form.lastName || 'حضوری', customerPhone: form.phone,
+        items: cart?.map(c => ({ id: crypto.randomUUID(), menuItemId: c.menuItem.id, menuItem: c.menuItem, name: c.menuItem.name, price: c.menuItem.price, quantity: c.quantity, subtotal: c.menuItem.price * c.quantity })),
+        subtotal, discount: form.discount, total, notes: form.notes, status: 'pending', orderType: form.orderType, paymentMethod: form.paymentMethod, cashier: user?.name || '',
+      });
+      setSuccess(order.orderNumber);
+    } catch (err) {
+      // addOrder already falls back to an offline order on network errors,
+      // so reaching here means something unexpected happened — surface it
+      // instead of leaving the cashier staring at a button that appears to
+      // do nothing.
+      setSubmitError(err instanceof Error ? err.message : 'ثبت سفارش با خطا مواجه شد. دوباره تلاش کنید.');
+    } finally {
+      setSubmitting(false);
+    }
   };
   const resetOrder = () => { setCart([]); setForm({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person', paymentMethod: 'cash' }); setSuccess(null); };
 
@@ -102,11 +120,11 @@ export default function NewOrder() {
               <Flame className="w-4 h-4 text-brand-600" />
               <span className="text-sm font-bold text-brand-700 dark:text-brand-400">پرفروش‌ها</span>
             </div>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            <ScrollRow trackClassName="gap-2">
               {topSellingItems?.map(item => {
                 const inCart = cart.find(c => c.menuItem.id === item.id);
                 return (
-                  <button key={item.id} onClick={() => addToCart(item)} className={cn('flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl transition-all text-right', inCart ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/30' : 'bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:border-brand-400')}>
+                  <button key={item.id} onClick={() => addToCart(item)} className={cn('flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl transition-all text-right border', inCart ? 'bg-brand-600 border-brand-600 text-white shadow-lg shadow-brand-500/30' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:border-brand-400')}>
                     <img src={item.image} alt="" className="w-8 h-8 rounded-lg object-cover" />
                     <div>
                       <p className={cn('text-xs font-bold', inCart ? 'text-white' : 'text-zinc-900 dark:text-zinc-100')}>{item.name}</p>
@@ -116,21 +134,21 @@ export default function NewOrder() {
                   </button>
                 );
               })}
-            </div>
+            </ScrollRow>
           </div>
         )}
 
         {/* Categories */}
-        <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
-          <button onClick={() => setSelectedCategory('all')} className={cn('flex-shrink-0 px-5 py-3 rounded-2xl text-sm font-bold transition-all', selectedCategory === 'all' ? 'bg-brand-600 text-white shadow-xl shadow-brand-500/30 scale-105' : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-2 border-zinc-200 dark:border-zinc-700')}>
+        <ScrollRow className="mb-4" trackClassName="gap-2">
+          <button onClick={() => setSelectedCategory('all')} className={cn('flex-shrink-0 px-5 py-3 rounded-2xl text-sm font-bold transition-all border-2', selectedCategory === 'all' ? 'bg-brand-600 border-brand-600 text-white shadow-xl shadow-brand-500/30 scale-105' : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700')}>
             همه
           </button>
           {activeCategories?.map(cat => (
-            <button key={cat.id} onClick={() => setSelectedCategory(cat.id)} className={cn('flex-shrink-0 px-5 py-3 rounded-2xl text-sm font-bold transition-all whitespace-nowrap', selectedCategory === cat.id ? 'bg-brand-600 text-white shadow-xl shadow-brand-500/30 scale-105' : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-2 border-zinc-200 dark:border-zinc-700')}>
+            <button key={cat.id} onClick={() => setSelectedCategory(cat.id)} className={cn('flex-shrink-0 px-5 py-3 rounded-2xl text-sm font-bold transition-all whitespace-nowrap border-2', selectedCategory === cat.id ? 'bg-brand-600 border-brand-600 text-white shadow-xl shadow-brand-500/30 scale-105' : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700')}>
               <span className="ml-2 text-lg">{cat.icon}</span>{cat.name}
             </button>
           ))}
-        </div>
+        </ScrollRow>
 
         {/* Search */}
         <div className="relative mb-4">
@@ -144,7 +162,7 @@ export default function NewOrder() {
             <div className="h-full flex flex-col items-center justify-center text-center py-16">
               <Search className="w-12 h-12 text-zinc-200 dark:text-zinc-700 mb-3" />
               <p className="text-zinc-400 font-bold">موردی یافت نشد</p>
-              <p className="text-zinc-300 dark:text-zinc-600 text-sm mt-1">جستجو یا دسته‌بندی را تغییر دهید</p>
+              <p className="text-zinc-400 dark:text-zinc-500 text-sm mt-1">جستجو یا دسته‌بندی را تغییر دهید</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -187,7 +205,7 @@ export default function NewOrder() {
               <div className="h-full flex flex-col items-center justify-center text-center py-12">
                 <ShoppingCart className="w-16 h-16 text-zinc-200 dark:text-zinc-700 mb-3" />
                 <p className="text-zinc-400 font-bold">سبد خرید خالی</p>
-                <p className="text-zinc-300 dark:text-zinc-600 text-sm mt-1">محصولات رو از سمت چپ انتخاب کنید</p>
+                <p className="text-zinc-400 dark:text-zinc-500 text-sm mt-1">محصولات رو از سمت چپ انتخاب کنید</p>
               </div>
             ) : cart?.map(c => (
               <motion.div key={c.menuItem.id} layout initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex gap-4 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl">
@@ -235,12 +253,13 @@ export default function NewOrder() {
         )}
 
         {cart?.length > 0 && (
-          <div className="flex-shrink-0 p-5 bg-zinc-50 dark:bg-zinc-800/50 border-t-2 border-zinc-100 dark:border-zinc-800">
-            <div className="flex items-center justify-between mb-4">
+          <div className="flex-shrink-0 p-5 bg-zinc-50 dark:bg-zinc-800/50 border-t-2 border-zinc-100 dark:border-zinc-800 space-y-3">
+            {submitError && <Banner variant="danger">{submitError}</Banner>}
+            <div className="flex items-center justify-between">
               {form.discount > 0 && <p className="text-xs text-emerald-600">تخفیف: -{formatPrice(form.discount)}</p>}
               <p className="text-2xl font-black text-brand-600 mr-auto">{formatPrice(total)}</p>
             </div>
-            <Button className="w-full !py-5 !text-lg !font-black !rounded-2xl !bg-brand-600 hover:!bg-brand-700 !shadow-xl !shadow-brand-500/30" onClick={handleSubmit}>
+            <Button className="w-full !py-5 !text-lg !font-black !rounded-2xl !bg-brand-600 hover:!bg-brand-700 !shadow-xl !shadow-brand-500/30" onClick={handleSubmit} loading={submitting}>
               <Zap className="w-6 h-6 ml-2" />ثبت سفارش
             </Button>
           </div>
@@ -259,7 +278,13 @@ export default function NewOrder() {
             <Input label="نام" placeholder="نام" value={form.firstName} onChange={e => setForm(p => ({ ...p, firstName: e.target.value }))} />
             <Input label="نام خانوادگی" placeholder="نام خانوادگی" value={form.lastName} onChange={e => setForm(p => ({ ...p, lastName: e.target.value }))} />
           </div>
-          <Input label="شماره تماس" placeholder="۰۹۱۲۳۴۵۶۷۸۹" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
+          <Input
+            label="شماره تماس"
+            placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+            value={form.phone}
+            onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+            error={iranianMobileError(form.phone) || undefined}
+          />
           <Textarea label="یادداشت" placeholder="توضیحات سفارش..." value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
         </div>
       </Modal>

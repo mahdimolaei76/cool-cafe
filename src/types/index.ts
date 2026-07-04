@@ -40,6 +40,7 @@ export interface OrderItem {
 export interface Order {
   id: string;
   orderNumber: string;
+  trackingCode: string;
   customerFirstName: string;
   customerLastName: string;
   customerPhone: string;

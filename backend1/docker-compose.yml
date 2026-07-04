@@ -1,0 +1,54 @@
+services:
+  # ─── PostgreSQL ──────────────────────
+  db:
+    image: docker.arvancloud.ir/postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: coolcafe
+      POSTGRES_PASSWORD: coolcafe_secret_2024
+      POSTGRES_DB: coolcafe
+      POSTGRES_HOST_AUTH_METHOD: md5
+
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    command: >
+      postgres -c listen_addresses='*'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coolcafe -d coolcafe"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+
+  # ─── Go API ─────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    command:  sh -c "sleep 5 && ./api migrate && ./api"
+    environment:
+      PORT: "8080"
+      ENV: production
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: coolcafe
+      DB_PASSWORD: coolcafe_secret_2024
+      DB_NAME: coolcafe
+      DB_SSLMODE: disable
+      JWT_SECRET: change-me-to-a-random-64-char-string-in-production
+      UPLOAD_DIR: /app/uploads
+      ALLOWED_ORIGINS: "http://localhost:5173,http://62.60.129.143"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pg_data:
+  uploads:

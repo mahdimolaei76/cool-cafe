@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 	"time"
 
@@ -97,25 +96,18 @@ func (r *OrderRepository) Create(ctx context.Context, order *domain.Order) error
 	}
 	defer tx.Rollback()
 
-	// Generate order number (sequential-looking, shown to staff) and a
-	// separate random tracking code (given to the customer, safe to expose
-	// publicly since it can't be guessed or enumerated).
+	// Generate order number
 	order.OrderNumber = r.generateOrderNumber()
-	trackingCode, err := r.generateUniqueTrackingCode(ctx, tx)
-	if err != nil {
-		return err
-	}
-	order.TrackingCode = trackingCode
 
 	// Insert order
 	orderQuery := `
-		INSERT INTO orders (order_number, tracking_code, customer_first_name, customer_last_name, customer_phone, 
+		INSERT INTO orders (order_number, customer_first_name, customer_last_name, customer_phone, 
 			subtotal, discount, total, notes, status, order_type, payment_method, cashier_id, cashier_name)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		RETURNING id, created_at, updated_at
 	`
 	err = tx.QueryRowContext(ctx, orderQuery,
-		order.OrderNumber, order.TrackingCode, order.CustomerFirstName, order.CustomerLastName, order.CustomerPhone,
+		order.OrderNumber, order.CustomerFirstName, order.CustomerLastName, order.CustomerPhone,
 		order.Subtotal, order.Discount, order.Total, order.Notes, order.Status,
 		order.OrderType, order.PaymentMethod, order.CashierID, order.CashierName,
 	).Scan(&order.ID, &order.CreatedAt, &order.UpdatedAt)
@@ -199,63 +191,6 @@ func (r *OrderRepository) loadOrderDetails(ctx context.Context, order *domain.Or
 func (r *OrderRepository) generateOrderNumber() string {
 	now := time.Now()
 	return fmt.Sprintf("COOL-%s-%s", now.Format("060102"), uuid.New().String()[:4])
-}
-
-// trackingCodeCharset intentionally excludes visually-ambiguous characters
-// (0/O, 1/I) so codes are easy for customers to read back over the phone
-// or type in correctly, while still being random, unique, and impossible
-// to guess or enumerate sequentially.
-const trackingCodeCharset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-const trackingCodeLength = 8
-
-// generateUniqueTrackingCode creates a cryptographically random tracking
-// code and retries on the rare event of a collision with an existing code.
-func (r *OrderRepository) generateUniqueTrackingCode(ctx context.Context, tx *sqlx.Tx) (string, error) {
-	for attempt := 0; attempt < 10; attempt++ {
-		code, err := randomTrackingCode()
-		if err != nil {
-			return "", err
-		}
-		var exists bool
-		if err := tx.GetContext(ctx, &exists, `SELECT EXISTS(SELECT 1 FROM orders WHERE tracking_code = $1)`, code); err != nil {
-			return "", err
-		}
-		if !exists {
-			return code, nil
-		}
-	}
-	return "", fmt.Errorf("failed to generate a unique tracking code after multiple attempts")
-}
-
-func randomTrackingCode() (string, error) {
-	b := make([]byte, trackingCodeLength)
-	buf := make([]byte, trackingCodeLength)
-	if _, err := rand.Read(buf); err != nil {
-		return "", err
-	}
-	n := len(trackingCodeCharset)
-	for i := range b {
-		b[i] = trackingCodeCharset[int(buf[i])%n]
-	}
-	return string(b), nil
-}
-
-// FindByTrackingCodeAndPhone looks up an order for the public tracking
-// page. Both the tracking code and the phone number used on the order
-// must match, so knowing the code alone (e.g. seeing a receipt) is not
-// enough to look up someone else's order.
-func (r *OrderRepository) FindByTrackingCodeAndPhone(ctx context.Context, trackingCode, phone string) (*domain.Order, error) {
-	var order domain.Order
-	query := `SELECT * FROM orders WHERE tracking_code = $1 AND customer_phone = $2`
-	if err := r.db.GetContext(ctx, &order, query, trackingCode, phone); err != nil {
-		return nil, err
-	}
-
-	if err := r.loadOrderDetails(ctx, &order); err != nil {
-		return nil, err
-	}
-
-	return &order, nil
 }
 
 // GetStatsByDateRange returns order statistics for a date range

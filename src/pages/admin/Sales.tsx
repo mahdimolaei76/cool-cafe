@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
 import Card from '@/components/ui/Card';
+import { formatJalali } from '@/utils/jalali';
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6', '#ec4899', '#64748b', '#d97706'];
 
@@ -39,7 +40,7 @@ export default function Sales() {
       const date = dayjs().subtract(numDays - 1 - i, 'day');
       const dayOrders = periodOrders.filter(o => dayjs(o.createdAt).format('YYYY-MM-DD') === date.format('YYYY-MM-DD'));
       return {
-        date: date.format('MM/DD'),
+        date: formatJalali(date.toDate(), 'MM/DD'),
         revenue: Math.round(dayOrders.reduce((s, o) => s + o.total, 0) / 1000),
         orders: dayOrders?.length,
       };

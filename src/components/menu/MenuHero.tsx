@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Clock, Wifi } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Clock, Wifi, Search } from 'lucide-react';
 
 export default function MenuHero() {
   return (
@@ -59,6 +60,10 @@ export default function MenuHero() {
               <Wifi className="w-3.5 h-3.5" />
               وای‌فای رایگان
             </div>
+            <Link to="/track" className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white/80 text-xs hover:bg-white/20 hover:text-white transition-colors">
+              <Search className="w-3.5 h-3.5" />
+              پیگیری سفارش
+            </Link>
           </motion.div>
 
           {/* Tagline */}

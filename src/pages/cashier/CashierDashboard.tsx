@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import { useAppStore, formatPrice } from '@/store';
 import { useAuthStore } from '@/store/authStore';
 import Card from '@/components/ui/Card';
+import { formatJalaliLong } from '@/utils/jalali';
 
 export default function CashierDashboard() {
   const { orders: rawOrders } = useAppStore();
@@ -59,7 +60,7 @@ export default function CashierDashboard() {
         <h1 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
           سلام {user?.name} 👋
         </h1>
-        <p className="text-sm text-zinc-500 mt-1">خلاصه امروز · {dayjs().format('dddd، D MMMM')}</p>
+        <p className="text-sm text-zinc-500 mt-1">خلاصه امروز · {formatJalaliLong(new Date())}</p>
       </div>
 
       {/* Active orders alert */}

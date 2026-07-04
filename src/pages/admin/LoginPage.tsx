@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Lock, User, Eye, EyeOff, AlertCircle, Coffee } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, Coffee } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import Button from '@/components/ui/Button';
+import Banner from '@/components/ui/Banner';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -85,9 +86,8 @@ export default function LoginPage() {
 
           {/* Error */}
           {error && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-2xl text-red-600 dark:text-red-400 mb-6">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <span className="font-medium">{error}</span>
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+              <Banner variant="danger">{error}</Banner>
             </motion.div>
           )}
 

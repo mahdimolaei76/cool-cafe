@@ -1,24 +1,29 @@
 import { cn } from '@/utils/cn';
 
 interface BadgeProps {
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'brand';
+  variant?: 'default' | 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'brand';
   children: React.ReactNode;
   className?: string;
   dot?: boolean;
 }
 
+// Same 5-status palette as Banner (`default`/`neutral` are aliases of the
+// same neutral style) so badges and banners always read as the same
+// semantic color across the whole app, in both themes.
 export default function Badge({ variant = 'default', children, className, dot }: BadgeProps) {
   const variants = {
     default: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
-    success: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    warning: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    danger: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    info: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    neutral: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+    success: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+    warning: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+    danger: 'bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    info: 'bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
     brand: 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400',
   };
 
   const dotColors = {
     default: 'bg-zinc-400',
+    neutral: 'bg-zinc-400',
     success: 'bg-emerald-500',
     warning: 'bg-amber-500',
     danger: 'bg-red-500',

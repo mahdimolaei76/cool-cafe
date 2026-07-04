@@ -7,6 +7,7 @@ import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import { formatJalali } from '@/utils/jalali';
 
 export default function Dashboard() {
   const { orders: rawOrders, menuItems: rawMenuItems, categories: rawCategories } = useAppStore();
@@ -48,7 +49,7 @@ export default function Dashboard() {
         dayjs(o.createdAt).format('YYYY-MM-DD') === date.format('YYYY-MM-DD') && o.status !== 'cancelled'
       );
       return {
-        date: date.format('MM/DD'),
+        date: formatJalali(date.toDate(), 'MM/DD'),
         revenue: Math.round(dayOrders.reduce((s, o) => s + o.total, 0) / 1000),
         orders: dayOrders?.length,
       };
@@ -224,7 +225,7 @@ export default function Dashboard() {
                     <td className="py-3 px-3 text-zinc-600 dark:text-zinc-400">{order.customerFirstName} {order.customerLastName}</td>
                     <td className="py-3 px-3"><Badge variant={statusColors[order.status]} dot>{statusLabels[order.status]}</Badge></td>
                     <td className="py-3 px-3 font-medium text-zinc-900 dark:text-zinc-100">{formatPrice(order.total)}</td>
-                    <td className="py-3 px-3 text-zinc-400 text-xs" dir="ltr">{dayjs(order.createdAt).format('MM/DD HH:mm')}</td>
+                    <td className="py-3 px-3 text-zinc-400 text-xs">{formatJalali(order.createdAt, 'MM/DD HH:mm')}</td>
                   </tr>
                 )) : (
                   <tr>

@@ -44,6 +44,21 @@ export default function PublicMenu() {
     }
   }, [selectedCategory]);
 
+  // Let a normal vertical mouse-wheel scroll this row horizontally too,
+  // since users often don't notice the category bar is scrollable.
+  useEffect(() => {
+    const el = catScrollRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        el.scrollLeft += e.deltaY;
+        e.preventDefault();
+      }
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+
   const renderItems = (items: typeof menuItems, startIndex = 0) => {
     if (viewMode === 'list') {
       return (
@@ -71,22 +86,26 @@ export default function PublicMenu() {
               <Menu className="w-5 h-5" />
             </button>
 
-            <div ref={catScrollRef} className="flex-1 overflow-x-auto flex items-center gap-1.5 no-scrollbar">
-              <button
-                data-active={selectedCategory === 'all'}
-                onClick={() => setSelectedCategory('all')}
-                className={cn('flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all', selectedCategory === 'all' ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400')}
-              >همه</button>
-              {activeCategories?.map(cat => (
+            <div className="relative flex-1 min-w-0">
+              <div ref={catScrollRef} className="overflow-x-auto flex items-center gap-1.5 no-scrollbar">
                 <button
-                  key={cat.id}
-                  data-active={selectedCategory === cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={cn('flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap', selectedCategory === cat.id ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400')}
-                >
-                  <span className="ml-1">{cat.icon}</span>{cat.name}
-                </button>
-              ))}
+                  data-active={selectedCategory === 'all'}
+                  onClick={() => setSelectedCategory('all')}
+                  className={cn('flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all', selectedCategory === 'all' ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400')}
+                >همه</button>
+                {activeCategories?.map(cat => (
+                  <button
+                    key={cat.id}
+                    data-active={selectedCategory === cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={cn('flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap', selectedCategory === cat.id ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400')}
+                  >
+                    <span className="ml-1">{cat.icon}</span>{cat.name}
+                  </button>
+                ))}
+              </div>
+              {/* Edge-fade hint: this row scrolls horizontally */}
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-white dark:from-zinc-900 to-transparent" />
             </div>
 
             {/* View Toggle */}

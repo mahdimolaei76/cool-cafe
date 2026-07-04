@@ -79,7 +79,6 @@ func main() {
 		r.Get("/menu", menuItemHandler.List)
 		r.Get("/menu/{id}", menuItemHandler.Get)
 		r.Post("/orders", orderHandler.Create)
-		r.Post("/orders/track", orderHandler.Track)
 
 		// Protected
 		r.Group(func(r chi.Router) {

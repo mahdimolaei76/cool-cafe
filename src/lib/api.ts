@@ -68,6 +68,8 @@ export const orderApi = {
   create: (data: any) => request<any>('/orders', { method: 'POST', body: JSON.stringify(data) }),
   updateStatus: (id: string, status: string, note?: string) =>
     request<any>(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, note }) }),
+  track: (trackingCode: string, phone: string) =>
+    request<any>('/orders/track', { method: 'POST', body: JSON.stringify({ trackingCode, phone }) }),
 };
 
 // ─── Upload ───

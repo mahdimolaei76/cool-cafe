@@ -9,6 +9,21 @@ export function formatPrice(price: number): string {
   return new Intl.NumberFormat('fa-IR').format(price) + ' تومان';
 }
 
+// ─── Tracking Code Generator (client-side offline fallback) ───
+// Matches the format the backend generates: 8 random characters, excluding
+// visually-ambiguous ones (0/O, 1/I), so codes are unique, non-sequential,
+// and safe to read back over the phone or print on a receipt.
+const TRACKING_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function generateTrackingCode(): string {
+  let code = '';
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  for (let i = 0; i < bytes.length; i++) {
+    code += TRACKING_CHARSET[bytes[i] % TRACKING_CHARSET.length];
+  }
+  return code;
+}
+
 // ─── Cart Store (client-side only) ───
 interface CartStore {
   items: CartItem[];
@@ -65,6 +80,7 @@ interface AppStore {
   // Orders
   addOrder: (data: any) => Promise<Order>;
   updateOrderStatus: (id: string, status: OrderStatus, note?: string) => Promise<void>;
+  trackOrder: (trackingCode: string, phone: string) => Promise<Order | null>;
 
   // Upload
   uploadImage: (file: File) => Promise<string>;
@@ -174,6 +190,7 @@ export const useAppStore = create<AppStore>()(
             ...orderData,
             id: crypto.randomUUID(),
             orderNumber: `COOL-${dayjs().format('YYMMDD')}-${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`,
+            trackingCode: generateTrackingCode(),
             timeline: [{ status: 'pending', timestamp: now }],
             createdAt: now, updatedAt: now,
           };
@@ -192,6 +209,22 @@ export const useAppStore = create<AppStore>()(
             timeline: [...(o.timeline || []), { status, timestamp: now, note }],
           } : o),
         }));
+      },
+
+      // ─── Track (public, no auth) ───
+      trackOrder: async (trackingCode, phone) => {
+        const code = trackingCode.trim().toUpperCase();
+        const cleanPhone = phone.trim();
+        try {
+          const order = await orderApi.track(code, cleanPhone);
+          return order ?? null;
+        } catch {
+          // Offline fallback: search the locally cached orders.
+          const match = _get().orders?.find(
+            o => o.trackingCode?.toUpperCase() === code && o.customerPhone === cleanPhone
+          );
+          return match ?? null;
+        }
       },
 
       // ─── Upload ───

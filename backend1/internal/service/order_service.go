@@ -68,14 +68,6 @@ func (s *OrderService) GetByOrderNumber(ctx context.Context, orderNumber string)
 	return s.repo.FindByOrderNumber(ctx, orderNumber)
 }
 
-// TrackOrder looks up an order by tracking code + phone number for the
-// public "track my order" page. Requiring both prevents anyone who merely
-// sees a tracking code (e.g. on a printed receipt left on a table) from
-// pulling up someone else's order details.
-func (s *OrderService) TrackOrder(ctx context.Context, trackingCode, phone string) (*domain.Order, error) {
-	return s.repo.FindByTrackingCodeAndPhone(ctx, trackingCode, phone)
-}
-
 type CreateOrderItemInput struct {
 	MenuItemID *uuid.UUID `json:"menuItemId"`
 	Name       string     `json:"name"`

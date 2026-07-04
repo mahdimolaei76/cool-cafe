@@ -8,6 +8,7 @@ import {
 import { cn } from '@/utils/cn';
 import { useAppStore } from '@/store';
 import { useAuthStore } from '@/store/authStore';
+import ScrollRow from '@/components/ui/ScrollRow';
 
 // منوی Admin
 const adminNavItems = [
@@ -88,7 +89,7 @@ export default function AdminLayout() {
         {/* نمایش سریع سفارش‌های فعال برای cashier */}
         {isCashier && activeOrdersCount > 0 && (
           <div className="px-4 pb-3">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            <ScrollRow trackClassName="gap-2">
               <div className="flex-shrink-0 px-3 py-1.5 bg-brand-600 text-white rounded-full text-xs font-bold">
                 {pendingOrdersCount} در انتظار
               </div>
@@ -98,7 +99,7 @@ export default function AdminLayout() {
               <div className="flex-shrink-0 px-3 py-1.5 bg-emerald-600 text-white rounded-full text-xs font-bold">
                 {orders?.filter(o => o.status === 'ready')?.length} آماده
               </div>
-            </div>
+            </ScrollRow>
           </div>
         )}
       </div>
@@ -272,10 +273,10 @@ function SidebarContent({
                 'flex items-center gap-4 transition-all duration-200',
                 isCashier
                   ? cn(
-                    'px-5 py-4 rounded-2xl text-base font-bold',
+                    'px-5 py-4 rounded-2xl text-base font-bold border-2',
                     active
-                      ? 'bg-brand-600 text-white shadow-xl shadow-brand-500/30 scale-105'
-                      : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 border-2 border-zinc-200 dark:border-zinc-700'
+                      ? 'bg-brand-600 border-brand-600 text-white shadow-xl shadow-brand-500/30 scale-105'
+                      : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 border-zinc-200 dark:border-zinc-700'
                   )
                   : cn(
                     'px-4 py-3 rounded-xl text-sm font-medium',

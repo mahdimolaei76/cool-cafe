@@ -49,7 +49,6 @@ type MenuItem struct {
 type Order struct {
 	ID                uuid.UUID       `db:"id" json:"id"`
 	OrderNumber       string          `db:"order_number" json:"orderNumber"`
-	TrackingCode      string          `db:"tracking_code" json:"trackingCode"`
 	CustomerFirstName string          `db:"customer_first_name" json:"customerFirstName"`
 	CustomerLastName  string          `db:"customer_last_name" json:"customerLastName"`
 	CustomerPhone     string          `db:"customer_phone" json:"customerPhone"`

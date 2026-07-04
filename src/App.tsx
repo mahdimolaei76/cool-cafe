@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAppStore } from '@/store';
 import PublicMenu from '@/pages/PublicMenu';
+import OrderTracking from '@/pages/OrderTracking';
 import LoginPage from '@/pages/admin/LoginPage';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ProtectedRoute from '@/components/admin/ProtectedRoute';
@@ -38,6 +39,7 @@ export default function App() {
       <Toaster position="top-center" toastOptions={{ style: { background: theme === 'dark' ? '#27272a' : '#fff', color: theme === 'dark' ? '#f4f4f5' : '#18181b', border: theme === 'dark' ? '1px solid #3f3f46' : '1px solid #e4e4e7', borderRadius: '12px' } }} />
       <Routes>
         <Route path="/" element={<PublicMenu />} />
+        <Route path="/track" element={<OrderTracking />} />
         <Route path="/admin/login" element={<LoginPage />} />
 
         {/* Cashier */}
