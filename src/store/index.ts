@@ -191,8 +191,14 @@ export const useAppStore = create<AppStore>()(
           const created = await orderApi.create(orderData);
           set(s => ({ orders: [created, ...s.orders] }));
           return created;
-        } catch {
-          // offline fallback
+        } catch (err) {
+          // The backend genuinely could not be reached (wrong API URL,
+          // server down, CORS, network drop, etc). We still keep the
+          // order locally so the cashier/customer doesn't lose their
+          // work, but we tag it and rethrow so the UI can clearly warn
+          // that this order was NOT saved to the server and will need
+          // to be re-entered or synced manually — silently pretending
+          // success here is exactly what was hiding real failures.
           const now = new Date().toISOString();
           const fake: Order = {
             ...orderData,
@@ -201,9 +207,13 @@ export const useAppStore = create<AppStore>()(
             trackingCode: generateTrackingCode(),
             timeline: [{ status: 'pending', timestamp: now }],
             createdAt: now, updatedAt: now,
-          };
-          set(s => ({ orders: [fake, ...s.orders] }));
-          return fake;
+            _unsynced: true,
+          } as Order;
+          set(s => ({ orders: [fake, ...s.orders], apiOnline: false }));
+          const message = err instanceof Error ? err.message : 'اتصال به سرور برقرار نشد';
+          const syncError = new Error(message) as Error & { order?: Order };
+          syncError.order = fake;
+          throw syncError;
         }
       },
       updateOrderStatus: async (id, status, note) => {

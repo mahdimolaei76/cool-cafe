@@ -116,7 +116,20 @@ export default function LoginPage() {
             </Button>
           </form>
 
-
+          {/* Demo Info */}
+          <div className="mt-8 p-5 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200 dark:border-zinc-700">
+            <p className="text-xs text-center text-zinc-400 mb-3 font-bold">اطلاعات آزمایشی</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button type="button" onClick={() => { setUsername('admin'); setPassword('admin123'); }} className="p-3 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-brand-400 transition-colors text-center group">
+                <p className="text-xs text-zinc-400 group-hover:text-brand-500">مدیر</p>
+                <p className="font-mono text-sm font-bold text-zinc-700 dark:text-zinc-300 mt-0.5" dir="ltr">admin</p>
+              </button>
+              <button type="button" onClick={() => { setUsername('cashier'); setPassword('cash123'); }} className="p-3 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-brand-400 transition-colors text-center group">
+                <p className="text-xs text-zinc-400 group-hover:text-brand-500">صندوق‌دار</p>
+                <p className="font-mono text-sm font-bold text-zinc-700 dark:text-zinc-300 mt-0.5" dir="ltr">cashier</p>
+              </button>
+            </div>
+          </div>
         </motion.div>
       </div>
     </div>

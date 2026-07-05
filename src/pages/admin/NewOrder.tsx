@@ -11,7 +11,7 @@ import Textarea from '@/components/ui/Textarea';
 import Modal from '@/components/ui/Modal';
 import Banner from '@/components/ui/Banner';
 import ScrollRow from '@/components/ui/ScrollRow';
-import type { OrderType, PaymentMethod, MenuItem } from '@/types';
+import type { Order, OrderType, PaymentMethod, MenuItem } from '@/types';
 import { iranianMobileError } from '@/utils/phone';
 
 interface CartEntry { menuItem: MenuItem; quantity: number; }
@@ -77,13 +77,20 @@ export default function NewOrder() {
       setSuccess(order.orderNumber);
       toast.success('سفارش با موفقیت ثبت شد');
     } catch (err) {
-      // addOrder already falls back to an offline order on network errors,
-      // so reaching here means something unexpected happened — surface it
-      // instead of leaving the cashier staring at a button that appears to
-      // do nothing.
+      // The backend genuinely could not be reached. addOrder still keeps
+      // the order on this device (attached to the error) so the cashier
+      // doesn't lose the work, but it must NOT be reported as a normal
+      // success — the kitchen and other devices won't see it until it's
+      // synced, so we say so clearly instead of hiding the failure.
+      const orderErr = err as Error & { order?: Order };
       const message = err instanceof Error ? err.message : 'ثبت سفارش با خطا مواجه شد. دوباره تلاش کنید.';
-      setSubmitError(message);
-      toast.error(message);
+      if (orderErr?.order) {
+        setSuccess(orderErr.order.orderNumber);
+        toast.warning('سفارش روی این دستگاه ذخیره شد، اما به سرور ارسال نشد. اتصال اینترنت/سرور را بررسی کنید.', { duration: 6000 });
+      } else {
+        setSubmitError(message);
+        toast.error(message);
+      }
     } finally {
       setSubmitting(false);
     }

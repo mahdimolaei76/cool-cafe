@@ -5,6 +5,7 @@ import { Search, Clock, CheckCircle2, XCircle, Truck, ChefHat, RefreshCw, Phone,
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
 import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
 import { fromNowFa, formatJalaliDateTime, formatJalali } from '@/utils/jalali';
 
 import Badge from '@/components/ui/Badge';
@@ -130,16 +131,13 @@ export default function OrderManagement() {
       </div>
 
       {/* Search */}
-      <div className="relative">
-        <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-        <input
-          type="text"
-          placeholder="جستجو با شماره سفارش، نام یا تلفن..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full pr-12 pl-4 py-3.5 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
-        />
-      </div>
+      <Input
+        type="text"
+        placeholder="جستجو با شماره سفارش، نام یا تلفن..."
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        icon={<Search className="w-5 h-5" />}
+      />
 
       {/* Active Orders Grid */}
       {activeOrders?.length > 0 && !statusFilter && (

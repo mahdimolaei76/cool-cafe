@@ -56,6 +56,10 @@ export interface Order {
   timeline: OrderTimeline[];
   createdAt: string;
   updatedAt: string;
+  /** True only for orders created locally when the backend could not be
+   * reached — they exist on this device only and were NOT saved to the
+   * server, so kitchen/reports/other devices won't see them yet. */
+  _unsynced?: boolean;
 }
 
 export interface OrderTimeline {

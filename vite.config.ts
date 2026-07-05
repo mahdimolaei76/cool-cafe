@@ -20,4 +20,18 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
+
+  server: {
+    proxy: {
+      // Forward API calls to the Go backend during development. Without
+      // this, every request to /api/* just 404s against the Vite dev
+      // server itself, which the app's offline-fallback logic silently
+      // swallows — making it look like orders "succeed" while never
+      // actually reaching the backend.
+      "/api": {
+        target: process.env.VITE_BACKEND_URL || "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
+  },
 });

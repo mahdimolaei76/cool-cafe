@@ -33,7 +33,7 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { theme, toggleTheme, orders: rawOrders } = useAppStore();
+  const { theme, toggleTheme, orders: rawOrders, apiOnline } = useAppStore();
   const { user, logout } = useAuthStore();
   const orders = rawOrders ?? [];
 
@@ -81,6 +81,15 @@ export default function AdminLayout() {
                 {user?.name}
               </span>
             )}
+            {!apiOnline && (
+              <span
+                title="اتصال به سرور برقرار نیست — سفارش‌ها فقط روی این دستگاه ذخیره می‌شوند"
+                className="flex items-center gap-1 px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 text-[10px] font-bold rounded-full"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                آفلاین
+              </span>
+            )}
           </div>
           <button onClick={toggleTheme} className="p-2.5 -ml-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
             {theme === 'dark' ? <Sun className="w-5 h-5 text-zinc-400" /> : <Moon className="w-5 h-5 text-zinc-400" />}
@@ -121,6 +130,7 @@ export default function AdminLayout() {
                 pendingOrdersCount={pendingOrdersCount}
                 activeOrdersCount={activeOrdersCount}
                 isCashier={isCashier}
+                apiOnline={apiOnline}
               />
             </motion.div>
           </div>
@@ -139,6 +149,7 @@ export default function AdminLayout() {
           pendingOrdersCount={pendingOrdersCount}
           activeOrdersCount={activeOrdersCount}
           isCashier={isCashier}
+          apiOnline={apiOnline}
         />
       </div>
 
@@ -163,6 +174,7 @@ function SidebarContent({
   pendingOrdersCount,
   activeOrdersCount,
   isCashier,
+  apiOnline,
 }: {
   onClose?: () => void;
   isActive: (path: string, exact?: boolean) => boolean;
@@ -174,6 +186,7 @@ function SidebarContent({
   pendingOrdersCount: number;
   activeOrdersCount: number;
   isCashier: boolean;
+  apiOnline: boolean;
 }) {
   return (
     <div className={cn(
@@ -249,6 +262,15 @@ function SidebarContent({
               </span>
             )}
           </div>
+          {!apiOnline && (
+            <div
+              title="اتصال به سرور برقرار نیست — سفارش‌ها فقط روی این دستگاه ذخیره می‌شوند تا اتصال برقرار شود"
+              className="mt-2 flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl"
+            >
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+              <p className="text-xs font-bold text-red-700 dark:text-red-400">اتصال به سرور قطع است</p>
+            </div>
+          )}
         </div>
       )}
 

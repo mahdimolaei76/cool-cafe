@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { X, Minus, Plus, ShoppingBag, ArrowLeft, Trash2, Check, Phone, User, MessageSquare } from 'lucide-react';
+import { X, Minus, Plus, ShoppingBag, ArrowLeft, Trash2, Check, AlertTriangle, Phone, User, MessageSquare } from 'lucide-react';
 import { useCartStore, useAppStore, formatPrice } from '@/store';
 import Button from '@/components/ui/Button';
+import Banner from '@/components/ui/Banner';
+import { cn } from '@/utils/cn';
 import { iranianMobileError } from '@/utils/phone';
-import type { OrderType, PaymentMethod } from '@/types';
+import type { Order, OrderType, PaymentMethod } from '@/types';
 
 interface CartSheetProps {
   open: boolean;
@@ -20,6 +22,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
   const [step, setStep] = useState<Step>('cart');
   const [orderNumber, setOrderNumber] = useState('');
   const [trackingCode, setTrackingCode] = useState('');
+  const [unsynced, setUnsynced] = useState(false);
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', notes: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -65,10 +68,23 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
       setStep('success');
       toast.success('سفارش شما با موفقیت ثبت شد');
     } catch (err) {
-      // addOrder already falls back to an offline order on network errors,
-      // so reaching here means something genuinely unexpected happened —
-      // tell the customer instead of leaving them staring at nothing.
-      toast.error('ثبت سفارش با خطا مواجه شد. لطفاً دوباره تلاش کنید.');
+      // addOrder always keeps the order locally (attached to the error)
+      // even when the backend can't be reached, so the customer's cart
+      // isn't lost. Treat that as a completed order from their point of
+      // view — they still get a tracking code and can check status later
+      // — but flag it clearly so staff know it hasn't synced to the
+      // server yet and may need manual reconciliation.
+      const orderErr = err as Error & { order?: Order };
+      if (orderErr?.order) {
+        setOrderNumber(orderErr.order.orderNumber);
+        setTrackingCode(orderErr.order.trackingCode);
+        setUnsynced(true);
+        clearCart();
+        setStep('success');
+        toast.warning('سفارش شما ذخیره شد، اما اتصال به سرور برقرار نشد. لطفاً به کافه اطلاع دهید.', { duration: 7000 });
+      } else {
+        toast.error('ثبت سفارش با خطا مواجه شد. لطفاً دوباره تلاش کنید.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -76,7 +92,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
 
   const handleClose = () => {
     onClose();
-    setTimeout(() => { setStep('cart'); setForm({ firstName: '', lastName: '', phone: '', notes: '' }); setErrors({}); }, 300);
+    setTimeout(() => { setStep('cart'); setForm({ firstName: '', lastName: '', phone: '', notes: '' }); setErrors({}); setUnsynced(false); }, 300);
   };
 
   return (
@@ -200,12 +216,28 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ type: 'spring', damping: 15, delay: 0.1 }}
-                      className="w-24 h-24 mx-auto mb-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-[2rem] flex items-center justify-center"
+                      className={cn(
+                        'w-24 h-24 mx-auto mb-6 rounded-[2rem] flex items-center justify-center',
+                        unsynced ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'
+                      )}
                     >
-                      <Check className="w-12 h-12 text-emerald-600 dark:text-emerald-400" strokeWidth={3} />
+                      {unsynced
+                        ? <AlertTriangle className="w-12 h-12 text-amber-600 dark:text-amber-400" strokeWidth={2.5} />
+                        : <Check className="w-12 h-12 text-emerald-600 dark:text-emerald-400" strokeWidth={3} />}
                     </motion.div>
-                    <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">سفارش ثبت شد!</h3>
-                    <p className="mt-2 text-zinc-500 dark:text-zinc-400">سفارش شما دریافت شد.</p>
+                    <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
+                      {unsynced ? 'سفارش ذخیره شد' : 'سفارش ثبت شد!'}
+                    </h3>
+                    <p className="mt-2 text-zinc-500 dark:text-zinc-400">
+                      {unsynced ? 'سفارش شما ذخیره شد اما هنوز برای کافه ارسال نشده.' : 'سفارش شما دریافت شد.'}
+                    </p>
+                    {unsynced && (
+                      <div className="mt-4">
+                        <Banner variant="warning">
+                          اتصال به سرور برقرار نشد. لطفاً کد پیگیری زیر را به کافه نشان دهید تا سفارش شما به‌صورت دستی ثبت شود.
+                        </Banner>
+                      </div>
+                    )}
                     <div className="mt-8 p-5 bg-zinc-50 dark:bg-zinc-800 rounded-2xl">
                       <p className="text-xs text-zinc-400 mb-1">شماره سفارش</p>
                       <p className="text-3xl font-black text-brand-600 font-mono tracking-wider" dir="ltr">{orderNumber}</p>

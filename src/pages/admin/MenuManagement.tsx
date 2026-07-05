@@ -126,17 +126,15 @@ export default function MenuManagement() {
       </div>
 
       <Card>
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-            <input
-              type="text"
-              placeholder="جستجو..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full pr-12 pl-4 py-3 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
-            />
-          </div>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3 mb-6">
+          <Input
+            type="text"
+            placeholder="جستجو..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            icon={<Search className="w-5 h-5" />}
+            className="flex-1"
+          />
           <Select
             value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
