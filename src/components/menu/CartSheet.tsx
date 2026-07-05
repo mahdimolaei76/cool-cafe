@@ -44,12 +44,16 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
       return;
     }
     if (!validate()) {
+      // eslint-disable-next-line no-console
+      console.warn('[Order] validation failed before any request was sent:', errors, form);
       toast.error('لطفاً اطلاعات را کامل و صحیح وارد کنید');
       return;
     }
 
     setSubmitting(true);
     try {
+      // eslint-disable-next-line no-console
+      console.info('[Order] submitting to backend…', { base: import.meta.env.VITE_API_URL || '/api' });
       const order = await addOrder({
         customerFirstName: form.firstName,
         customerLastName: form.lastName,
@@ -68,6 +72,8 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
       setStep('success');
       toast.success('سفارش شما با موفقیت ثبت شد');
     } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[Order] addOrder threw:', err);
       // addOrder always keeps the order locally (attached to the error)
       // even when the backend can't be reached, so the customer's cart
       // isn't lost. Treat that as a completed order from their point of
@@ -83,7 +89,8 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
         setStep('success');
         toast.warning('سفارش شما ذخیره شد، اما اتصال به سرور برقرار نشد. لطفاً به کافه اطلاع دهید.', { duration: 7000 });
       } else {
-        toast.error('ثبت سفارش با خطا مواجه شد. لطفاً دوباره تلاش کنید.');
+        const detail = orderErr instanceof Error ? orderErr.message : String(err);
+        toast.error(`ثبت سفارش با خطا مواجه شد: ${detail}`, { duration: 7000 });
       }
     } finally {
       setSubmitting(false);

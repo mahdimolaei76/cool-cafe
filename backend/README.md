@@ -11,9 +11,10 @@ docker-compose up -d --build
 
 That's it. This will:
 1. Start PostgreSQL 16
-2. Auto-run `migrations/001_init.sql` (creates all tables + seed data)
-3. Build & start the Go API on port `8080`
-4. The Go app auto-seeds bcrypt password hashes on first run
+2. Postgres auto-runs everything in `migrations/*.sql` **only on a brand-new, empty database volume** (this is Postgres's own `docker-entrypoint-initdb.d` behavior, not something this app controls)
+3. The Go API additionally applies any migration file not yet recorded in the `schema_migrations` table, every time it starts — so migrations added *after* your database already existed (like `002_tracking_code.sql`) still get applied automatically, instead of silently never running
+4. Build & start the Go API on port `8080`
+5. The Go app auto-seeds bcrypt password hashes on first run
 
 ### Default Users
 
@@ -46,15 +47,53 @@ curl http://localhost:8080/api/categories
 # 1. Create database
 createdb coolcafe
 
-# 2. Run migrations
-psql -d coolcafe -f migrations/001_init.sql
-
-# 3. Create .env
+# 2. Create .env
 cp .env.example .env
 # Edit .env with your DB credentials
 
+# 3. Apply migrations (safe to re-run any time — already-applied files are skipped)
+go run ./cmd/api migrate
+
 # 4. Run
-go run cmd/api/main.go
+go run ./cmd/api
+```
+
+## Migrations
+
+Every `.sql` file in `migrations/` is applied automatically, in filename
+order, the first time the API connects to a database that hasn't seen
+it yet — tracked in a `schema_migrations` table so each file only runs
+once. This happens both via `./api migrate` (a one-shot command that
+applies pending migrations then exits) and automatically every time the
+API starts normally, as a safety net.
+
+**If you already had this project running before `002_tracking_code.sql`
+(or any migration) was added**, your existing database's data volume was
+initialized before that file existed, so Postgres's own auto-init never
+ran it — and older versions of this backend had no code that would run
+it later either. If orders started failing after pulling new backend
+code, this is the most likely cause: the `orders` table is missing a
+column the Go code now expects.
+
+**Fix — pick one:**
+
+```bash
+# Docker: rebuild and let the API apply pending migrations on startup
+docker-compose up -d --build
+
+# Or run the one-shot migrate command directly:
+docker-compose run --rm api ./api migrate
+
+# Without Docker:
+go run ./cmd/api migrate
+
+# Or apply a specific file by hand if you don't want to touch the Go binary:
+psql -d coolcafe -f migrations/002_tracking_code.sql
+```
+
+To check what's actually been applied:
+```sql
+SELECT * FROM schema_migrations ORDER BY filename;
 ```
 
 ## API Endpoints
@@ -95,13 +134,18 @@ backend/
 │   ├── service/               # Business logic
 │   ├── handler/               # HTTP handlers
 │   └── middleware/            # Auth JWT middleware
-├── migrations/001_init.sql    # Full database schema
+├── migrations/                # 001_init.sql (schema+seed), 002_tracking_code.sql, ...
 ├── Dockerfile                 # Multi-stage Go build
 ├── docker-compose.yml         # DB + API orchestration
 └── .env.example               # Config template
 ```
 
 ## Troubleshooting
+
+### "Order creation fails" / "orders never reach the backend"
+- Check the API logs right after startup for `✅ Applied migration: ...` lines — if you don't see `002_tracking_code.sql` listed and your database predates it, run `docker-compose run --rm api ./api migrate` (see Migrations section above)
+- A Postgres error like `column "tracking_code" of relation "orders" does not exist` in the API logs confirms this exact cause
+- Also check the browser console (F12): if the frontend is served over HTTPS but `VITE_API_URL` points to a plain `http://` address, the browser blocks the request entirely as "mixed content" before it ever reaches the network — the API's own logs will show nothing because the request never arrived. Serve the backend over HTTPS (e.g. behind an nginx/Caddy reverse proxy) or match protocols.
 
 ### "Failed to connect to database"
 - Check DB is running: `docker-compose ps`

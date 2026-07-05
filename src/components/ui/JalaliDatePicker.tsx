@@ -133,14 +133,14 @@ export default function JalaliDatePicker({ label, value, onChange, placeholder, 
           className="z-[1000] bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-2xl p-3"
         >
           <div className="flex items-center justify-between mb-2">
-            <button type="button" onClick={goToPrevMonth} className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500">
-              <ChevronRight className="w-4 h-4" />
+            <button type="button" onClick={goToNextMonth} className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500">
+              <ChevronLeft className="w-4 h-4" />
             </button>
             <p className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
               {PERSIAN_MONTHS[viewMonth - 1]} {toPersianDigits(viewYear)}
             </p>
-            <button type="button" onClick={goToNextMonth} className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500">
-              <ChevronLeft className="w-4 h-4" />
+            <button type="button" onClick={goToPrevMonth} className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500">
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 

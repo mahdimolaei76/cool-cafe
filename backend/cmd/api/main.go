@@ -5,6 +5,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -31,6 +34,32 @@ func main() {
 	}
 	defer db.Close()
 	log.Println("✅ Database connected")
+
+	// `./api migrate` applies any .sql files in migrations/ that haven't
+	// run yet, then exits — this is what docker-compose.yml invokes before
+	// starting the API. Previously this subcommand didn't exist: main()
+	// ignored os.Args entirely, so "migrate" was silently treated as a
+	// normal server start and no migration ever actually ran. Any schema
+	// change added after the database's first boot (e.g. the tracking_code
+	// column) would then be missing forever, and every INSERT that touches
+	// it would fail — exactly the "order creation doesn't reach the
+	// backend" symptom this fixes.
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		if err := runMigrations(db); err != nil {
+			log.Fatalf("❌ Migration failed: %v", err)
+		}
+		log.Println("✅ Migrations up to date")
+		return
+	}
+
+	// Also apply any pending migrations on normal startup (not just when
+	// invoked as `./api migrate`). This is a safety net: if the migrate
+	// step is ever skipped or fails silently, the server won't come up
+	// against a stale schema and quietly break every write that touches
+	// a newer column.
+	if err := runMigrations(db); err != nil {
+		log.Fatalf("❌ Migration failed: %v", err)
+	}
 
 	// Seed default passwords (safe to run multiple times)
 	seedDefaultPasswords(db)
@@ -117,6 +146,77 @@ func main() {
 	port := getEnv("PORT", "8080")
 	log.Printf("🚀 COOL Café API → :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
+}
+
+// runMigrations applies every .sql file under migrations/ that hasn't
+// been recorded as applied yet, in filename order (hence the numeric
+// prefixes like 001_, 002_). Each migration runs in its own transaction
+// and is recorded in schema_migrations only on success, so a failed
+// migration doesn't get silently marked as done and re-running this
+// function is always safe.
+func runMigrations(db *sqlx.DB) error {
+	if _, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			filename   TEXT PRIMARY KEY,
+			applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+		)
+	`); err != nil {
+		return fmt.Errorf("creating schema_migrations table: %w", err)
+	}
+
+	dir := getEnv("MIGRATIONS_DIR", "./migrations")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		// No migrations directory (e.g. a stripped-down deploy image) is
+		// not fatal — there's simply nothing to apply.
+		log.Printf("⚠️  Migrations directory %q not found, skipping: %v", dir, err)
+		return nil
+	}
+
+	var files []string
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".sql") {
+			files = append(files, e.Name())
+		}
+	}
+	sort.Strings(files)
+
+	for _, name := range files {
+		var alreadyApplied bool
+		if err := db.Get(&alreadyApplied, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE filename = $1)`, name); err != nil {
+			return fmt.Errorf("checking migration status for %s: %w", name, err)
+		}
+		if alreadyApplied {
+			continue
+		}
+
+		path := filepath.Join(dir, name)
+		sqlBytes, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("reading %s: %w", name, err)
+		}
+
+		tx, err := db.Beginx()
+		if err != nil {
+			return fmt.Errorf("beginning transaction for %s: %w", name, err)
+		}
+
+		if _, err := tx.Exec(string(sqlBytes)); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("applying %s: %w", name, err)
+		}
+		if _, err := tx.Exec(`INSERT INTO schema_migrations (filename) VALUES ($1)`, name); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("recording %s as applied: %w", name, err)
+		}
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("committing %s: %w", name, err)
+		}
+
+		log.Printf("✅ Applied migration: %s", name)
+	}
+
+	return nil
 }
 
 // seedDefaultPasswords hashes and stores passwords for seed users.

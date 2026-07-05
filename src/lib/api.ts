@@ -3,6 +3,22 @@
 
 const BASE = import.meta.env.VITE_API_URL || '/api';
 
+// If the page is loaded over HTTPS but the API URL is plain HTTP, the
+// browser will silently block every request as "mixed content" — this
+// happens before any network activity, so DevTools' Network tab shows
+// nothing at all and the only trace is a console warning easy to miss.
+// Surface it loudly and once, since this is the single most common cause
+// of "the request never even reaches the backend."
+if (typeof window !== 'undefined' && window.location.protocol === 'https:' && BASE.startsWith('http://')) {
+  // eslint-disable-next-line no-console
+  console.error(
+    `[API] This page is served over HTTPS but VITE_API_URL ("${BASE}") is plain HTTP.\n` +
+    `Browsers block this as "mixed content" — every request will fail silently with no network activity.\n` +
+    `Fix: serve the backend over HTTPS (e.g. behind an nginx/Caddy reverse proxy with a TLS certificate), ` +
+    `then update VITE_API_URL to the https:// address.`
+  );
+}
+
 function getToken(): string | null {
   try {
     const raw = localStorage.getItem('cool-cafe-auth');
@@ -18,7 +34,20 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   if (token) headers['Authorization'] = `Bearer ${token}`;
   if (!(opts.body instanceof FormData)) headers['Content-Type'] = 'application/json';
 
-  const res = await fetch(`${BASE}${path}`, { ...opts, headers });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, { ...opts, headers });
+  } catch (err) {
+    // fetch() itself throwing (rather than resolving with a non-ok
+    // response) means the request never reached the network at all —
+    // wrong/unreachable host, CORS preflight rejection, mixed-content
+    // block, DNS failure, etc. Label it clearly instead of surfacing
+    // the browser's generic "Failed to fetch".
+    const reason = window.location.protocol === 'https:' && BASE.startsWith('http://')
+      ? `آدرس سرور (${BASE}) با HTTP است در حالی که این صفحه با HTTPS بارگذاری شده — مرورگر این درخواست را مسدود می‌کند (mixed content)`
+      : `اتصال به سرور در آدرس ${BASE} برقرار نشد`;
+    throw new Error(reason);
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

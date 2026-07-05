@@ -65,10 +65,17 @@ export default function NewOrder() {
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (cart?.length === 0) return;
+    if (cart?.length === 0) {
+      // eslint-disable-next-line no-console
+      console.warn('[Order] submit blocked: cart is empty');
+      toast.error('سبد خرید خالی است — ابتدا محصولی اضافه کنید');
+      return;
+    }
     setSubmitError(null);
     setSubmitting(true);
     try {
+      // eslint-disable-next-line no-console
+      console.info('[Order] submitting to backend…', { base: import.meta.env.VITE_API_URL || '/api', itemCount: cart?.length });
       const order = await addOrder({
         customerFirstName: form.firstName || 'مشتری', customerLastName: form.lastName || 'حضوری', customerPhone: form.phone,
         items: cart?.map(c => ({ id: crypto.randomUUID(), menuItemId: c.menuItem.id, menuItem: c.menuItem, name: c.menuItem.name, price: c.menuItem.price, quantity: c.quantity, subtotal: c.menuItem.price * c.quantity })),
@@ -77,6 +84,8 @@ export default function NewOrder() {
       setSuccess(order.orderNumber);
       toast.success('سفارش با موفقیت ثبت شد');
     } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[Order] addOrder threw:', err);
       // The backend genuinely could not be reached. addOrder still keeps
       // the order on this device (attached to the error) so the cashier
       // doesn't lose the work, but it must NOT be reported as a normal
