@@ -8,6 +8,7 @@ import Banner from '@/components/ui/Banner';
 import { cn } from '@/utils/cn';
 import { iranianMobileError } from '@/utils/phone';
 import type { Order, OrderType, PaymentMethod } from '@/types';
+import { uuidGenerator } from '@/lib/api';
 
 interface CartSheetProps {
   open: boolean;
@@ -59,7 +60,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
         customerLastName: form.lastName,
         customerPhone: form.phone,
         items: items?.map(ci => ({
-          id: crypto.randomUUID(), menuItemId: ci.menuItem.id, menuItem: ci.menuItem,
+          id: uuidGenerator(), menuItemId: ci.menuItem.id, menuItem: ci.menuItem,
           name: ci.menuItem.name, price: ci.menuItem.price, quantity: ci.quantity,
           subtotal: ci.menuItem.price * ci.quantity,
         })),

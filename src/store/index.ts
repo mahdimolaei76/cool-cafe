@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import dayjs from 'dayjs';
 import type { Category, MenuItem, Order, CartItem, OrderStatus } from '@/types';
-import { categoryApi, menuApi, orderApi, uploadApi } from '@/lib/api';
+import { categoryApi, menuApi, orderApi, uploadApi, uuidGenerator } from '@/lib/api';
 
 // ─── Price Formatter ───
 export function formatPrice(price: number): string {
@@ -145,7 +145,7 @@ export const useAppStore = create<AppStore>()(
           set(s => ({ categories: [...s.categories, created] }));
         } catch {
           // offline fallback
-          const fake = { ...data, id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as Category;
+          const fake = { ...data, id: uuidGenerator(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as Category;
           set(s => ({ categories: [...s.categories, fake] }));
         }
       },
@@ -168,7 +168,7 @@ export const useAppStore = create<AppStore>()(
           const created = await menuApi.create(data);
           set(s => ({ menuItems: [...s.menuItems, created] }));
         } catch {
-          const fake = { ...data, id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as MenuItem;
+          const fake = { ...data, id: uuidGenerator(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as MenuItem;
           set(s => ({ menuItems: [...s.menuItems, fake] }));
         }
       },
@@ -202,7 +202,7 @@ export const useAppStore = create<AppStore>()(
           const now = new Date().toISOString();
           const fake: Order = {
             ...orderData,
-            id: crypto.randomUUID(),
+            id: uuidGenerator(),
             orderNumber: `COOL-${dayjs().format('YYMMDD')}-${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`,
             trackingCode: generateTrackingCode(),
             timeline: [{ status: 'pending', timestamp: now }],

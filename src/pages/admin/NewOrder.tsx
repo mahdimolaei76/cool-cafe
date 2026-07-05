@@ -13,6 +13,7 @@ import Banner from '@/components/ui/Banner';
 import ScrollRow from '@/components/ui/ScrollRow';
 import type { Order, OrderType, PaymentMethod, MenuItem } from '@/types';
 import { iranianMobileError } from '@/utils/phone';
+import { uuidGenerator } from '@/lib/api';
 
 interface CartEntry { menuItem: MenuItem; quantity: number; }
 
@@ -78,7 +79,7 @@ export default function NewOrder() {
       console.info('[Order] submitting to backend…', { base: import.meta.env.VITE_API_URL || '/api', itemCount: cart?.length });
       const order = await addOrder({
         customerFirstName: form.firstName || 'مشتری', customerLastName: form.lastName || 'حضوری', customerPhone: form.phone,
-        items: cart?.map(c => ({ id: crypto.randomUUID(), menuItemId: c.menuItem.id, menuItem: c.menuItem, name: c.menuItem.name, price: c.menuItem.price, quantity: c.quantity, subtotal: c.menuItem.price * c.quantity })),
+        items: cart?.map(c => ({ id: uuidGenerator(), menuItemId: c.menuItem.id, menuItem: c.menuItem, name: c.menuItem.name, price: c.menuItem.price, quantity: c.quantity, subtotal: c.menuItem.price * c.quantity })),
         subtotal, discount: form.discount, total, notes: form.notes, status: 'pending', orderType: form.orderType, paymentMethod: form.paymentMethod, cashier: user?.name || '',
       });
       setSuccess(order.orderNumber);
