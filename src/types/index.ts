@@ -13,7 +13,17 @@ export interface MenuItem {
   id: string;
   name: string;
   description: string;
+  /** For priceType 'fixed' this is the real price. For 'variable' it's
+   * ignored for order totals (kept as 0 or a reference/starting price)
+   * — the actual amount is entered by the cashier per order instead. */
   price: number;
+  /** 'variable' items (e.g. "قیمت بازار" / "توافقی") don't have one fixed
+   * number — customers/cashiers can still add them to an order, but the
+   * amount is set later by the cashier and is tracked outside the normal
+   * numeric subtotal until then. */
+  priceType: 'fixed' | 'variable';
+  /** Free-text shown instead of a price for variable items, e.g. "قیمت بازار". */
+  priceLabel?: string;
   categoryId: string;
   category?: Category;
   image: string;
@@ -32,9 +42,21 @@ export interface OrderItem {
   menuItemId: string;
   menuItem?: MenuItem;
   name: string;
+  /** For variable-priced items this is 0 (or a placeholder) until the
+   * cashier confirms the real price — see `priceConfirmed`. */
   price: number;
   quantity: number;
   subtotal: number;
+  /** True if this line's price still needs to be set by the cashier
+   * (copied from the menu item's priceType at the time it was ordered,
+   * since prices/labels can change later but the order shouldn't). */
+  isPriceVariable?: boolean;
+  /** For variable-priced items: false until a cashier enters the actual
+   * price during order processing/confirmation. Fixed-price items are
+   * always considered confirmed. */
+  priceConfirmed?: boolean;
+  /** Free-text label shown in place of a price while unconfirmed, e.g. "قیمت بازار". */
+  priceLabel?: string;
 }
 
 export interface Order {
@@ -45,6 +67,11 @@ export interface Order {
   customerLastName: string;
   customerPhone: string;
   items: OrderItem[];
+  /** Sum of confirmed/fixed-price items only. Items with an unconfirmed
+   * variable price (see OrderItem.priceConfirmed) are excluded — they're
+   * tracked separately, like a pending line the cashier still needs to
+   * price, rather than silently counted as free or blocking the rest of
+   * the order from being totaled. */
   subtotal: number;
   discount: number;
   total: number;

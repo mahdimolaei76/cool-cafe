@@ -54,9 +54,15 @@ export default function MenuItemRow({ item, index }: Props) {
         </div>
 
         <div className="flex items-center justify-between mt-2">
-          <span className="font-black text-brand-600 dark:text-brand-400 text-sm sm:text-base">
-            {formatPrice(item.price)}
-          </span>
+          {item.priceType === 'variable' ? (
+            <span className="font-bold text-amber-600 dark:text-amber-400 text-xs sm:text-sm">
+              {item.priceLabel || 'قیمت بازار'}
+            </span>
+          ) : (
+            <span className="font-black text-brand-600 dark:text-brand-400 text-sm sm:text-base">
+              {formatPrice(item.price)}
+            </span>
+          )}
 
           {inCart ? (
             <div className="flex items-center gap-1 bg-white dark:bg-zinc-800 rounded-xl p-0.5 border border-zinc-200 dark:border-zinc-700 shadow-sm">

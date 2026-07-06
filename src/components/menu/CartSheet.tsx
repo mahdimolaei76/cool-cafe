@@ -3,12 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { X, Minus, Plus, ShoppingBag, ArrowLeft, Trash2, Check, AlertTriangle, Phone, User, MessageSquare } from 'lucide-react';
 import { useCartStore, useAppStore, formatPrice } from '@/store';
+import { uuidGenerator } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Banner from '@/components/ui/Banner';
 import { cn } from '@/utils/cn';
 import { iranianMobileError } from '@/utils/phone';
 import type { Order, OrderType, PaymentMethod } from '@/types';
-import { uuidGenerator } from '@/lib/api';
 
 interface CartSheetProps {
   open: boolean;
@@ -18,12 +18,13 @@ interface CartSheetProps {
 type Step = 'cart' | 'info' | 'success';
 
 export default function CartSheet({ open, onClose }: CartSheetProps) {
-  const { items, updateQuantity, removeItem, getTotal, clearCart } = useCartStore();
+  const { items, updateQuantity, removeItem, getTotal, getVariablePriceItems, clearCart } = useCartStore();
   const addOrder = useAppStore(s => s.addOrder);
   const [step, setStep] = useState<Step>('cart');
   const [orderNumber, setOrderNumber] = useState('');
   const [trackingCode, setTrackingCode] = useState('');
   const [unsynced, setUnsynced] = useState(false);
+  const [hadVariableItems, setHadVariableItems] = useState(false);
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', notes: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -59,16 +60,23 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
         customerFirstName: form.firstName,
         customerLastName: form.lastName,
         customerPhone: form.phone,
-        items: items?.map(ci => ({
-          id: uuidGenerator(), menuItemId: ci.menuItem.id, menuItem: ci.menuItem,
-          name: ci.menuItem.name, price: ci.menuItem.price, quantity: ci.quantity,
-          subtotal: ci.menuItem.price * ci.quantity,
-        })),
+        items: items?.map(ci => {
+          const isVariable = ci.menuItem.priceType === 'variable';
+          return {
+            id: uuidGenerator(), menuItemId: ci.menuItem.id, menuItem: ci.menuItem,
+            name: ci.menuItem.name, price: isVariable ? 0 : ci.menuItem.price, quantity: ci.quantity,
+            subtotal: isVariable ? 0 : ci.menuItem.price * ci.quantity,
+            isPriceVariable: isVariable,
+            priceConfirmed: !isVariable,
+            priceLabel: isVariable ? (ci.menuItem.priceLabel || 'قیمت‌گذاری توسط کافه') : undefined,
+          };
+        }),
         subtotal: total, discount: 0, total, notes: form.notes,
         status: 'pending', orderType: 'online' as OrderType, paymentMethod: 'cash' as PaymentMethod, cashier: '',
       });
       setOrderNumber(order.orderNumber);
       setTrackingCode(order.trackingCode);
+      setHadVariableItems(getVariablePriceItems()?.length > 0);
       clearCart();
       setStep('success');
       toast.success('سفارش شما با موفقیت ثبت شد');
@@ -86,6 +94,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
         setOrderNumber(orderErr.order.orderNumber);
         setTrackingCode(orderErr.order.trackingCode);
         setUnsynced(true);
+        setHadVariableItems(getVariablePriceItems()?.length > 0);
         clearCart();
         setStep('success');
         toast.warning('سفارش شما ذخیره شد، اما اتصال به سرور برقرار نشد. لطفاً به کافه اطلاع دهید.', { duration: 7000 });
@@ -100,7 +109,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
 
   const handleClose = () => {
     onClose();
-    setTimeout(() => { setStep('cart'); setForm({ firstName: '', lastName: '', phone: '', notes: '' }); setErrors({}); setUnsynced(false); }, 300);
+    setTimeout(() => { setStep('cart'); setForm({ firstName: '', lastName: '', phone: '', notes: '' }); setErrors({}); setUnsynced(false); setHadVariableItems(false); }, 300);
   };
 
   return (
@@ -163,19 +172,25 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
-                              <p className="text-sm text-brand-600 font-bold mt-0.5">{formatPrice(ci.menuItem.price)}</p>
-                              <div className="flex items-center justify-between mt-3">
-                                <div className="flex items-center gap-1 bg-white dark:bg-zinc-700 rounded-xl p-1 border border-zinc-200 dark:border-zinc-600 shadow-sm">
-                                  <button onClick={() => updateQuantity(ci.menuItem.id, ci.quantity - 1)} className="w-11 h-11 rounded-lg flex items-center justify-center hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 transition-colors">
+                              {ci.menuItem.priceType === 'variable' ? (
+                                <p className="text-sm text-amber-600 dark:text-amber-400 font-bold mt-0.5">
+                                  {ci.menuItem.priceLabel || 'قیمت بازار'} · بعداً توسط کافه مشخص می‌شود
+                                </p>
+                              ) : (
+                                <p className="text-sm text-brand-600 font-bold mt-0.5">{formatPrice(ci.menuItem.price)}</p>
+                              )}
+                              <div className="flex items-center justify-between gap-2 mt-3 flex-wrap">
+                                <div className="flex items-center gap-0.5 bg-white dark:bg-zinc-700 rounded-xl p-1 border border-zinc-200 dark:border-zinc-600 shadow-sm flex-shrink-0">
+                                  <button onClick={() => updateQuantity(ci.menuItem.id, ci.quantity - 1)} className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 transition-colors">
                                     {ci.quantity === 1 ? <Trash2 className="w-3.5 h-3.5" /> : <Minus className="w-4 h-4" />}
                                   </button>
-                                  <span className="w-7 text-center font-black text-base text-zinc-900 dark:text-zinc-100">{ci.quantity}</span>
-                                  <button onClick={() => updateQuantity(ci.menuItem.id, ci.quantity + 1)} className="w-11 h-11 rounded-lg flex items-center justify-center hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-900/20 transition-colors">
+                                  <span className="w-6 text-center font-black text-sm text-zinc-900 dark:text-zinc-100">{ci.quantity}</span>
+                                  <button onClick={() => updateQuantity(ci.menuItem.id, ci.quantity + 1)} className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-900/20 transition-colors">
                                     <Plus className="w-4 h-4" />
                                   </button>
                                 </div>
-                                <span className="font-black text-zinc-900 dark:text-zinc-100 text-base">
-                                  {formatPrice(ci.menuItem.price * ci.quantity)}
+                                <span className="font-black text-zinc-900 dark:text-zinc-100 text-base flex-shrink-0">
+                                  {ci.menuItem.priceType === 'variable' ? '—' : formatPrice(ci.menuItem.price * ci.quantity)}
                                 </span>
                               </div>
                             </div>
@@ -256,6 +271,13 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                         <p className="text-xl font-black text-brand-700 dark:text-brand-400 font-mono tracking-widest" dir="ltr">{trackingCode}</p>
                       </div>
                     )}
+                    {hadVariableItems && (
+                      <div className="mt-3">
+                        <Banner variant="warning">
+                          مبلغ نهایی این سفارش شامل قیمت اقلامِ «قیمت بازار» نیست — این مبلغ توسط کافه محاسبه و هنگام تحویل به شما اعلام می‌شود.
+                        </Banner>
+                      </div>
+                    )}
                     <p className="mt-4 text-xs text-zinc-400">این کد رو نگه دار برای پیگیری سفارش</p>
                   </motion.div>
                 )}
@@ -269,6 +291,11 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                   <span className="text-zinc-500 font-medium">جمع کل</span>
                   <span className="text-2xl font-black text-zinc-900 dark:text-zinc-100">{formatPrice(total)}</span>
                 </div>
+                {getVariablePriceItems()?.length > 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 -mt-2">
+                    ⚠️ قیمت {getVariablePriceItems()?.length} قلم (با قیمت بازار) در این مبلغ نیست و جداگانه محاسبه می‌شود
+                  </p>
+                )}
                 {step === 'cart' ? (
                   <Button className="w-full !py-4 !text-base !font-bold !rounded-2xl !bg-brand-600 hover:!bg-brand-700 !shadow-xl !shadow-brand-500/25" size="lg" onClick={() => setStep('info')} icon={<ArrowLeft className="w-5 h-5" />}>
                     ادامه و ثبت سفارش

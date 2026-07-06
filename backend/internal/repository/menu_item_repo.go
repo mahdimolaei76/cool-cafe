@@ -50,12 +50,12 @@ func (r *MenuItemRepository) FindByID(ctx context.Context, id uuid.UUID) (*domai
 
 func (r *MenuItemRepository) Create(ctx context.Context, item *domain.MenuItem) error {
 	query := `
-		INSERT INTO menu_items (name, description, price, category_id, image_url, is_available, is_featured)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO menu_items (name, description, price, price_type, price_label, category_id, image_url, is_available, is_featured)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, created_at, updated_at
 	`
 	return r.db.QueryRowContext(ctx, query,
-		item.Name, item.Description, item.Price, item.CategoryID, item.ImageURL, item.IsAvailable, item.IsFeatured,
+		item.Name, item.Description, item.Price, item.PriceType, item.PriceLabel, item.CategoryID, item.ImageURL, item.IsAvailable, item.IsFeatured,
 	).Scan(&item.ID, &item.CreatedAt, &item.UpdatedAt)
 }
 
@@ -65,15 +65,17 @@ func (r *MenuItemRepository) Update(ctx context.Context, item *domain.MenuItem) 
 			name = $2,
 			description = $3,
 			price = $4,
-			category_id = $5,
-			image_url = $6,
-			is_available = $7,
-			is_featured = $8,
+			price_type = $5,
+			price_label = $6,
+			category_id = $7,
+			image_url = $8,
+			is_available = $9,
+			is_featured = $10,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = $1
 	`
 	_, err := r.db.ExecContext(ctx, query,
-		item.ID, item.Name, item.Description, item.Price, item.CategoryID, item.ImageURL, item.IsAvailable, item.IsFeatured,
+		item.ID, item.Name, item.Description, item.Price, item.PriceType, item.PriceLabel, item.CategoryID, item.ImageURL, item.IsAvailable, item.IsFeatured,
 	)
 	return err
 }

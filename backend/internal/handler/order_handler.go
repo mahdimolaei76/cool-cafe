@@ -123,6 +123,50 @@ func (h *OrderHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, order)
 }
 
+// UpdateItemPriceRequest is the payload for setting a variable-priced
+// order item's price during cashier processing/confirmation.
+type UpdateItemPriceRequest struct {
+	Price int64 `json:"price"`
+}
+
+// UpdateItemPrice handles PATCH /orders/{id}/items/{itemId}/price — a
+// cashier entering the actual amount for a "قیمت بازار" style item.
+func (h *OrderHandler) UpdateItemPrice(w http.ResponseWriter, r *http.Request) {
+	orderID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid order ID")
+		return
+	}
+	itemID, err := uuid.Parse(chi.URLParam(r, "itemId"))
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid order item ID")
+		return
+	}
+
+	var input UpdateItemPriceRequest
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	order, err := h.orderService.UpdateItemPrice(r.Context(), orderID, itemID, input.Price)
+	if err != nil {
+		switch err {
+		case service.ErrInvalidPrice:
+			respondError(w, http.StatusBadRequest, "قیمت نمی‌تواند منفی باشد")
+		case service.ErrItemNotVariablePriced:
+			respondError(w, http.StatusBadRequest, "این قلم قیمت متغیر ندارد")
+		case service.ErrOrderItemNotFound:
+			respondError(w, http.StatusNotFound, "قلم سفارش یافت نشد")
+		default:
+			respondError(w, http.StatusInternalServerError, "Failed to update item price")
+		}
+		return
+	}
+
+	respondJSON(w, http.StatusOK, order)
+}
+
 // TrackOrderRequest is the payload for the public order-tracking lookup.
 type TrackOrderRequest struct {
 	TrackingCode string `json:"trackingCode"`

@@ -1,12 +1,20 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { DollarSign, ShoppingBag, TrendingUp, Clock, ArrowUpRight } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Link } from 'react-router-dom';
+import { DollarSign, ShoppingBag, Clock, ChefHat, Package, Plus, ArrowLeft } from 'lucide-react';
 import dayjs from 'dayjs';
 import { useAppStore, formatPrice } from '@/store';
 import { useAuthStore } from '@/store/authStore';
 import Card from '@/components/ui/Card';
-import { formatJalaliLong } from '@/utils/jalali';
+import Badge from '@/components/ui/Badge';
+import { formatJalaliLong, fromNowFa } from '@/utils/jalali';
+import type { Order } from '@/types';
+
+const statusConfig: Record<string, { label: string; icon: typeof Clock; badgeVariant: 'warning' | 'info' | 'success' }> = {
+  pending: { label: 'در انتظار', icon: Clock, badgeVariant: 'warning' },
+  preparing: { label: 'در حال آماده‌سازی', icon: ChefHat, badgeVariant: 'info' },
+  ready: { label: 'آماده تحویل', icon: Package, badgeVariant: 'success' },
+};
 
 export default function CashierDashboard() {
   const { orders: rawOrders } = useAppStore();
@@ -17,42 +25,23 @@ export default function CashierDashboard() {
 
   const stats = useMemo(() => {
     const todayOrders = orders?.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled');
-    const myOrders = todayOrders?.filter(o => o.cashier === user?.name);
-    const pending = orders?.filter(o => o.status === 'pending')?.length;
-    const preparing = orders?.filter(o => o.status === 'preparing')?.length;
-    const ready = orders?.filter(o => o.status === 'ready')?.length;
+    const pending = orders?.filter(o => o.status === 'pending')?.length || 0;
+    const preparing = orders?.filter(o => o.status === 'preparing')?.length || 0;
+    const ready = orders?.filter(o => o.status === 'ready')?.length || 0;
     return {
       todayRevenue: todayOrders.reduce((s, o) => s + o.total, 0),
-      todayCount: todayOrders?.length,
-      myCount: myOrders?.length,
-      myRevenue: myOrders.reduce((s, o) => s + o.total, 0),
-      avgOrder: todayOrders?.length > 0 ? todayOrders.reduce((s, o) => s + o.total, 0) / todayOrders?.length : 0,
+      todayCount: todayOrders?.length || 0,
       pending, preparing, ready,
+      activeTotal: pending + preparing + ready,
     };
-  }, [orders, today, user]);
-
-  // Hourly chart
-  const hourlyData = useMemo(() => {
-    const hours: Record<number, { revenue: number; count: number; }> = {};
-    for (let h = 7; h <= 22; h++) hours[h] = { revenue: 0, count: 0 };
-    orders?.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled').forEach(o => {
-      const h = dayjs(o.createdAt).hour();
-      if (hours[h]) { hours[h].revenue += o.total; hours[h].count++; }
-    });
-    return Object.entries(hours)?.map(([h, d]) => ({ hour: `${h}:00`, revenue: Math.round(d.revenue / 1000), count: d.count }));
   }, [orders, today]);
 
-  // Top items today
-  const topItems = useMemo(() => {
-    const map: Record<string, { name: string; count: number; }> = {};
-    orders?.filter(o => dayjs(o.createdAt).isAfter(today) && o.status !== 'cancelled').forEach(o => {
-      o.items.forEach(i => {
-        if (!map[i.name]) map[i.name] = { name: i.name, count: 0 };
-        map[i.name].count += i.quantity;
-      });
-    });
-    return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 5);
-  }, [orders, today]);
+  const activeOrders: Order[] = useMemo(() => {
+    return orders
+      ?.filter(o => ['pending', 'preparing', 'ready'].includes(o.status))
+      ?.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      ?.slice(0, 6) || [];
+  }, [orders]);
 
   return (
     <div className="space-y-5">
@@ -60,87 +49,98 @@ export default function CashierDashboard() {
         <h1 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
           سلام {user?.name} 👋
         </h1>
-        <p className="text-sm text-zinc-500 mt-1">خلاصه امروز · {formatJalaliLong(new Date())}</p>
+        <p className="text-sm text-zinc-500 mt-1">{formatJalaliLong(new Date())}</p>
       </div>
 
-      {/* Active orders alert */}
-      {(stats.pending + stats.preparing + stats.ready) > 0 && (
-        <div className="p-4 bg-brand-50 dark:bg-brand-900/20 rounded-2xl border border-brand-200 dark:border-brand-800 flex items-center gap-3">
-          <div className="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Clock className="w-5 h-5 text-white" />
+      {/* Primary action — this is what a cashier needs most, front and center */}
+      <Link to="/cashier">
+        <motion.div
+          whileTap={{ scale: 0.98 }}
+          className="flex items-center gap-4 p-5 bg-gradient-to-l from-brand-600 to-brand-700 rounded-2xl shadow-lg shadow-brand-500/25 text-white"
+        >
+          <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+            <Plus className="w-6 h-6" strokeWidth={2.5} />
           </div>
           <div className="flex-1">
-            <p className="font-bold text-brand-800 dark:text-brand-400">سفارش‌های فعال</p>
-            <p className="text-sm text-brand-600 dark:text-brand-500">
-              {stats.pending} در انتظار · {stats.preparing} آماده‌سازی · {stats.ready} آماده تحویل
-            </p>
+            <p className="font-black text-lg">ثبت سفارش جدید</p>
+            <p className="text-sm text-white/80">شروع یک سفارش تازه برای مشتری</p>
           </div>
-        </div>
-      )}
+          <ArrowLeft className="w-5 h-5 flex-shrink-0" />
+        </motion.div>
+      </Link>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { label: 'فروش امروز', value: formatPrice(stats.todayRevenue), icon: DollarSign, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30' },
-          { label: 'سفارش‌های امروز', value: stats.todayCount, icon: ShoppingBag, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' },
-          { label: 'سفارش‌های من', value: stats.myCount, icon: ArrowUpRight, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/30' },
-          { label: 'میانگین سفارش', value: formatPrice(stats.avgOrder), icon: TrendingUp, color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/30' },
-        ]?.map((s, i) => (
-          <motion.div key={s.label} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
-            <Card>
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-zinc-400 font-medium">{s.label}</p>
-                  <p className="mt-1.5 text-xl font-black text-zinc-900 dark:text-zinc-100">{s.value}</p>
-                </div>
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${s.color}`}>
-                  <s.icon className="w-4 h-4" />
-                </div>
-              </div>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Hourly chart */}
-        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="lg:col-span-2">
-          <Card>
-            <h3 className="font-bold text-zinc-900 dark:text-zinc-100 mb-4">فروش ساعتی (هزار تومان)</h3>
-            <div className="h-[220px]" dir="ltr">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={hourlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
-                  <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a1a1aa' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a1a1aa' }} />
-                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e4e4e7', borderRadius: '12px', fontSize: '12px' }} />
-                  <Bar dataKey="revenue" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={16} name="درآمد" />
-                </BarChart>
-              </ResponsiveContainer>
+      {/* Today at a glance — kept to the two numbers a cashier actually
+          checks mid-shift; deeper analytics live in Reports/Sales (admin). */}
+      <div className="grid grid-cols-2 gap-3">
+        <Card>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+              <DollarSign className="w-5 h-5" />
             </div>
-          </Card>
-        </motion.div>
-
-        {/* Top items today */}
-        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-          <Card>
-            <h3 className="font-bold text-zinc-900 dark:text-zinc-100 mb-4">پرفروش‌های امروز</h3>
-            {topItems?.length > 0 ? (
-              <div className="space-y-3">
-                {topItems?.map((item, i) => (
-                  <div key={item.name} className="flex items-center gap-3">
-                    <span className="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand-600 flex items-center justify-center text-xs font-black">{i + 1}</span>
-                    <span className="flex-1 text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{item.name}</span>
-                    <span className="text-sm font-bold text-zinc-500">{item.count}×</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-zinc-400 text-center py-8">هنوز فروشی ثبت نشده</p>
-            )}
-          </Card>
-        </motion.div>
+            <div className="min-w-0">
+              <p className="text-xs text-zinc-400 font-medium">فروش امروز</p>
+              <p className="text-lg font-black text-zinc-900 dark:text-zinc-100 truncate">{formatPrice(stats.todayRevenue)}</p>
+            </div>
+          </div>
+        </Card>
+        <Card>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+              <ShoppingBag className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-zinc-400 font-medium">سفارش‌های امروز</p>
+              <p className="text-lg font-black text-zinc-900 dark:text-zinc-100">{stats.todayCount}</p>
+            </div>
+          </div>
+        </Card>
       </div>
+
+      {/* Active orders queue — the thing a cashier actually monitors */}
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-zinc-900 dark:text-zinc-100">سفارش‌های فعال</h3>
+          {stats.activeTotal > 0 && (
+            <Badge variant="warning" dot>{stats.activeTotal} در جریان</Badge>
+          )}
+        </div>
+
+        {activeOrders.length > 0 ? (
+          <div className="space-y-2">
+            {activeOrders.map((order, i) => {
+              const config = statusConfig[order.status];
+              const isUrgent = dayjs().diff(dayjs(order.createdAt), 'minute') > 15 && order.status === 'pending';
+              const StatusIcon = config?.icon ?? Clock;
+              return (
+                <motion.div
+                  key={order.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.04 }}
+                  className={`flex items-center gap-3 p-3 rounded-xl border ${isUrgent ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/10' : 'border-zinc-100 dark:border-zinc-800'}`}
+                >
+                  <div className="w-9 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 text-zinc-500 dark:text-zinc-400">
+                    <StatusIcon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                      {order.customerFirstName} {order.customerLastName}
+                      <span className="text-zinc-400 font-mono font-normal mr-1.5" dir="ltr">#{order.orderNumber.replace('COOL-', '')}</span>
+                    </p>
+                    <p className="text-xs text-zinc-400">{order.items?.length} آیتم · {fromNowFa(order.createdAt)}</p>
+                  </div>
+                  {config && <Badge variant={config.badgeVariant}>{config.label}</Badge>}
+                </motion.div>
+              );
+            })}
+            <Link to="/cashier/orders" className="block text-center text-sm font-bold text-brand-600 hover:text-brand-700 pt-2">
+              مشاهده همه سفارش‌ها ←
+            </Link>
+          </div>
+        ) : (
+          <p className="text-sm text-zinc-400 text-center py-8">در حال حاضر سفارش فعالی وجود ندارد</p>
+        )}
+      </Card>
     </div>
   );
 }

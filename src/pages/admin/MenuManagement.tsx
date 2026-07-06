@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Edit2, Trash2, Star, Eye, EyeOff, Upload, Image, X } from 'lucide-react';
 import { useAppStore, formatPrice } from '@/store';
+import { cn } from '@/utils/cn';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -25,7 +26,7 @@ export default function MenuManagement() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
-    name: '', description: '', price: '', categoryId: '', image: '/images/coffee-hot.jpg', isAvailable: true, isFeatured: false,
+    name: '', description: '', price: '', priceType: 'fixed' as 'fixed' | 'variable', priceLabel: '', categoryId: '', image: '/images/coffee-hot.jpg', isAvailable: true, isFeatured: false,
   });
 
   const filtered = useMemo(() => {
@@ -42,13 +43,13 @@ export default function MenuManagement() {
 
   const openCreate = () => {
     setEditingItem(null);
-    setForm({ name: '', description: '', price: '', categoryId: categories[0]?.id || '', image: '/images/coffee-hot.jpg', isAvailable: true, isFeatured: false });
+    setForm({ name: '', description: '', price: '', priceType: 'fixed', priceLabel: '', categoryId: categories[0]?.id || '', image: '/images/coffee-hot.jpg', isAvailable: true, isFeatured: false });
     setModalOpen(true);
   };
 
   const openEdit = (item: MenuItem) => {
     setEditingItem(item);
-    setForm({ name: item.name, description: item.description, price: String(item.price), categoryId: item.categoryId, image: item.image, isAvailable: item.isAvailable, isFeatured: item.isFeatured });
+    setForm({ name: item.name, description: item.description, price: String(item.price), priceType: item.priceType || 'fixed', priceLabel: item.priceLabel || '', categoryId: item.categoryId, image: item.image, isAvailable: item.isAvailable, isFeatured: item.isFeatured });
     setModalOpen(true);
   };
 
@@ -71,7 +72,9 @@ export default function MenuManagement() {
     const data = {
       name: form.name,
       description: form.description,
-      price: parseFloat(form.price) || 0,
+      price: form.priceType === 'variable' ? 0 : (parseFloat(form.price) || 0),
+      priceType: form.priceType,
+      priceLabel: form.priceType === 'variable' ? (form.priceLabel || 'قیمت بازار') : '',
       categoryId: form.categoryId,
       image: form.image,
       isAvailable: form.isAvailable,
@@ -186,10 +189,14 @@ export default function MenuManagement() {
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <h3 className="font-bold text-zinc-900 dark:text-zinc-100">{item.name}</h3>
-                        <Badge className="flex-shrink-0">{cat?.icon}</Badge>
+                        <Badge className="flex-shrink-0 !text-base !px-2">{cat?.icon}</Badge>
                       </div>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">{item.description}</p>
-                      <p className="text-lg font-bold text-brand-700 dark:text-brand-400">{formatPrice(item.price)}</p>
+                      {item.priceType === 'variable' ? (
+                        <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{item.priceLabel || 'قیمت بازار'}</p>
+                      ) : (
+                        <p className="text-lg font-bold text-brand-700 dark:text-brand-400">{formatPrice(item.price)}</p>
+                      )}
                     </div>
                   </motion.div>
                 );
@@ -211,7 +218,7 @@ export default function MenuManagement() {
         footer={
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setModalOpen(false)}>انصراف</Button>
-            <Button onClick={handleSave} disabled={!form.name || !form.price}>{editingItem ? 'ذخیره تغییرات' : 'افزودن آیتم'}</Button>
+            <Button onClick={handleSave} disabled={!form.name || (form.priceType === 'fixed' ? !form.price : !form.priceLabel)}>{editingItem ? 'ذخیره تغییرات' : 'افزودن آیتم'}</Button>
           </div>
         }
       >
@@ -273,8 +280,45 @@ export default function MenuManagement() {
           <Input label="نام آیتم" placeholder="مثال: کاپوچینو" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
           <Textarea label="توضیحات" placeholder="توضیح کوتاه درباره این آیتم..." value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
 
+          {/* Price type toggle: fixed number vs. free-text (e.g. "قیمت بازار")
+              whose amount the cashier sets per order instead of here. */}
+          <div>
+            <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-1.5 block">نوع قیمت‌گذاری</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setForm(p => ({ ...p, priceType: 'fixed' }))}
+                className={cn(
+                  'py-2.5 rounded-xl border-2 text-sm font-bold transition-all',
+                  form.priceType === 'fixed' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500'
+                )}
+              >
+                عدد ثابت
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm(p => ({ ...p, priceType: 'variable' }))}
+                className={cn(
+                  'py-2.5 rounded-xl border-2 text-sm font-bold transition-all',
+                  form.priceType === 'variable' ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/30 text-amber-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500'
+                )}
+              >
+                متنی (مثلاً قیمت بازار)
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="قیمت (تومان)" type="number" placeholder="۰" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} />
+            {form.priceType === 'variable' ? (
+              <Input
+                label="برچسب قیمت"
+                placeholder="مثال: قیمت بازار / توافقی"
+                value={form.priceLabel}
+                onChange={e => setForm(p => ({ ...p, priceLabel: e.target.value }))}
+              />
+            ) : (
+              <Input label="قیمت (تومان)" type="number" placeholder="۰" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} />
+            )}
             <Select label="دسته‌بندی" value={form.categoryId} onChange={e => setForm(p => ({ ...p, categoryId: e.target.value }))} options={categories?.map(c => ({ value: c.id, label: `${c.icon} ${c.name}` }))} />
           </div>
 

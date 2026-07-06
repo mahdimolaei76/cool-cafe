@@ -36,6 +36,10 @@ type MenuItem struct {
 	Name        string     `db:"name" json:"name"`
 	Description string     `db:"description" json:"description"`
 	Price       int64      `db:"price" json:"price"`
+	// PriceType is "fixed" (Price is used as-is) or "variable" (no fixed
+	// price — the amount is entered by a cashier per order instead).
+	PriceType   string     `db:"price_type" json:"priceType"`
+	PriceLabel  string     `db:"price_label" json:"priceLabel,omitempty"`
 	CategoryID  *uuid.UUID `db:"category_id" json:"categoryId,omitempty"`
 	ImageURL    string     `db:"image_url" json:"image"`
 	IsAvailable bool       `db:"is_available" json:"isAvailable"`
@@ -70,15 +74,22 @@ type Order struct {
 
 // OrderItem represents an item in an order
 type OrderItem struct {
-	ID         uuid.UUID  `db:"id" json:"id"`
-	OrderID    uuid.UUID  `db:"order_id" json:"orderId"`
-	MenuItemID *uuid.UUID `db:"menu_item_id" json:"menuItemId,omitempty"`
-	Name       string     `db:"name" json:"name"`
-	Price      int64      `db:"price" json:"price"`
-	Quantity   int        `db:"quantity" json:"quantity"`
-	Subtotal   int64      `db:"subtotal" json:"subtotal"`
-	Notes      string     `db:"notes" json:"notes,omitempty"`
-	CreatedAt  time.Time  `db:"created_at" json:"createdAt"`
+	ID              uuid.UUID  `db:"id" json:"id"`
+	OrderID         uuid.UUID  `db:"order_id" json:"orderId"`
+	MenuItemID      *uuid.UUID `db:"menu_item_id" json:"menuItemId,omitempty"`
+	Name            string     `db:"name" json:"name"`
+	Price           int64      `db:"price" json:"price"`
+	Quantity        int        `db:"quantity" json:"quantity"`
+	Subtotal        int64      `db:"subtotal" json:"subtotal"`
+	Notes           string     `db:"notes" json:"notes,omitempty"`
+	// IsPriceVariable/PriceConfirmed/PriceLabel support items whose price
+	// isn't fixed (e.g. "قیمت بازار"): the cashier fills in Price later,
+	// and until PriceConfirmed is true this line is excluded from the
+	// order's subtotal/total rather than silently counted as free.
+	IsPriceVariable bool       `db:"is_price_variable" json:"isPriceVariable"`
+	PriceConfirmed  bool       `db:"price_confirmed" json:"priceConfirmed"`
+	PriceLabel      string     `db:"price_label" json:"priceLabel,omitempty"`
+	CreatedAt       time.Time  `db:"created_at" json:"createdAt"`
 }
 
 // OrderTimeline represents a status change in order history

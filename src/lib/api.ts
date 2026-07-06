@@ -1,6 +1,18 @@
 // ─── API Client ───
 // Connects to Go backend. Set VITE_API_URL in .env or it defaults to /api
 
+// crypto.randomUUID() is only available in "secure contexts" (HTTPS or
+// localhost) — on a plain HTTP deployment it doesn't exist at all and
+// throws "randomUUID is not a function" everywhere it's called. This
+// works unconditionally, in any context.
+export function uuidGenerator() {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 const BASE = import.meta.env.VITE_API_URL || '/api';
 
 // If the page is loaded over HTTPS but the API URL is plain HTTP, the
@@ -18,13 +30,7 @@ if (typeof window !== 'undefined' && window.location.protocol === 'https:' && BA
     `then update VITE_API_URL to the https:// address.`
   );
 }
-export function uuidGenerator() {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
+
 function getToken(): string | null {
   try {
     const raw = localStorage.getItem('cool-cafe-auth');
@@ -103,6 +109,8 @@ export const orderApi = {
   create: (data: any) => request<any>('/orders', { method: 'POST', body: JSON.stringify(data) }),
   updateStatus: (id: string, status: string, note?: string) =>
     request<any>(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, note }) }),
+  updateItemPrice: (orderId: string, itemId: string, price: number) =>
+    request<any>(`/orders/${orderId}/items/${itemId}/price`, { method: 'PATCH', body: JSON.stringify({ price }) }),
   track: (trackingCode: string, phone: string) =>
     request<any>('/orders/track', { method: 'POST', body: JSON.stringify({ trackingCode, phone }) }),
 };

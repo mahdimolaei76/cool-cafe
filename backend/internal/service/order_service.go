@@ -12,6 +12,9 @@ import (
 
 var (
 	ErrInvalidStatusTransition = errors.New("invalid status transition")
+	ErrInvalidPrice            = errors.New("price must not be negative")
+	ErrItemNotVariablePriced   = errors.New("order item does not have a variable price")
+	ErrOrderItemNotFound       = errors.New("order item not found")
 )
 
 type OrderService struct {
@@ -172,6 +175,42 @@ func (s *OrderService) UpdateStatus(ctx context.Context, id uuid.UUID, input Upd
 	}
 
 	return s.repo.FindByID(ctx, id)
+}
+
+// UpdateItemPrice lets a cashier set the price of a 'variable' priced
+// order item (e.g. "قیمت بازار") when processing or confirming the
+// order. The item must actually belong to the given order and must be
+// a variable-priced, not-yet-confirmed line — this prevents accidentally
+// overwriting an already-fixed price via the wrong endpoint.
+func (s *OrderService) UpdateItemPrice(ctx context.Context, orderID, itemID uuid.UUID, unitPrice int64) (*domain.Order, error) {
+	if unitPrice < 0 {
+		return nil, ErrInvalidPrice
+	}
+
+	order, err := s.repo.FindByID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	var found bool
+	for _, item := range order.Items {
+		if item.ID == itemID {
+			found = true
+			if !item.IsPriceVariable {
+				return nil, ErrItemNotVariablePriced
+			}
+			break
+		}
+	}
+	if !found {
+		return nil, ErrOrderItemNotFound
+	}
+
+	if err := s.repo.UpdateItemPrice(ctx, orderID, itemID, unitPrice); err != nil {
+		return nil, err
+	}
+
+	return s.repo.FindByID(ctx, orderID)
 }
 
 func (s *OrderService) isValidStatusTransition(current, next string) bool {

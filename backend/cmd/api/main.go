@@ -128,6 +128,7 @@ func main() {
 			r.Get("/orders", orderHandler.List)
 			r.Get("/orders/{id}", orderHandler.Get)
 			r.Patch("/orders/{id}/status", orderHandler.UpdateStatus)
+			r.Patch("/orders/{id}/items/{itemId}/price", orderHandler.UpdateItemPrice)
 
 			r.Post("/upload", uploadHandler.Upload)
 		})

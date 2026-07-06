@@ -327,6 +327,25 @@ function OrderDetail({ order, onStatusChange, nextStatus }: {
   nextStatus?: OrderStatus;
 }) {
   const config = statusConfig[order.status];
+  const updateOrderItemPrice = useAppStore(s => s.updateOrderItemPrice);
+  const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
+  const [savingItemId, setSavingItemId] = useState<string | null>(null);
+
+  const confirmItemPrice = async (itemId: string) => {
+    const raw = priceDrafts[itemId];
+    const price = Number(raw);
+    if (!raw || Number.isNaN(price) || price < 0) {
+      toast.error('قیمت معتبر وارد کنید');
+      return;
+    }
+    setSavingItemId(itemId);
+    try {
+      await updateOrderItemPrice(order.id, itemId, price);
+      toast.success('قیمت ثبت شد');
+    } finally {
+      setSavingItemId(null);
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -377,25 +396,56 @@ function OrderDetail({ order, onStatusChange, nextStatus }: {
       <div>
         <p className="text-sm font-medium text-zinc-500 mb-3">آیتم‌ها ({order.items?.length})</p>
         <div className="space-y-2">
-          {order.items?.map(item => (
-            <div key={item.id} className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-              <div className="flex items-center gap-3">
-                <span className="w-8 h-8 bg-brand-100 dark:bg-brand-900/30 rounded-lg flex items-center justify-center text-sm font-bold text-brand-700 dark:text-brand-400">
-                  {item.quantity}×
-                </span>
-                <div>
-                  <p className="font-medium text-zinc-900 dark:text-zinc-100">{item.name}</p>
-                  <p className="text-xs text-zinc-400">{formatPrice(item.price)}</p>
+          {order.items?.map(item => {
+            const needsPricing = item.isPriceVariable && !item.priceConfirmed;
+            return (
+              <div key={item.id} className={cn(
+                'flex items-center justify-between p-3 rounded-xl gap-3',
+                needsPricing ? 'bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800' : 'bg-zinc-50 dark:bg-zinc-800/50'
+              )}>
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="w-8 h-8 bg-brand-100 dark:bg-brand-900/30 rounded-lg flex items-center justify-center text-sm font-bold text-brand-700 dark:text-brand-400 flex-shrink-0">
+                    {item.quantity}×
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-medium text-zinc-900 dark:text-zinc-100 truncate">{item.name}</p>
+                    {needsPricing ? (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 font-bold">{item.priceLabel || 'نیاز به قیمت‌گذاری'}</p>
+                    ) : (
+                      <p className="text-xs text-zinc-400">{formatPrice(item.price)}</p>
+                    )}
+                  </div>
                 </div>
+                {needsPricing ? (
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="قیمت واحد"
+                      value={priceDrafts[item.id] ?? ''}
+                      onChange={e => setPriceDrafts(p => ({ ...p, [item.id]: e.target.value }))}
+                      className="w-24 px-2 py-1.5 text-sm rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                    />
+                    <Button size="sm" onClick={() => confirmItemPrice(item.id)} loading={savingItemId === item.id} className="!rounded-lg !py-1.5">
+                      ثبت
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="font-bold text-zinc-900 dark:text-zinc-100 flex-shrink-0">{formatPrice(item.subtotal)}</p>
+                )}
               </div>
-              <p className="font-bold text-zinc-900 dark:text-zinc-100">{formatPrice(item.subtotal)}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
       {/* Total */}
       <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 space-y-2">
+        {order.items?.some(i => i.isPriceVariable && !i.priceConfirmed) && (
+          <Banner variant="warning">
+            مبلغ زیر شامل قیمت اقلامِ قیمت‌گذاری‌نشده نیست — پس از ثبت قیمت آن‌ها، مبلغ نهایی به‌روزرسانی می‌شود.
+          </Banner>
+        )}
         <div className="flex justify-between text-sm">
           <span className="text-zinc-500">جمع</span>
           <span className="text-zinc-900 dark:text-zinc-100">{formatPrice(order.subtotal)}</span>

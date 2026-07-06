@@ -125,8 +125,8 @@ func (r *OrderRepository) Create(ctx context.Context, order *domain.Order) error
 
 	// Insert order items
 	itemQuery := `
-		INSERT INTO order_items (order_id, menu_item_id, name, price, quantity, subtotal)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO order_items (order_id, menu_item_id, name, price, quantity, subtotal, is_price_variable, price_confirmed, price_label)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, created_at
 	`
 	for i := range order.Items {
@@ -134,6 +134,7 @@ func (r *OrderRepository) Create(ctx context.Context, order *domain.Order) error
 		item.OrderID = order.ID
 		err = tx.QueryRowContext(ctx, itemQuery,
 			item.OrderID, item.MenuItemID, item.Name, item.Price, item.Quantity, item.Subtotal,
+			item.IsPriceVariable, item.PriceConfirmed, item.PriceLabel,
 		).Scan(&item.ID, &item.CreatedAt)
 		if err != nil {
 			return err
@@ -180,18 +181,73 @@ func (r *OrderRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status
 	return tx.Commit()
 }
 
-func (r *OrderRepository) loadOrderDetails(ctx context.Context, order *domain.Order) error {
-	// Load items
-	itemsQuery := `SELECT * FROM order_items WHERE order_id = $1 ORDER BY created_at`
-	if err := r.db.SelectContext(ctx, &order.Items, itemsQuery, order.ID); err != nil {
+// UpdateItemPrice sets the cashier-entered price for a single order item
+// (used for 'variable' priced items like "قیمت بازار") and recalculates
+// the parent order's subtotal/total from all now-confirmed item prices,
+// so previously-unpriced lines start counting toward the total only once
+// the cashier has actually priced them.
+func (r *OrderRepository) UpdateItemPrice(ctx context.Context, orderID, itemID uuid.UUID, unitPrice int64) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var quantity int
+	if err := tx.GetContext(ctx, &quantity, `SELECT quantity FROM order_items WHERE id = $1 AND order_id = $2`, itemID, orderID); err != nil {
+		return err
+	}
+	subtotal := unitPrice * int64(quantity)
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE order_items
+		SET price = $3, subtotal = $4, price_confirmed = true
+		WHERE id = $1 AND order_id = $2
+	`, itemID, orderID, unitPrice, subtotal); err != nil {
 		return err
 	}
 
-	// Load timeline
-	timelineQuery := `SELECT * FROM order_timeline WHERE order_id = $1 ORDER BY created_at`
-	if err := r.db.SelectContext(ctx, &order.Timeline, timelineQuery, order.ID); err != nil {
+	// Recompute the order's totals from all confirmed items only —
+	// unconfirmed variable-priced lines stay excluded, same rule the
+	// frontend uses when it first builds the order.
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE orders o
+		SET subtotal = COALESCE((
+			SELECT SUM(oi.subtotal) FROM order_items oi
+			WHERE oi.order_id = o.id AND oi.price_confirmed = true
+		), 0),
+		total = GREATEST(0, COALESCE((
+			SELECT SUM(oi.subtotal) FROM order_items oi
+			WHERE oi.order_id = o.id AND oi.price_confirmed = true
+		), 0) - o.discount),
+		updated_at = CURRENT_TIMESTAMP
+		WHERE o.id = $1
+	`, orderID); err != nil {
 		return err
 	}
+
+	return tx.Commit()
+}
+
+// loadOrderDetails populates an order's Items and Timeline, which live in
+// separate tables and aren't covered by the `SELECT * FROM orders` used
+// by the various Find*/List methods above.
+func (r *OrderRepository) loadOrderDetails(ctx context.Context, order *domain.Order) error {
+	var items []domain.OrderItem
+	if err := r.db.SelectContext(ctx, &items, `
+		SELECT * FROM order_items WHERE order_id = $1 ORDER BY created_at ASC
+	`, order.ID); err != nil {
+		return err
+	}
+	order.Items = items
+
+	var timeline []domain.OrderTimeline
+	if err := r.db.SelectContext(ctx, &timeline, `
+		SELECT * FROM order_timeline WHERE order_id = $1 ORDER BY timestamp ASC
+	`, order.ID); err != nil {
+		return err
+	}
+	order.Timeline = timeline
 
 	return nil
 }

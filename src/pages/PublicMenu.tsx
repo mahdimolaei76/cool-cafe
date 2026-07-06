@@ -100,7 +100,7 @@ export default function PublicMenu() {
                     onClick={() => setSelectedCategory(cat.id)}
                     className={cn('flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap', selectedCategory === cat.id ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400')}
                   >
-                    <span className="ml-1">{cat.icon}</span>{cat.name}
+                    <span className="text-sm ml-1">{cat.icon}</span>{cat.name}
                   </button>
                 ))}
               </div>
@@ -183,7 +183,7 @@ export default function PublicMenu() {
             return (
               <section key={cat.id} className="mt-10">
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="text-lg">{cat.icon}</span>
+                  <span className="text-2xl">{cat.icon}</span>
                   <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-100">{cat.name}</h2>
                   <span className="text-xs text-zinc-400">({catItems?.length})</span>
                 </div>

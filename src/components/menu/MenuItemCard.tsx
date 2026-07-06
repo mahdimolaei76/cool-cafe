@@ -80,30 +80,36 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
           </p>
 
           {/* Price & Action */}
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex flex-col items-start justify-between gap-2 mt-4">
             <div>
-              <span className="text-lg font-black text-brand-700 dark:text-brand-400">
-                {formatPrice(item.price)}
-              </span>
+              {item.priceType === 'variable' ? (
+                <span className="text-sm font-black text-amber-600 dark:text-amber-400">
+                  {item.priceLabel || 'قیمت بازار'}
+                </span>
+              ) : (
+                <span className="text-lg font-black text-brand-700 dark:text-brand-400">
+                  {formatPrice(item.price)}
+                </span>
+              )}
             </div>
 
             {inCart ? (
               /* Quantity Stepper */
-              <div className="flex items-center gap-1 bg-brand-50 dark:bg-brand-900/30 rounded-xl p-1 border border-brand-200 dark:border-brand-800">
+              <div className="flex items-center gap-0.5 bg-brand-50 dark:bg-brand-900/30 rounded-xl p-1 border border-brand-200 dark:border-brand-800 flex-shrink-0">
                 <button
                   onClick={() => updateQuantity(item.id, cartItem.quantity - 1)}
                   aria-label="کاهش تعداد"
-                  className="w-11 h-11 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors shadow-sm"
+                  className="w-9 h-9 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors shadow-sm"
                 >
                   <Minus className="w-4 h-4" strokeWidth={3} />
                 </button>
-                <span className="w-8 text-center font-black text-brand-700 dark:text-brand-400 text-base">
+                <span className="w-6 text-center font-black text-brand-700 dark:text-brand-400 text-sm">
                   {cartItem.quantity}
                 </span>
                 <button
                   onClick={() => updateQuantity(item.id, cartItem.quantity + 1)}
                   aria-label="افزایش تعداد"
-                  className="w-11 h-11 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors shadow-sm"
+                  className="w-9 h-9 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center text-brand-600 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors shadow-sm"
                 >
                   <Plus className="w-4 h-4" strokeWidth={3} />
                 </button>
@@ -113,10 +119,10 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
               <motion.button
                 whileTap={{ scale: 0.92 }}
                 onClick={() => addItem(item)}
-                className="flex items-center gap-2 px-4 min-h-11 bg-brand-600 text-white rounded-xl text-sm font-bold hover:bg-brand-700 transition-colors shadow-md shadow-brand-500/20 active:shadow-sm"
+                aria-label="افزودن به سبد"
+                className="flex items-center justify-center gap-2 px-4 min-h-11 min-w-11 bg-brand-600 text-white rounded-xl text-sm font-bold hover:bg-brand-700 transition-colors shadow-md shadow-brand-500/20 active:shadow-sm"
               >
-                <Plus className="w-4 h-4" strokeWidth={3} />
-                <span className="md:hidden">+</span>
+                <Plus className="w-4 h-4 flex-shrink-0" strokeWidth={3} />
                 <span className="hidden md:inline">افزودن</span>
               </motion.button>
             )}

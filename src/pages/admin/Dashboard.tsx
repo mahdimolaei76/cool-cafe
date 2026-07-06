@@ -7,6 +7,7 @@ import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import ChartTooltip from '@/components/ui/ChartTooltip';
 import { formatJalali } from '@/utils/jalali';
 
 export default function Dashboard() {
@@ -168,10 +169,9 @@ export default function Dashboard() {
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#a1a1aa' }} dy={8} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#a1a1aa' }} dx={-8} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e4e4e7', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: '13px' }}
-                    formatter={(value) => [`${Number(value)} هزار تومان`, 'درآمد']}
+                    content={<ChartTooltip formatValue={(v) => `${Number(v)} هزار تومان`} />}
                   />
-                  <Area type="monotone" dataKey="revenue" stroke="#ef4444" strokeWidth={2} fill="url(#revenueGradient)" />
+                  <Area type="monotone" dataKey="revenue" stroke="#ef4444" strokeWidth={2} fill="url(#revenueGradient)" name="درآمد" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -190,8 +190,8 @@ export default function Dashboard() {
                 <BarChart data={categoryPerformance} layout="vertical" margin={{ left: 0 }}>
                   <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a1a1aa' }} />
                   <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#71717a' }} width={70} />
-                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e4e4e7', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: '13px' }} formatter={(value) => [formatPrice(Number(value)), 'درآمد']} />
-                  <Bar dataKey="revenue" fill="#ef4444" radius={[0, 6, 6, 0]} barSize={18} />
+                  <Tooltip content={<ChartTooltip formatValue={(v) => formatPrice(Number(v))} />} />
+                  <Bar dataKey="revenue" fill="#ef4444" radius={[0, 6, 6, 0]} barSize={18} name="درآمد" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

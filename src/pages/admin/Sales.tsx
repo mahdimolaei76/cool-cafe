@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
 import Card from '@/components/ui/Card';
+import ChartTooltip from '@/components/ui/ChartTooltip';
 import { formatJalali } from '@/utils/jalali';
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6', '#ec4899', '#64748b', '#d97706'];
@@ -133,8 +134,8 @@ export default function Sales() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#a1a1aa' }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#a1a1aa' }} />
-                <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e4e4e7', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
-                <Area type="monotone" dataKey="revenue" stroke="#ef4444" strokeWidth={2} fill="url(#salesGradient)" />
+                <Tooltip content={<ChartTooltip formatValue={(v) => formatPrice(Number(v) * 1000)} />} />
+                <Area type="monotone" dataKey="revenue" stroke="#ef4444" strokeWidth={2} fill="url(#salesGradient)" name="درآمد" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -150,7 +151,7 @@ export default function Sales() {
                     <Cell key={i} fill={COLORS[i % COLORS?.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e4e4e7', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} formatter={(v) => `${Number(v)} هزار تومان`} />
+                <Tooltip content={<ChartTooltip formatValue={(v) => `${Number(v)} هزار تومان`} />} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -198,7 +199,7 @@ export default function Sales() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#71717a' }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#a1a1aa' }} />
-                <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e4e4e7', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
+                <Tooltip content={<ChartTooltip />} />
                 <Bar dataKey="value" fill="#ef4444" radius={[6, 6, 0, 0]} barSize={40} name="سفارش" />
               </BarChart>
             </ResponsiveContainer>

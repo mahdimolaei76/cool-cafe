@@ -5,6 +5,7 @@ import { Plus, Minus, Trash2, Search, Check, ShoppingCart, User, CreditCard, Ban
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
 import { useAuthStore } from '@/store/authStore';
+import { uuidGenerator } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
@@ -13,9 +14,15 @@ import Banner from '@/components/ui/Banner';
 import ScrollRow from '@/components/ui/ScrollRow';
 import type { Order, OrderType, PaymentMethod, MenuItem } from '@/types';
 import { iranianMobileError } from '@/utils/phone';
-import { uuidGenerator } from '@/lib/api';
 
-interface CartEntry { menuItem: MenuItem; quantity: number; }
+interface CartEntry {
+  menuItem: MenuItem;
+  quantity: number;
+  /** Cashier-entered price for a single unit of a 'variable' priced item.
+   * null until the cashier fills it in; the line contributes 0 to the
+   * order total until then, same as the customer-facing flow. */
+  manualPrice: number | null;
+}
 
 export default function NewOrder() {
   const { menuItems: rawMenuItems, categories: rawCategories, orders: rawOrders, addOrder } = useAppStore();
@@ -50,16 +57,21 @@ export default function NewOrder() {
     setCart(prev => {
       const ex = prev.find(c => c.menuItem.id === item.id);
       if (ex) return prev?.map(c => c.menuItem.id === item.id ? { ...c, quantity: c.quantity + 1 } : c);
-      return [...prev, { menuItem: item, quantity: 1 }];
+      return [...prev, { menuItem: item, quantity: 1, manualPrice: null }];
     });
+  };
+  const setManualPrice = (id: string, price: number | null) => {
+    setCart(prev => prev?.map(c => c.menuItem.id === id ? { ...c, manualPrice: price } : c));
   };
   const updateQty = (id: string, qty: number) => {
     if (qty <= 0) setCart(prev => prev?.filter(c => c.menuItem.id !== id));
     else setCart(prev => prev?.map(c => c.menuItem.id === id ? { ...c, quantity: qty } : c));
   };
 
-  const subtotal = cart.reduce((s, c) => s + c.menuItem.price * c.quantity, 0);
+  const lineTotal = (c: CartEntry) => c.menuItem.priceType === 'variable' ? (c.manualPrice ?? 0) * c.quantity : c.menuItem.price * c.quantity;
+  const subtotal = cart.reduce((s, c) => s + lineTotal(c), 0);
   const total = Math.max(0, subtotal - form.discount);
+  const hasUnpricedVariableItems = cart.some(c => c.menuItem.priceType === 'variable' && (c.manualPrice === null || c.manualPrice === undefined));
   const itemCount = cart.reduce((s, c) => s + c.quantity, 0);
 
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -79,7 +91,17 @@ export default function NewOrder() {
       console.info('[Order] submitting to backend…', { base: import.meta.env.VITE_API_URL || '/api', itemCount: cart?.length });
       const order = await addOrder({
         customerFirstName: form.firstName || 'مشتری', customerLastName: form.lastName || 'حضوری', customerPhone: form.phone,
-        items: cart?.map(c => ({ id: uuidGenerator(), menuItemId: c.menuItem.id, menuItem: c.menuItem, name: c.menuItem.name, price: c.menuItem.price, quantity: c.quantity, subtotal: c.menuItem.price * c.quantity })),
+        items: cart?.map(c => {
+          const isVariable = c.menuItem.priceType === 'variable';
+          const unitPrice = isVariable ? (c.manualPrice ?? 0) : c.menuItem.price;
+          return {
+            id: uuidGenerator(), menuItemId: c.menuItem.id, menuItem: c.menuItem, name: c.menuItem.name,
+            price: unitPrice, quantity: c.quantity, subtotal: unitPrice * c.quantity,
+            isPriceVariable: isVariable,
+            priceConfirmed: isVariable ? c.manualPrice !== null && c.manualPrice !== undefined : true,
+            priceLabel: isVariable && (c.manualPrice === null || c.manualPrice === undefined) ? (c.menuItem.priceLabel || 'قیمت‌گذاری نشده') : undefined,
+          };
+        }),
         subtotal, discount: form.discount, total, notes: form.notes, status: 'pending', orderType: form.orderType, paymentMethod: form.paymentMethod, cashier: user?.name || '',
       });
       setSuccess(order.orderNumber);
@@ -233,7 +255,23 @@ export default function NewOrder() {
                 <img src={c.menuItem.image} alt="" className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-zinc-900 dark:text-zinc-100 truncate">{c.menuItem.name}</h4>
-                  <p className="text-sm text-zinc-500 mt-0.5">{formatPrice(c.menuItem.price)}</p>
+                  {c.menuItem.priceType === 'variable' ? (
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <span className="text-xs text-amber-600 dark:text-amber-400 font-bold flex-shrink-0">
+                        {c.menuItem.priceLabel || 'قیمت بازار'} —
+                      </span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="قیمت واحد (تومان)"
+                        value={c.manualPrice ?? ''}
+                        onChange={e => setManualPrice(c.menuItem.id, e.target.value === '' ? null : Number(e.target.value))}
+                        className="w-32 px-2 py-1 text-sm rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-sm text-zinc-500 mt-0.5">{formatPrice(c.menuItem.price)}</p>
+                  )}
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-2 bg-white dark:bg-zinc-700 rounded-xl p-1 border border-zinc-200 dark:border-zinc-600">
                       <button onClick={() => updateQty(c.menuItem.id, c.quantity - 1)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-colors">
@@ -242,7 +280,9 @@ export default function NewOrder() {
                       <span className="w-8 text-center font-black text-lg">{c.quantity}</span>
                       <button onClick={() => updateQty(c.menuItem.id, c.quantity + 1)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-brand-50 hover:text-brand-600 transition-colors"><Plus className="w-4 h-4" /></button>
                     </div>
-                    <p className="font-black text-lg text-zinc-900 dark:text-zinc-100">{formatPrice(c.menuItem.price * c.quantity)}</p>
+                    <p className="font-black text-lg text-zinc-900 dark:text-zinc-100">
+                      {c.menuItem.priceType === 'variable' && c.manualPrice === null ? '—' : formatPrice(lineTotal(c))}
+                    </p>
                   </div>
                 </div>
               </motion.div>
@@ -276,6 +316,11 @@ export default function NewOrder() {
         {cart?.length > 0 && (
           <div className="flex-shrink-0 p-5 bg-zinc-50 dark:bg-zinc-800/50 border-t-2 border-zinc-100 dark:border-zinc-800 space-y-3">
             {submitError && <Banner variant="danger">{submitError}</Banner>}
+            {hasUnpricedVariableItems && (
+              <Banner variant="warning">
+                یک یا چند قلم بدون قیمت است — این سفارش ثبت می‌شود اما مبلغ نهایی این اقلام باید جداگانه هنگام تحویل مشخص شود.
+              </Banner>
+            )}
             <div className="flex items-center justify-between">
               {form.discount > 0 && <p className="text-xs text-emerald-600">تخفیف: -{formatPrice(form.discount)}</p>}
               <p className="text-2xl font-black text-brand-600 mr-auto">{formatPrice(total)}</p>

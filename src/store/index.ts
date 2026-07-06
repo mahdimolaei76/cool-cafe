@@ -16,10 +16,8 @@ export function formatPrice(price: number): string {
 const TRACKING_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function generateTrackingCode(): string {
   let code = '';
-  const bytes = new Uint8Array(8);
-  crypto.getRandomValues(bytes);
-  for (let i = 0; i < bytes.length; i++) {
-    code += TRACKING_CHARSET[bytes[i] % TRACKING_CHARSET.length];
+  for (let i = 0; i < 8; i++) {
+    code += TRACKING_CHARSET[Math.floor(Math.random() * TRACKING_CHARSET.length)];
   }
   return code;
 }
@@ -33,6 +31,7 @@ interface CartStore {
   clearCart: () => void;
   getTotal: () => number;
   getItemCount: () => number;
+  getVariablePriceItems: () => CartItem[];
 }
 
 export const useCartStore = create<CartStore>((set, get) => ({
@@ -48,8 +47,9 @@ export const useCartStore = create<CartStore>((set, get) => ({
     else set(s => ({ items: s.items?.map(i => i.menuItem.id === id ? { ...i, quantity: qty } : i) }));
   },
   clearCart: () => set({ items: [] }),
-  getTotal: () => get().items.reduce((s, i) => s + i.menuItem.price * i.quantity, 0),
+  getTotal: () => get().items.reduce((s, i) => s + (i.menuItem.priceType === 'variable' ? 0 : i.menuItem.price) * i.quantity, 0),
   getItemCount: () => get().items.reduce((s, i) => s + i.quantity, 0),
+  getVariablePriceItems: () => get().items.filter(i => i.menuItem.priceType === 'variable'),
 }));
 
 // ─── App Store — API-connected with local cache ───
@@ -81,6 +81,7 @@ interface AppStore {
   // Orders
   addOrder: (data: any) => Promise<Order>;
   updateOrderStatus: (id: string, status: OrderStatus, note?: string) => Promise<void>;
+  updateOrderItemPrice: (orderId: string, itemId: string, price: number) => Promise<void>;
   trackOrder: (trackingCode: string, phone: string) => Promise<Order | null>;
 
   // Upload
@@ -229,6 +230,27 @@ export const useAppStore = create<AppStore>()(
         }));
       },
 
+      updateOrderItemPrice: async (orderId, itemId, price) => {
+        try {
+          await orderApi.updateItemPrice(orderId, itemId, price);
+        } catch { /* fall through to local-only update below */ }
+        const now = new Date().toISOString();
+        set(s => ({
+          orders: s.orders?.map(o => {
+            if (o.id !== orderId) return o;
+            const items = o.items?.map(it => it.id === itemId
+              ? { ...it, price, subtotal: price * it.quantity, priceConfirmed: true }
+              : it);
+            // Recompute totals from confirmed items only, mirroring the
+            // rule used when the order was first created — an item's
+            // cost only counts once the cashier has actually priced it.
+            const subtotal = items?.reduce((sum, it) => sum + (it.priceConfirmed !== false ? it.subtotal : 0), 0) ?? o.subtotal;
+            const total = Math.max(0, subtotal - o.discount);
+            return { ...o, items, subtotal, total, updatedAt: now };
+          }),
+        }));
+      },
+
       // ─── Track (public, no auth) ───
       trackOrder: async (trackingCode, phone) => {
         const code = trackingCode.trim().toUpperCase();
@@ -292,6 +314,18 @@ export const useAppStore = create<AppStore>()(
           menuItems: Array.isArray(persisted.menuItems) ? persisted.menuItems : [],
           orders: Array.isArray(persisted.orders) ? persisted.orders : [],
         };
+      },
+      // Belt-and-suspenders for the light/dark toggle on mobile: rather
+      // than waiting for React to mount and run the App-level useEffect
+      // (which reacts to `theme` changes), apply the class to <html> the
+      // moment zustand finishes rehydrating from localStorage. This closes
+      // any timing gap on slower devices where the theme could otherwise
+      // render with the wrong class for a frame or two, or get stuck if
+      // the effect fires before hydration completes.
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        if (state.theme === 'dark') document.documentElement.classList.add('dark');
+        else document.documentElement.classList.remove('dark');
       },
     }
   )

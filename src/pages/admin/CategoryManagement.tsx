@@ -21,7 +21,11 @@ export default function CategoryManagement() {
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', slug: '', icon: '☕', order: 0, isActive: true });
 
-  const sorted = [...categories].sort((a, b) => a.order - b.order);
+  // Tiebreak by id when `order` values collide (e.g. leftover duplicate
+  // order values from data created before this was fixed) — otherwise
+  // the sort would be unstable across renders and the up/down buttons
+  // could appear to do nothing or jump unpredictably.
+  const sorted = [...categories].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
 
   const openCreate = () => {
     setEditingCat(null);
@@ -41,15 +45,22 @@ export default function CategoryManagement() {
   };
   const handleDelete = async () => { if (deleteId) { await deleteCategory(deleteId); setDeleteId(null); } };
 
-  const moveCategory = (id: string, direction: 'up' | 'down') => {
+  const moveCategory = async (id: string, direction: 'up' | 'down') => {
     const idx = sorted.findIndex(c => c.id === id);
-    if (direction === 'up' && idx > 0) {
-      updateCategory(sorted[idx].id, { order: sorted[idx - 1].order });
-      updateCategory(sorted[idx - 1].id, { order: sorted[idx].order });
-    } else if (direction === 'down' && idx < sorted?.length - 1) {
-      updateCategory(sorted[idx].id, { order: sorted[idx + 1].order });
-      updateCategory(sorted[idx + 1].id, { order: sorted[idx].order });
-    }
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= sorted.length) return;
+
+    // Swap the two `order` values as a single atomic pair rather than two
+    // independent async calls — firing both updateCategory() calls at
+    // once let them race (whichever API response landed last "won"),
+    // which could leave both categories with the same order value or
+    // only one side of the swap actually applied. Awaiting the first
+    // before starting the second guarantees the final state is always
+    // a clean swap.
+    const a = sorted[idx];
+    const b = sorted[swapIdx];
+    await updateCategory(a.id, { order: b.order });
+    await updateCategory(b.id, { order: a.order });
   };
 
   const emojiOptions = ['☕', '🧊', '🍵', '🎂', '🍰', '🥐', '🍳', '🥪', '🥤', '🍕', '🥗', '🍩', '🧁', '🥞', '🍔'];
