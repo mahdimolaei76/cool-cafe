@@ -19,7 +19,7 @@ const adminNavItems = [
   { path: '/admin/sales', label: 'فروش', icon: DollarSign, roles: ['admin'] },
   { path: '/admin/reports', label: 'گزارش‌ها', icon: BarChart3, roles: ['admin'] },
   { path: '/admin/qr-code', label: 'کد QR', icon: QrCode, roles: ['admin'] },
-  { path: '/admin/settings', label: 'تنظیمات', icon: Settings, roles: ['admin'] },
+  { path: '/admin/settings', label: 'تنظیمات و اطلاعات', icon: Settings, roles: ['admin'] },
 ];
 
 // منوی Cashier
@@ -91,8 +91,24 @@ export default function AdminLayout() {
               </span>
             )}
           </div>
-          <button onClick={toggleTheme} className="p-2.5 -ml-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-            {theme === 'dark' ? <Sun className="w-5 h-5 text-zinc-400" /> : <Moon className="w-5 h-5 text-zinc-400" />}
+          <button
+            onClick={toggleTheme}
+            role="switch"
+            aria-checked={theme === 'dark'}
+            aria-label="تغییر حالت روشن/تاریک"
+            className={cn(
+              'relative w-14 h-8 rounded-full flex items-center px-1 transition-colors flex-shrink-0',
+              theme === 'dark' ? 'bg-brand-600' : 'bg-zinc-200'
+            )}
+          >
+            <span
+              className={cn(
+                'w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center transition-transform',
+                theme === 'dark' ? '-translate-x-6' : 'translate-x-0'
+              )}
+            >
+              {theme === 'dark' ? <Moon className="w-3.5 h-3.5 text-brand-600" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
+            </span>
           </button>
         </div>
         {/* نمایش سریع سفارش‌های فعال برای cashier */}
@@ -332,15 +348,30 @@ function SidebarContent({
 
       {/* Footer */}
       <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
-        {!isCashier && (
+        {
           <button
             onClick={toggleTheme}
+            role="switch"
+            aria-checked={theme === 'dark'}
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800 w-full transition-colors"
           >
-            {theme === 'dark' ? <Sun className="w-5 h-5 text-zinc-400" /> : <Moon className="w-5 h-5 text-zinc-400" />}
-            {theme === 'dark' ? 'حالت روشن' : 'حالت تاریک'}
+            {theme === 'dark' ? <Moon className="w-5 h-5 text-zinc-400" /> : <Sun className="w-5 h-5 text-zinc-400" />}
+            <span className="flex-1 text-right">{theme === 'dark' ? 'حالت تاریک' : 'حالت روشن'}</span>
+            <span
+              className={cn(
+                'relative w-11 h-6 rounded-full flex items-center px-1 transition-colors flex-shrink-0',
+                theme === 'dark' ? 'bg-brand-600' : 'bg-zinc-300 dark:bg-zinc-700'
+              )}
+            >
+              <span
+                className={cn(
+                  'w-4 h-4 rounded-full bg-white shadow-sm transition-transform',
+                  theme === 'dark' ? '-translate-x-5' : 'translate-x-0'
+                )}
+              />
+            </span>
           </button>
-        )}
+        }
 
         {!isCashier && (
           <Link

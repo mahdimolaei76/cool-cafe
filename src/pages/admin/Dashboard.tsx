@@ -187,9 +187,9 @@ export default function Dashboard() {
         >
           <Card>
             <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-4">بر اساس دسته‌بندی</h3>
-            <div className="h-[280px]">
+            <div className="h-[280px]" dir="ltr">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={categoryPerformance} layout="vertical" margin={{ left: 8, right: 24 }}>
+                <BarChart data={categoryPerformance} layout="vertical" margin={{ left: 8, right: 56 }}>
                   <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a1a1aa' }} />
                   <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#52525b' }} width={110} />
                   <Tooltip content={<ChartTooltip formatValue={(v) => formatPrice(Number(v))} />} />

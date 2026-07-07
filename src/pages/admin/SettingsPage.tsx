@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Store, Palette, Phone, Mail, MapPin, Clock } from 'lucide-react';
+import { Save, Store, Palette, Phone, Mail, MapPin, Clock, Sun, Moon } from 'lucide-react';
 import { useAppStore } from '@/store';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -95,9 +95,12 @@ export default function SettingsPage() {
                     onClick={toggleTheme}
                     role="switch"
                     aria-checked={theme === 'dark'}
-                    className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${theme === 'dark' ? 'bg-brand-600' : 'bg-zinc-300'}`}
+                    aria-label="تغییر حالت روشن/تاریک"
+                    className={`w-14 h-8 rounded-full transition-colors relative flex-shrink-0 flex items-center px-1 ${theme === 'dark' ? 'bg-brand-600' : 'bg-zinc-300'}`}
                   >
-                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${theme === 'dark' ? 'right-1' : 'left-1'}`} />
+                    <span className={`w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center transition-transform ${theme === 'dark' ? '-translate-x-6' : 'translate-x-0'}`}>
+                      {theme === 'dark' ? <Moon className="w-3.5 h-3.5 text-brand-600" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
+                    </span>
                   </button>
                 </div>
               </div>

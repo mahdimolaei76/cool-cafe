@@ -10,6 +10,7 @@ import Badge from '@/components/ui/Badge';
 import Banner from '@/components/ui/Banner';
 import ScrollRow from '@/components/ui/ScrollRow';
 import Modal from '@/components/ui/Modal';
+import Pagination from '@/components/ui/Pagination';
 import type { OrderStatus } from '@/types';
 import { fromNowFa, formatJalaliDateTime } from '@/utils/jalali';
 
@@ -44,6 +45,8 @@ export default function CashierOrders() {
   const [savingItemId, setSavingItemId] = useState<string | null>(null);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const statusMenuRef = useRef<HTMLDivElement>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   // Close the "jump to any status" menu on outside click.
   useEffect(() => {
@@ -79,13 +82,25 @@ export default function CashierOrders() {
   };
 
   const filteredOrders = useMemo(() => {
-    let result = selectedStatus === 'all' ? activeOrders : orders?.filter(o => o.status === selectedStatus);
+    let result = selectedStatus === 'all'
+      ? activeOrders
+      : selectedStatus === 'all_orders'
+        ? orders
+        : orders?.filter(o => o.status === selectedStatus);
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result?.filter(o => o.orderNumber.toLowerCase().includes(q) || o.customerFirstName.toLowerCase().includes(q) || o.customerLastName.toLowerCase().includes(q) || o.customerPhone.includes(q));
     }
     return result;
   }, [orders, activeOrders, selectedStatus, searchQuery]);
+
+  // برگشت به صفحه اول با تغییر فیلتر یا جستجو تا کاربر روی صفحه‌ی خالی نماند
+  useEffect(() => { setPage(1); }, [selectedStatus, searchQuery]);
+
+  const paginatedOrders = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredOrders?.slice(start, start + pageSize);
+  }, [filteredOrders, page, pageSize]);
 
   // Daily stats
   const todayStats = useMemo(() => {
@@ -140,6 +155,8 @@ export default function CashierOrders() {
           { key: 'preparing', label: 'آماده‌سازی', count: statusCounts.preparing },
           { key: 'ready', label: 'آماده', count: statusCounts.ready },
           { key: 'delivered', label: 'تحویل شده', count: orders?.filter(o => o.status === 'delivered')?.length || 0 },
+          { key: 'cancelled', label: 'لغو شده', count: orders?.filter(o => o.status === 'cancelled')?.length || 0 },
+          { key: 'all_orders', label: 'همه سفارش‌ها', count: orders?.length || 0 },
         ]?.map(s => (
           <button key={s.key} onClick={() => setSelectedStatus(s.key)} className={cn(
             'flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap border',
@@ -180,7 +197,7 @@ export default function CashierOrders() {
         ) : (
           <>
             <AnimatePresence mode="popLayout">
-              {filteredOrders?.map((order, i) => {
+              {paginatedOrders?.map((order, i) => {
                 const config = statusMap[order.status];
                 const isUrgent = dayjs().diff(dayjs(order.createdAt), 'minute') > 15 && order.status === 'pending';
                 return (
@@ -218,6 +235,16 @@ export default function CashierOrders() {
                 <p className="font-bold text-zinc-500">سفارشی نیست</p>
                 <p className="text-sm text-zinc-400 mt-1">{searchQuery ? 'جستجو نتیجه‌ای نداشت' : 'همه پردازش شده‌اند'}</p>
               </div>
+            )}
+            {filteredOrders?.length > 0 && (
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                total={filteredOrders.length}
+                onPageChange={setPage}
+                onPageSizeChange={size => { setPageSize(size); setPage(1); }}
+                className="bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700"
+              />
             )}
           </>
         )}

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Coffee, Info, Phone, MapPin, Clock, Shield, MessageCircle, Search } from 'lucide-react';
+import { X, Coffee, Info, Phone, MapPin, Clock, Shield, MessageCircle, Search, Sun, Moon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/utils/cn';
 import { useAppStore } from '@/store';
@@ -106,16 +106,18 @@ export default function MenuSidebar({ open, onClose }: MenuSidebarProps) {
                 className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 transition-colors"
               >
                 <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  {theme === 'dark' ? 'حالت روشن' : 'حالت تاریک'}
+                  {theme === 'dark' ? 'حالت تاریک' : 'حالت روشن'}
                 </span>
                 <div className={cn(
-                  'w-12 h-6 rounded-full transition-colors relative',
+                  'w-14 h-8 rounded-full transition-colors relative flex items-center px-1',
                   theme === 'dark' ? 'bg-brand-600' : 'bg-zinc-300'
                 )}>
                   <div className={cn(
-                    'absolute top-1 w-4 h-4 rounded-full bg-white transition-all',
-                    theme === 'dark' ? 'right-1' : 'left-1'
-                  )} />
+                    'w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center transition-transform',
+                    theme === 'dark' ? '-translate-x-6' : 'translate-x-0'
+                  )}>
+                    {theme === 'dark' ? <Moon className="w-3.5 h-3.5 text-brand-600" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
+                  </div>
                 </div>
               </button>
             </div>

@@ -34,7 +34,13 @@ export default function OrderManagement() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');
 
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  // همیشه سفارشِ آپدیت‌شده را از استور می‌خوانیم تا مدال بعد از هر عملیات
+  // (تغییر وضعیت، ثبت قیمت آیتم و ...) بدون نیاز به همگام‌سازی دستی به‌روز بماند.
+  const selectedOrder = useMemo(
+    () => (selectedOrderId ? orders?.find(o => o.id === selectedOrderId) ?? null : null),
+    [orders, selectedOrderId]
+  );
   const [confirmAction, setConfirmAction] = useState<{ orderId: string; status: OrderStatus; } | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -69,9 +75,6 @@ export default function OrderManagement() {
     if (confirmAction) {
       updateOrderStatus(confirmAction.orderId, confirmAction.status);
       setConfirmAction(null);
-      if (selectedOrder && selectedOrder.id === confirmAction.orderId) {
-        setSelectedOrder(prev => prev ? { ...prev, status: confirmAction.status } : null);
-      }
       toast.success('وضعیت سفارش بروزرسانی شد');
     }
   };
@@ -179,7 +182,7 @@ export default function OrderManagement() {
                   key={order.id}
                   order={order}
                   index={index}
-                  onView={() => setSelectedOrder(order)}
+                  onView={() => setSelectedOrderId(order.id)}
                   onStatusChange={(status) => setConfirmAction({ orderId: order.id, status })}
                   nextStatus={nextStatus[order.status]}
                 />
@@ -222,7 +225,7 @@ export default function OrderManagement() {
               ) : filtered.length > 0 ? paginated.map(order => (
                 <tr
                   key={order.id}
-                  onClick={() => setSelectedOrder(order)}
+                  onClick={() => setSelectedOrderId(order.id)}
                   className="border-b border-zinc-50 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 cursor-pointer transition-colors"
                 >
                   <td className="py-3 px-4">
@@ -285,7 +288,7 @@ export default function OrderManagement() {
       </div>
 
       {/* Order Detail Modal */}
-      <Modal open={!!selectedOrder} onClose={() => setSelectedOrder(null)} title={`سفارش ${selectedOrder?.orderNumber}`} size="lg">
+      <Modal open={!!selectedOrder} onClose={() => setSelectedOrderId(null)} title={`سفارش ${selectedOrder?.orderNumber}`} size="lg">
         {selectedOrder && <OrderDetail order={selectedOrder} onStatusChange={(status) => setConfirmAction({ orderId: selectedOrder.id, status })} nextStatus={nextStatus[selectedOrder.status]} />}
       </Modal>
 
