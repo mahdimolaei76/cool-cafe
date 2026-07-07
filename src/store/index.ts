@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import dayjs from 'dayjs';
 import type { Category, MenuItem, Order, CartItem, OrderStatus } from '@/types';
-import { categoryApi, menuApi, orderApi, uploadApi, uuidGenerator } from '@/lib/api';
+import { categoryApi, menuApi, orderApi, settingsApi, uploadApi, uuidGenerator } from '@/lib/api';
 
 // ─── Price Formatter ───
 export function formatPrice(price: number): string {
@@ -101,7 +101,8 @@ interface AppStore {
 
   // Settings
   settings: { name: string; phone: string; email: string; address: string; };
-  updateSettings: (s: Partial<AppStore['settings']>) => void;
+  fetchSettings: () => Promise<void>;
+  updateSettings: (s: Partial<AppStore['settings']>) => Promise<void>;
 }
 
 export const useAppStore = create<AppStore>()(
@@ -320,7 +321,30 @@ export const useAppStore = create<AppStore>()(
       }),
 
       // ─── Settings ───
-      updateSettings: (data) => set(s => ({ settings: { ...s.settings, ...data } })),
+      fetchSettings: async () => {
+        try {
+          const data = await settingsApi.get();
+          set(s => ({
+            settings: {
+              name: data?.name ?? s.settings.name,
+              phone: data?.phone ?? s.settings.phone,
+              email: data?.email ?? s.settings.email,
+              address: data?.address ?? s.settings.address,
+            },
+            apiOnline: true,
+          }));
+        } catch {
+          // offline: keep whatever was last cached locally
+          set({ apiOnline: false });
+        }
+      },
+      updateSettings: async (data) => {
+        // Optimistic local update so the UI feels instant even if the
+        // request is slow or fails.
+        set(s => ({ settings: { ...s.settings, ...data } }));
+        const merged = { ...(_get() as AppStore).settings, ...data };
+        await settingsApi.update(merged);
+      },
     }),
     {
       name: 'cool-cafe-storage',

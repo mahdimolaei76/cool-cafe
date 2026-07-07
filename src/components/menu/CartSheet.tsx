@@ -293,7 +293,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                 </div>
                 {getVariablePriceItems()?.length > 0 && (
                   <p className="text-xs text-amber-600 dark:text-amber-400 -mt-2">
-                    ⚠️ قیمت {getVariablePriceItems()?.length} قلم (با قیمت بازار) در این مبلغ نیست و جداگانه محاسبه می‌شود
+                    ⚠️ قیمت {getVariablePriceItems()?.length} قلم در این مبلغ نیست و جداگانه محاسبه می‌شود
                   </p>
                 )}
                 {step === 'cart' ? (

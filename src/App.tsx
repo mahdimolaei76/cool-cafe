@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAppStore } from '@/store';
+import { useAuthStore } from '@/store/authStore';
 import PublicMenu from '@/pages/PublicMenu';
 import OrderTracking from '@/pages/OrderTracking';
 import LoginPage from '@/pages/admin/LoginPage';
@@ -20,19 +21,27 @@ import QRCodePage from '@/pages/admin/QRCodePage';
 import SettingsPage from '@/pages/admin/SettingsPage';
 
 export default function App() {
-  const { theme, fetchCategories, fetchMenuItems, fetchOrders } = useAppStore();
+  const { theme, fetchCategories, fetchMenuItems, fetchOrders, fetchSettings } = useAppStore();
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
 
   // Apply theme
   useEffect(() => {
     if (theme === 'dark') document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
   }, [theme]);
-  // Fetch data from API on mount (falls back to localStorage cache if offline)
+  // Fetch public data from API on mount (falls back to localStorage cache if offline)
   useEffect(() => {
     fetchCategories();
     fetchMenuItems();
-    fetchOrders();
-  }, [fetchCategories, fetchMenuItems, fetchOrders]);
+    fetchSettings();
+  }, [fetchCategories, fetchMenuItems, fetchSettings]);
+
+  // GET /orders requires staff auth, so only fetch it once a cashier/admin
+  // is actually logged in — otherwise every anonymous visitor to the
+  // public menu or tracking page triggers a guaranteed 401 in the background.
+  useEffect(() => {
+    if (isAuthenticated) fetchOrders();
+  }, [isAuthenticated, fetchOrders]);
 
   return (
     <BrowserRouter>

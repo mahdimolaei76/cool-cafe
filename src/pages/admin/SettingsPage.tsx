@@ -10,11 +10,21 @@ export default function SettingsPage() {
   const { settings, updateSettings, theme, toggleTheme } = useAppStore();
   const [form, setForm] = useState({ ...settings });
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSave = () => {
-    updateSettings(form);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await updateSettings(form);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'ذخیره تغییرات با خطا مواجه شد');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -24,9 +34,12 @@ export default function SettingsPage() {
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">تنظیمات</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">مدیریت تنظیمات کافه</p>
         </div>
-        <Button onClick={handleSave} icon={saved ? undefined : <Save className="w-4 h-4" />}>
-          {saved ? '✓ ذخیره شد!' : 'ذخیره تغییرات'}
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button onClick={handleSave} disabled={saving} icon={saved ? undefined : <Save className="w-4 h-4" />}>
+            {saving ? 'در حال ذخیره...' : saved ? '✓ ذخیره شد!' : 'ذخیره تغییرات'}
+          </Button>
+          {error && <p className="text-xs text-red-500">{error}</p>}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

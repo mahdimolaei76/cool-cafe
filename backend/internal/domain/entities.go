@@ -128,3 +128,16 @@ const (
 	RoleAdmin   = "admin"
 	RoleCashier = "cashier"
 )
+
+// Settings represents the café's general settings. It's a singleton row
+// (there's only ever one row in the settings table) rather than
+// per-user, since it describes the café itself (shown on the public
+// menu sidebar as well as the admin settings page).
+type Settings struct {
+	ID        int       `db:"id" json:"-"`
+	Name      string    `db:"name" json:"name"`
+	Phone     string    `db:"phone" json:"phone"`
+	Email     string    `db:"email" json:"email"`
+	Address   string    `db:"address" json:"address"`
+	UpdatedAt time.Time `db:"updated_at" json:"updatedAt"`
+}

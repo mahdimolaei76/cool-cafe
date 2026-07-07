@@ -116,6 +116,13 @@ export const orderApi = {
     request<any>('/orders/track', { method: 'POST', body: JSON.stringify({ trackingCode, phone }) }),
 };
 
+// ─── Settings ───
+export const settingsApi = {
+  get: () => request<any>('/settings'),
+  update: (data: { name: string; phone: string; email: string; address: string }) =>
+    request<any>('/settings', { method: 'PUT', body: JSON.stringify(data) }),
+};
+
 // ─── Upload ───
 // Returns full URL: if backend gives /uploads/xxx.jpg, prepend the API host
 export const uploadApi = {

@@ -69,6 +69,7 @@ func main() {
 	categoryRepo := repository.NewCategoryRepository(db)
 	menuItemRepo := repository.NewMenuItemRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
+	settingsRepo := repository.NewSettingsRepository(db)
 
 	// Services
 	jwtSecret := getEnv("JWT_SECRET", "default-secret-change-me")
@@ -76,12 +77,14 @@ func main() {
 	categoryService := service.NewCategoryService(categoryRepo)
 	menuItemService := service.NewMenuItemService(menuItemRepo)
 	orderService := service.NewOrderService(orderRepo)
+	settingsService := service.NewSettingsService(settingsRepo)
 
 	// Handlers
 	authHandler := handler.NewAuthHandler(authService)
 	categoryHandler := handler.NewCategoryHandler(categoryService)
 	menuItemHandler := handler.NewMenuItemHandler(menuItemService)
 	orderHandler := handler.NewOrderHandler(orderService)
+	settingsHandler := handler.NewSettingsHandler(settingsService)
 	uploadHandler := handler.NewUploadHandler(getEnv("UPLOAD_DIR", "./uploads"))
 
 	authMW := appMiddleware.NewAuthMiddleware(jwtSecret)
@@ -109,6 +112,7 @@ func main() {
 		r.Get("/menu/{id}", menuItemHandler.Get)
 		r.Post("/orders", orderHandler.Create)
 		r.Post("/orders/track", orderHandler.Track)
+		r.Get("/settings", settingsHandler.Get)
 
 		// Protected
 		r.Group(func(r chi.Router) {
@@ -132,6 +136,11 @@ func main() {
 			r.Patch("/orders/{id}/items/{itemId}/price", orderHandler.UpdateItemPrice)
 
 			r.Post("/upload", uploadHandler.Upload)
+
+			r.Group(func(r chi.Router) {
+				r.Use(authMW.RequireAdmin)
+				r.Put("/settings", settingsHandler.Update)
+			})
 		})
 	})
 

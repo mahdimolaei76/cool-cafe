@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { CheckCircle2, Bell, Search, DollarSign, ShoppingBag, TrendingUp, X } from 'lucide-react';
+import { CheckCircle2, Bell, Search, DollarSign, ShoppingBag, TrendingUp, X, Clock, ChefHat, Truck, XCircle, MoreVertical } from 'lucide-react';
 import dayjs from 'dayjs';
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
@@ -19,12 +19,57 @@ const statusMap: Record<string, { label: string; color: string; bgColor: string;
   ready: { label: 'آماده تحویل', color: 'bg-emerald-500', bgColor: 'bg-emerald-50 dark:bg-emerald-900/20', textColor: 'text-emerald-700 dark:text-emerald-400', badgeVariant: 'success', next: 'delivered', nextLabel: 'تحویل داده شد' },
 };
 
+// All statuses the "jump to any status" three-dot menu can offer, in the
+// same icon/color style used by the admin order-management screen.
+const allStatusConfig: Record<OrderStatus, { label: string; icon: typeof Clock; color: string }> = {
+  pending: { label: 'در انتظار', icon: Clock, color: 'text-amber-600' },
+  preparing: { label: 'در حال آماده‌سازی', icon: ChefHat, color: 'text-blue-600' },
+  ready: { label: 'آماده تحویل', icon: CheckCircle2, color: 'text-emerald-600' },
+  delivered: { label: 'تحویل شده', icon: Truck, color: 'text-zinc-600' },
+  cancelled: { label: 'لغو شده', icon: XCircle, color: 'text-red-600' },
+};
+const allStatuses: OrderStatus[] = ['pending', 'preparing', 'ready', 'delivered', 'cancelled'];
+
 export default function CashierOrders() {
-  const { orders: rawOrders, updateOrderStatus, loading } = useAppStore();
+  const { orders: rawOrders, updateOrderStatus, updateOrderItemPrice, loading } = useAppStore();
   const orders = rawOrders ?? [];
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  // Derived (not a snapshot) so that after e.g. confirming an item's price,
+  // the modal reflects the updated totals/receipt immediately instead of
+  // showing whatever was true at the moment the modal was opened.
+  const selectedOrder = selectedOrderId ? orders.find(o => o.id === selectedOrderId) ?? null : null;
+  const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
+  const [savingItemId, setSavingItemId] = useState<string | null>(null);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const statusMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close the "jump to any status" menu on outside click.
+  useEffect(() => {
+    if (!statusMenuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (statusMenuRef.current && !statusMenuRef.current.contains(e.target as Node)) setStatusMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [statusMenuOpen]);
+
+  const confirmItemPrice = async (itemId: string) => {
+    const raw = priceDrafts[itemId];
+    const price = Number(raw);
+    if (!raw || Number.isNaN(price) || price < 0) {
+      toast.error('قیمت معتبر وارد کنید');
+      return;
+    }
+    setSavingItemId(itemId);
+    try {
+      await updateOrderItemPrice(selectedOrderId!, itemId, price);
+      toast.success('قیمت ثبت شد و فیش به‌روزرسانی شد');
+    } finally {
+      setSavingItemId(null);
+    }
+  };
 
   const activeOrders = orders?.filter(o => ['pending', 'preparing', 'ready'].includes(o.status));
   const statusCounts: Record<string, number> = {
@@ -55,7 +100,7 @@ export default function CashierOrders() {
 
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
     updateOrderStatus(orderId, newStatus);
-    setSelectedOrder(null);
+    setSelectedOrderId(null);
     toast.success('وضعیت سفارش بروزرسانی شد');
   };
 
@@ -139,7 +184,7 @@ export default function CashierOrders() {
                 const config = statusMap[order.status];
                 const isUrgent = dayjs().diff(dayjs(order.createdAt), 'minute') > 15 && order.status === 'pending';
                 return (
-                  <motion.div key={order.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.03 }} onClick={() => setSelectedOrder(order)}
+                  <motion.div key={order.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.03 }} onClick={() => setSelectedOrderId(order.id)}
                     className={cn('bg-white dark:bg-zinc-800 rounded-2xl border p-4 cursor-pointer transition-all hover:shadow-lg', isUrgent ? 'border-red-300 dark:border-red-800' : 'border-zinc-200 dark:border-zinc-700')}>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -179,16 +224,49 @@ export default function CashierOrders() {
       </div>
 
       {/* Order Detail Modal */}
-      <Modal open={!!selectedOrder} onClose={() => setSelectedOrder(null)} title={`سفارش ${selectedOrder?.orderNumber}`}
-        footer={selectedOrder && statusMap[selectedOrder.status]?.next ? (
+      <Modal open={!!selectedOrder} onClose={() => setSelectedOrderId(null)} title={`سفارش ${selectedOrder?.orderNumber}`}
+        footer={selectedOrder && (
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={() => setSelectedOrder(null)}>بستن</Button>
-            <Button className="flex-1" onClick={() => handleStatusChange(selectedOrder.id, statusMap[selectedOrder.status].next!)}>
-              {statusMap[selectedOrder.status].nextLabel}
-            </Button>
+            <Button variant="outline" className="flex-1" onClick={() => setSelectedOrderId(null)}>بستن</Button>
+            {statusMap[selectedOrder.status]?.next && (
+              <Button className="flex-1" onClick={() => handleStatusChange(selectedOrder.id, statusMap[selectedOrder.status].next!)}>
+                {statusMap[selectedOrder.status].nextLabel}
+              </Button>
+            )}
+            {selectedOrder.status !== 'delivered' && selectedOrder.status !== 'cancelled' && (
+              <div className="relative" ref={statusMenuRef}>
+                <Button variant="outline" onClick={() => setStatusMenuOpen(o => !o)} aria-label="تغییر به وضعیت دیگر" className="!px-3">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+                <AnimatePresence>
+                  {statusMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute bottom-full mb-2 left-0 w-56 bg-white dark:bg-zinc-800 rounded-xl shadow-2xl border border-zinc-100 dark:border-zinc-700 py-1.5 z-10"
+                    >
+                      <p className="px-3 py-1.5 text-xs text-zinc-400 font-medium">تغییر مستقیم وضعیت به:</p>
+                      {allStatuses.filter(s => s !== selectedOrder.status).map(s => {
+                        const sc = allStatusConfig[s];
+                        return (
+                          <button
+                            key={s}
+                            onClick={() => { handleStatusChange(selectedOrder.id, s); setStatusMenuOpen(false); }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-right hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
+                          >
+                            <sc.icon className={cn('w-4 h-4', sc.color)} />
+                            <span className="text-zinc-700 dark:text-zinc-200">{sc.label}</span>
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
-        ) : (
-          <Button variant="outline" className="w-full" onClick={() => setSelectedOrder(null)}>بستن</Button>
         )}>
         {selectedOrder && (
           <div className="p-5 space-y-4">
@@ -207,13 +285,45 @@ export default function CashierOrders() {
               </div>
             </div>
             <div className="space-y-2">
-              {selectedOrder.items?.map(item => (
-                <div key={item.id} className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800 rounded-xl">
-                  <span className="text-sm"><span className="font-bold">{item.quantity}×</span> {item.name}</span>
-                  <span className="font-bold text-sm">{formatPrice(item.subtotal)}</span>
-                </div>
-              ))}
+              {selectedOrder.items?.map(item => {
+                const needsPricing = item.isPriceVariable && !item.priceConfirmed;
+                return (
+                  <div key={item.id} className={cn(
+                    'flex items-center justify-between p-3 rounded-xl gap-3',
+                    needsPricing ? 'bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800' : 'bg-zinc-50 dark:bg-zinc-800'
+                  )}>
+                    <span className="text-sm min-w-0 truncate">
+                      <span className="font-bold">{item.quantity}×</span> {item.name}
+                      {needsPricing && (
+                        <span className="block text-xs text-amber-600 dark:text-amber-400 font-bold mt-0.5">{item.priceLabel || 'نیاز به قیمت‌گذاری'}</span>
+                      )}
+                    </span>
+                    {needsPricing ? (
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          placeholder="قیمت واحد"
+                          value={priceDrafts[item.id] ?? ''}
+                          onChange={e => setPriceDrafts(p => ({ ...p, [item.id]: e.target.value }))}
+                          className="w-24 px-2 py-1.5 text-sm rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                        />
+                        <Button size="sm" onClick={() => confirmItemPrice(item.id)} loading={savingItemId === item.id} className="!rounded-lg !py-1.5">
+                          ثبت
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="font-bold text-sm flex-shrink-0">{formatPrice(item.subtotal)}</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+            {selectedOrder.items?.some(i => i.isPriceVariable && !i.priceConfirmed) && (
+              <Banner variant="warning">
+                مبلغ زیر شامل قیمت اقلامِ قیمت‌گذاری‌نشده نیست — پس از ثبت قیمت آن‌ها، مبلغ نهایی به‌روزرسانی می‌شود.
+              </Banner>
+            )}
             <div className="pt-3 border-t-2 border-dashed border-zinc-200 dark:border-zinc-700 flex justify-between">
               <span className="font-bold text-zinc-900 dark:text-zinc-100">مبلغ نهایی</span>
               <span className="text-2xl font-black text-brand-600">{formatPrice(selectedOrder.total)}</span>
