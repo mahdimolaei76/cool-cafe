@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Banner from '@/components/ui/Banner';
 import type { Order, OrderStatus } from '@/types';
+import QRCode from 'react-qr-code';
 
 const statusSteps: { key: OrderStatus; label: string; icon: typeof Clock }[] = [
   { key: 'pending', label: 'در انتظار تایید', icon: Clock },
@@ -41,6 +42,7 @@ function estimatedCompletion(order: Order): string {
 }
 
 export default function OrderTracking() {
+  const menuUrl = `${window.location.origin}/`;
   const trackOrder = useAppStore(s => s.trackOrder);
   const [trackingCode, setTrackingCode] = useState('');
   const [phone, setPhone] = useState('');
@@ -111,7 +113,10 @@ export default function OrderTracking() {
             پیگیری سفارش
           </Button>
         </form>
-
+        <div className="mt-8 mx-auto p-6 bg-white rounded-2xl shadow-sm border border-zinc-100 flex flex-col w-fit items-center">
+          <QRCode value={menuUrl} size={220} level="H" fgColor="#991b1b" />
+          <p className="mt-4 text-xs text-zinc-400 font-mono break-all max-w-[300px]" dir="ltr">{menuUrl}</p>
+        </div>
         <AnimatePresence mode="wait">
           {searched && order && (
             <motion.div
@@ -152,8 +157,8 @@ export default function OrderTracking() {
                         )}
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${reached
-                              ? 'bg-brand-600 text-white'
-                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600'
+                            ? 'bg-brand-600 text-white'
+                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600'
                             }`}
                         >
                           <StepIcon className="w-4 h-4" />
