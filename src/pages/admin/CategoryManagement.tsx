@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
-import { useAppStore, formatPrice } from '@/store';
+import { Plus, Edit2, Trash2, ArrowUpDown, ChevronUp, ChevronDown, Save, X as XIcon } from 'lucide-react';
+import { useAppStore, formatItemPrice } from '@/store';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -12,7 +12,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import type { Category } from '@/types';
 
 export default function CategoryManagement() {
-  const { categories: rawCategories, menuItems: rawMenuItems, addCategory, updateCategory, deleteCategory } = useAppStore();
+  const { categories: rawCategories, menuItems: rawMenuItems, addCategory, updateCategory, deleteCategory, reorderCategories } = useAppStore();
   const categories = rawCategories ?? [];
   const menuItems = rawMenuItems ?? [];
   const [modalOpen, setModalOpen] = useState(false);
@@ -21,11 +21,23 @@ export default function CategoryManagement() {
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', slug: '', icon: '☕', order: 0, isActive: true });
 
+  // Reorder mode: instead of the HTML5 drag-and-drop API (which doesn't
+  // work on touch/mobile at all without extra polyfills — the actual
+  // reason reordering "was broken"), the admin explicitly enters reorder
+  // mode, moves rows up/down with simple buttons, then saves once.
+  const [reorderMode, setReorderMode] = useState(false);
+  const [draftOrder, setDraftOrder] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+
   // Tiebreak by id when `order` values collide (e.g. leftover duplicate
   // order values from data created before this was fixed) — otherwise
-  // the sort would be unstable across renders and the up/down buttons
-  // could appear to do nothing or jump unpredictably.
+  // the sort would be unstable across renders.
   const sorted = [...categories].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+
+  const catById = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories]);
+  const displayList = reorderMode
+    ? draftOrder.map(id => catById.get(id)).filter((c): c is Category => !!c)
+    : sorted;
 
   const openCreate = () => {
     setEditingCat(null);
@@ -45,25 +57,39 @@ export default function CategoryManagement() {
   };
   const handleDelete = async () => { if (deleteId) { await deleteCategory(deleteId); setDeleteId(null); } };
 
-  const moveCategory = async (id: string, direction: 'up' | 'down') => {
-    const idx = sorted.findIndex(c => c.id === id);
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= sorted.length) return;
-
-    // Swap the two `order` values as a single atomic pair rather than two
-    // independent async calls — firing both updateCategory() calls at
-    // once let them race (whichever API response landed last "won"),
-    // which could leave both categories with the same order value or
-    // only one side of the swap actually applied. Awaiting the first
-    // before starting the second guarantees the final state is always
-    // a clean swap.
-    const a = sorted[idx];
-    const b = sorted[swapIdx];
-    await updateCategory(a.id, { order: b.order });
-    await updateCategory(b.id, { order: a.order });
+  const startReorder = () => {
+    setDraftOrder(sorted.map(c => c.id));
+    setReorderMode(true);
+  };
+  const cancelReorder = () => {
+    setReorderMode(false);
+    setDraftOrder([]);
+  };
+  const moveDraft = (index: number, dir: -1 | 1) => {
+    const target = index + dir;
+    if (target < 0 || target >= draftOrder.length) return;
+    setDraftOrder(prev => {
+      const next = [...prev];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+  const saveReorder = async () => {
+    setSaving(true);
+    try {
+      await reorderCategories(draftOrder);
+      setReorderMode(false);
+      setDraftOrder([]);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const emojiOptions = ['☕', '🧊', '🍵', '🎂', '🍰', '🥐', '🍳', '🥪', '🥤', '🍕', '🥗', '🍩', '🧁', '🥞', '🍔'];
+  const emojiOptions = [
+    '☕', '🧊', '🍵', '🎂', '🍰', '🥐', '🍳', '🥪', '🥤', '🍕', '🥗', '🍩', '🧁', '🥞', '🍔',
+    '🍫', '🍪', '🥧', '🍮', '🍨', '🍦', '🥛', '🧃', '🍹', '🥂', '🍷', '🍺', '🌭', '🥙', '🌮',
+    '🍟', '🥟', '🍱', '🍜', '🍲', '🥘', '🍝', '🥩', '🍗', '🥓', '🍇', '🍓', '🍍', '🥑', '🍯',
+  ];
 
   return (
     <div className="space-y-6">
@@ -72,7 +98,21 @@ export default function CategoryManagement() {
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">دسته‌بندی‌ها</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{categories?.length} دسته‌بندی · ترتیب نمایش در منوی مشتری</p>
         </div>
-        <Button onClick={openCreate} icon={<Plus className="w-4 h-4" />}>افزودن دسته‌بندی</Button>
+        <div className="flex items-center gap-2">
+          {reorderMode ? (
+            <>
+              <Button variant="outline" onClick={cancelReorder} disabled={saving} icon={<XIcon className="w-4 h-4" />}>انصراف</Button>
+              <Button onClick={saveReorder} loading={saving} icon={<Save className="w-4 h-4" />}>ذخیره ترتیب</Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={startReorder} disabled={sorted.length < 2} icon={<ArrowUpDown className="w-4 h-4" />}>
+                تغییر ترتیب نمایش
+              </Button>
+              <Button onClick={openCreate} icon={<Plus className="w-4 h-4" />}>افزودن دسته‌بندی</Button>
+            </>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -86,40 +126,60 @@ export default function CategoryManagement() {
         ) : (
           <div className="space-y-2">
             <AnimatePresence>
-              {sorted?.map((cat, idx) => {
+              {displayList?.map((cat, idx) => {
                 const catItems = menuItems?.filter(m => m.categoryId === cat.id);
                 const isExpanded = expandedCat === cat.id;
                 return (
                   <motion.div key={cat.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                     <div className="flex items-center gap-3 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group">
-                      {/* Reorder Buttons */}
-                      <div className="flex flex-col gap-0.5 flex-shrink-0">
-                        <button onClick={() => moveCategory(cat.id, 'up')} disabled={idx === 0} className="p-0.5 text-zinc-400 hover:text-zinc-600 disabled:opacity-30"><ChevronUp className="w-4 h-4" /></button>
-                        <button onClick={() => moveCategory(cat.id, 'down')} disabled={idx === sorted?.length - 1} className="p-0.5 text-zinc-400 hover:text-zinc-600 disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
-                      </div>
+                      {reorderMode && (
+                        <div className="flex flex-col gap-0.5 flex-shrink-0">
+                          <button
+                            onClick={() => moveDraft(idx, -1)}
+                            disabled={idx === 0}
+                            aria-label="انتقال به بالا"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:text-brand-600 hover:border-brand-300 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                          >
+                            <ChevronUp className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => moveDraft(idx, 1)}
+                            disabled={idx === displayList.length - 1}
+                            aria-label="انتقال به پایین"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:text-brand-600 hover:border-brand-300 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
                       <span className="text-2xl flex-shrink-0">{cat.icon}</span>
-                      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpandedCat(isExpanded ? null : cat.id)}>
+                      <div
+                        className={`flex-1 min-w-0 ${reorderMode ? '' : 'cursor-pointer'}`}
+                        onClick={() => !reorderMode && setExpandedCat(isExpanded ? null : cat.id)}
+                      >
                         <div className="flex items-center gap-2">
                           <h3 className="font-bold text-zinc-900 dark:text-zinc-100">{cat.name}</h3>
                           <Badge variant={cat.isActive ? 'success' : 'default'} dot>{cat.isActive ? 'فعال' : 'غیرفعال'}</Badge>
                         </div>
                         <p className="text-xs text-zinc-400 mt-0.5">{catItems?.length} آیتم</p>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => openEdit(cat)} className="p-2 rounded-lg text-zinc-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => setDeleteId(cat.id)} className="p-2 rounded-lg text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                      </div>
+                      {!reorderMode && (
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => openEdit(cat)} className="p-2 rounded-lg text-zinc-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => setDeleteId(cat.id)} className="p-2 rounded-lg text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      )}
                     </div>
                     {/* Expanded — show items */}
                     <AnimatePresence>
-                      {isExpanded && catItems?.length > 0 && (
+                      {!reorderMode && isExpanded && catItems?.length > 0 && (
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                           <div className="pr-12 pl-4 py-2 space-y-1">
                             {catItems?.map(item => (
                               <div key={item.id} className="flex items-center gap-3 p-2.5 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-100 dark:border-zinc-800">
                                 <img src={item.image} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
                                 <span className="flex-1 text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{item.name}</span>
-                                <span className="text-xs font-bold text-brand-600">{formatPrice(item.price)}</span>
+                                <span className="text-xs font-bold text-brand-600">{formatItemPrice(item)}</span>
                                 <Badge variant={item.isAvailable ? 'success' : 'danger'}>{item.isAvailable ? 'موجود' : 'ناموجود'}</Badge>
                               </div>
                             ))}
@@ -146,13 +206,17 @@ export default function CategoryManagement() {
           <Input label="نام" placeholder="نام دسته‌بندی" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">آیکون</label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
               {emojiOptions?.map(emoji => (
                 <button key={emoji} type="button" onClick={() => setForm(p => ({ ...p, icon: emoji }))} className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all ${form.icon === emoji ? 'bg-brand-100 ring-2 ring-brand-500 dark:bg-brand-900/30' : 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}>{emoji}</button>
               ))}
             </div>
           </div>
-          <Input label="ترتیب نمایش" type="number" value={String(form.order)} onChange={e => setForm(p => ({ ...p, order: parseInt(e.target.value) || 0 }))} />
+          {/* Manual order input removed — ترتیب نمایش is now controlled entirely
+              by the "تغییر ترتیب نمایش" reorder mode in the list above, which
+              keeps sort_order values always distinct and in sync with what
+              the admin sees, instead of letting two categories collide on
+              the same manually-typed number. */}
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={form.isActive} onChange={e => setForm(p => ({ ...p, isActive: e.target.checked }))} className="w-4 h-4 rounded" />
             <span className="text-sm text-zinc-700 dark:text-zinc-300">فعال</span>

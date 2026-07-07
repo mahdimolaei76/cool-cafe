@@ -112,7 +112,7 @@ export default function PublicMenu() {
             <button
               onClick={() => setViewMode((v: 'grid' | 'list') => v === 'grid' ? 'list' : 'grid')}
               aria-label="تغییر نمای نمایش"
-              className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex-shrink-0"
+              className="hidden xs:flex w-11 h-11 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex-shrink-0"
             >
               {viewMode === 'grid' ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
             </button>

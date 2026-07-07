@@ -122,7 +122,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="absolute bottom-0 left-0 right-0 md:right-0 md:top-0 md:left-auto md:w-[440px] bg-white dark:bg-zinc-900 md:rounded-none rounded-t-3xl shadow-2xl flex flex-col max-h-[92vh] md:max-h-full"
+            className="absolute bottom-0 left-0 right-0 md:right-0 md:top-0 md:left-auto md:w-[440px] bg-white dark:bg-zinc-900 md:rounded-none rounded-t-3xl shadow-2xl flex flex-col max-h-[calc(92vh-env(safe-area-inset-bottom))] md:max-h-full"
           >
             {/* Drag handle (mobile) */}
             <div className="md:hidden flex justify-center pt-3 pb-1">
@@ -286,7 +286,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
 
             {/* Footer */}
             {step !== 'success' && items?.length > 0 && (
-              <div className="border-t-2 border-zinc-100 dark:border-zinc-800 p-5 space-y-4 bg-white dark:bg-zinc-900">
+              <div className="border-t-2 border-zinc-100 dark:border-zinc-800 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] space-y-4 bg-white dark:bg-zinc-900">
                 <div className="flex items-center justify-between">
                   <span className="text-zinc-500 font-medium">جمع کل</span>
                   <span className="text-2xl font-black text-zinc-900 dark:text-zinc-100">{formatPrice(total)}</span>
@@ -310,7 +310,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
             )}
 
             {step === 'success' && (
-              <div className="border-t border-zinc-100 dark:border-zinc-800 p-5">
+              <div className="border-t border-zinc-100 dark:border-zinc-800 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
                 <Button className="w-full !py-4 !text-base !font-bold !rounded-2xl !bg-brand-600 hover:!bg-brand-700" size="lg" onClick={handleClose}>بستن</Button>
               </div>
             )}

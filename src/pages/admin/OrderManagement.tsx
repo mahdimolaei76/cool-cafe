@@ -94,11 +94,25 @@ export default function OrderManagement() {
       </div>
 
       {/* Status Quick Filters */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        {(['', 'pending', 'preparing', 'ready', 'delivered'] as const)?.map(status => {
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {(['', 'pending', 'preparing', 'ready', 'delivered', 'cancelled'] as const)?.map(status => {
           const config = status ? statusConfig[status] : null;
           const count = status ? (statusCounts[status] || 0) : orders?.length;
           const isActive = statusFilter === status;
+          const activeBorder: Record<string, string> = {
+            pending: 'border-amber-500',
+            preparing: 'border-blue-500',
+            ready: 'border-emerald-500',
+            delivered: 'border-zinc-500',
+            cancelled: 'border-red-500',
+          };
+          const activeText: Record<string, string> = {
+            pending: 'text-amber-800 dark:text-amber-400',
+            preparing: 'text-blue-800 dark:text-blue-400',
+            ready: 'text-emerald-800 dark:text-emerald-400',
+            delivered: 'text-zinc-800 dark:text-zinc-300',
+            cancelled: 'text-red-800 dark:text-red-400',
+          };
 
           return (
             <button
@@ -107,22 +121,21 @@ export default function OrderManagement() {
               className={cn(
                 'p-4 rounded-2xl border-2 transition-all text-right',
                 isActive
-                  ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30'
-                  : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600',
-                config?.bgColor && !isActive && config.bgColor
+                  ? cn(activeBorder[status || 'delivered'] || 'border-brand-500', config?.bgColor || 'bg-brand-50 dark:bg-brand-900/30', 'shadow-md')
+                  : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-900'
               )}
             >
               <div className="flex items-center justify-between mb-2">
                 {config ? (
-                  <config.icon className={cn('w-5 h-5', isActive ? 'text-brand-600' : config.color)} />
+                  <config.icon className={cn('w-5 h-5', isActive ? activeText[status] : config.color)} />
                 ) : (
                   <Receipt className={cn('w-5 h-5', isActive ? 'text-brand-600' : 'text-zinc-400')} />
                 )}
-                <span className={cn('text-2xl font-bold', isActive ? 'text-brand-800 dark:text-brand-400' : 'text-zinc-900 dark:text-zinc-100')}>
+                <span className={cn('text-2xl font-bold', isActive ? (activeText[status || 'delivered'] || 'text-brand-800') : 'text-zinc-900 dark:text-zinc-100')}>
                   {count}
                 </span>
               </div>
-              <p className={cn('text-sm font-medium', isActive ? 'text-brand-700 dark:text-brand-400' : 'text-zinc-600 dark:text-zinc-400')}>
+              <p className={cn('text-sm font-bold', isActive ? (activeText[status || 'delivered'] || 'text-brand-700') : 'text-zinc-600 dark:text-zinc-400')}>
                 {config?.label || 'همه سفارش‌ها'}
               </p>
             </button>
@@ -295,9 +308,7 @@ function OrderCard({ order, index, onView, onStatusChange, nextStatus }: {
           </span>
           <p className="text-xs text-zinc-400 mt-2">{fromNowFa(order.createdAt)}</p>
         </div>
-        <div className={cn('p-2 rounded-xl', config.bgColor)}>
-          <config.icon className={cn('w-5 h-5', config.color)} />
-        </div>
+        <Badge variant={config.variant} dot>{config.label}</Badge>
       </div>
 
       <div className="mb-3">

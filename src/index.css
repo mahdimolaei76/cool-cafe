@@ -6,6 +6,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+  --breakpoint-xs: 400px;
   --font-sans: "Vazirmatn", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", ui-serif, Georgia, serif;
 
@@ -112,6 +113,32 @@ body {
   }
 }
 
+/* Any clickable element gets a pointer cursor on hover, everywhere in the app. */
+button:not(:disabled),
+a,
+[role="button"],
+[onclick],
+select,
+input[type="checkbox"],
+input[type="radio"],
+label[for],
+summary {
+  cursor: pointer;
+}
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* iOS Safari auto-zooms the page when a focused input's font-size is
+   under 16px. Our text-sm inputs are 14px, which made every tap into a
+   form field on the customer menu/checkout jerk the whole page in. */
+@media (max-width: 767px) {
+  input, textarea, select {
+    font-size: 16px;
+  }
+}
+
 input[type="checkbox"] { accent-color: var(--color-brand-600); }
 input[type="date"] { color-scheme: light; }
 .dark input[type="date"] { color-scheme: dark; }
@@ -132,4 +159,21 @@ select:focus-visible,
   outline: 2px solid var(--color-brand-500);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* Printing a receipt (see NewOrder's "رسید" button) should print only the
+   receipt itself, not the admin sidebar/header/rest of the page behind it. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-receipt,
+  .print-receipt * {
+    visibility: visible;
+  }
+  .print-receipt {
+    position: fixed;
+    inset: 0;
+    padding: 24px;
+  }
 }

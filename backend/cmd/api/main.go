@@ -120,6 +120,7 @@ func main() {
 			r.Post("/categories", categoryHandler.Create)
 			r.Put("/categories/{id}", categoryHandler.Update)
 			r.Delete("/categories/{id}", categoryHandler.Delete)
+			r.Post("/categories/reorder", categoryHandler.Reorder)
 
 			r.Post("/menu", menuItemHandler.Create)
 			r.Put("/menu/{id}", menuItemHandler.Update)

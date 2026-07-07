@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Edit2, Trash2, Star, Eye, EyeOff, Upload, Image, X } from 'lucide-react';
-import { useAppStore, formatPrice } from '@/store';
+import { useAppStore, formatItemPrice } from '@/store';
 import { cn } from '@/utils/cn';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -195,7 +195,7 @@ export default function MenuManagement() {
                       {item.priceType === 'variable' ? (
                         <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{item.priceLabel || 'قیمت بازار'}</p>
                       ) : (
-                        <p className="text-lg font-bold text-brand-700 dark:text-brand-400">{formatPrice(item.price)}</p>
+                        <p className="text-lg font-bold text-brand-700 dark:text-brand-400">{formatItemPrice(item)}</p>
                       )}
                     </div>
                   </motion.div>

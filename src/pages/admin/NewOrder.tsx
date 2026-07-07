@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Plus, Minus, Trash2, Search, Check, ShoppingCart, User, CreditCard, Banknote, Smartphone, Receipt, Flame, Zap } from 'lucide-react';
 import { cn } from '@/utils/cn';
-import { useAppStore, formatPrice } from '@/store';
+import { useAppStore, formatPrice, formatItemPrice } from '@/store';
 import { useAuthStore } from '@/store/authStore';
 import { uuidGenerator } from '@/lib/api';
 import Button from '@/components/ui/Button';
@@ -14,6 +14,7 @@ import Banner from '@/components/ui/Banner';
 import ScrollRow from '@/components/ui/ScrollRow';
 import type { Order, OrderType, PaymentMethod, MenuItem } from '@/types';
 import { iranianMobileError } from '@/utils/phone';
+import { formatJalaliDateTime } from '@/utils/jalali';
 
 interface CartEntry {
   menuItem: MenuItem;
@@ -25,7 +26,7 @@ interface CartEntry {
 }
 
 export default function NewOrder() {
-  const { menuItems: rawMenuItems, categories: rawCategories, orders: rawOrders, addOrder } = useAppStore();
+  const { menuItems: rawMenuItems, categories: rawCategories, orders: rawOrders, addOrder, settings } = useAppStore();
   const menuItems = rawMenuItems ?? [];
   const categories = rawCategories ?? [];
   const orders = rawOrders ?? [];
@@ -33,7 +34,7 @@ export default function NewOrder() {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [cart, setCart] = useState<CartEntry[]>([]);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [success, setSuccess] = useState<Order | null>(null);
   const [customerModal, setCustomerModal] = useState(false);
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person' as OrderType, paymentMethod: 'cash' as PaymentMethod });
 
@@ -104,7 +105,7 @@ export default function NewOrder() {
         }),
         subtotal, discount: form.discount, total, notes: form.notes, status: 'pending', orderType: form.orderType, paymentMethod: form.paymentMethod, cashier: user?.name || '',
       });
-      setSuccess(order.orderNumber);
+      setSuccess(order);
       toast.success('سفارش با موفقیت ثبت شد');
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -117,7 +118,7 @@ export default function NewOrder() {
       const orderErr = err as Error & { order?: Order };
       const message = err instanceof Error ? err.message : 'ثبت سفارش با خطا مواجه شد. دوباره تلاش کنید.';
       if (orderErr?.order) {
-        setSuccess(orderErr.order.orderNumber);
+        setSuccess(orderErr.order);
         toast.warning('سفارش روی این دستگاه ذخیره شد، اما به سرور ارسال نشد. اتصال اینترنت/سرور را بررسی کنید.', { duration: 6000 });
       } else {
         setSubmitError(message);
@@ -133,21 +134,63 @@ export default function NewOrder() {
   if (success) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center max-w-sm mx-auto">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center max-w-sm mx-auto print:hidden">
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.1, type: 'spring' }} className="w-24 h-24 mx-auto mb-6 bg-emerald-500 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-emerald-500/40">
             <Check className="w-12 h-12 text-white" strokeWidth={3} />
           </motion.div>
           <h2 className="text-3xl font-black text-zinc-900 dark:text-zinc-100">ثبت شد!</h2>
           <div className="mt-6 p-6 bg-white dark:bg-zinc-800 rounded-2xl shadow-lg border border-zinc-100 dark:border-zinc-700">
             <p className="text-xs text-zinc-400 mb-1">شماره سفارش</p>
-            <p className="text-4xl font-black text-brand-600 font-mono" dir="ltr">{success}</p>
+            <p className="text-4xl font-black text-brand-600 font-mono" dir="ltr">{success.orderNumber}</p>
           </div>
-          <p className="mt-4 text-lg font-bold text-brand-600">{formatPrice(total)}</p>
+          <p className="mt-4 text-lg font-bold text-brand-600">{formatPrice(success.total)}</p>
           <div className="flex gap-3 mt-8">
             <Button variant="outline" className="flex-1 !py-3 !rounded-2xl" onClick={() => window.print()}><Receipt className="w-4 h-4 ml-1" />رسید</Button>
             <Button className="flex-1 !py-3 !rounded-2xl !bg-brand-600" onClick={resetOrder}><Plus className="w-4 h-4 ml-1" />سفارش جدید</Button>
           </div>
         </motion.div>
+
+        {/* Printable receipt — hidden on screen, shown only for window.print().
+            Previously "رسید" printed this same on-screen success card, which
+            only has the order number and total; a real receipt needs the
+            line items, customer, and payment info too. */}
+        <div className="hidden print:block print-receipt text-black" dir="rtl">
+          <div className="max-w-sm mx-auto font-mono text-sm">
+            <div className="text-center mb-4">
+              <p className="text-lg font-black">{settings.name}</p>
+              {settings.address && <p className="text-xs mt-0.5">{settings.address}</p>}
+              {settings.phone && <p className="text-xs" dir="ltr">{settings.phone}</p>}
+            </div>
+            <div className="border-t border-b border-dashed border-black py-2 my-2 space-y-1 text-xs">
+              <div className="flex justify-between"><span>شماره سفارش</span><span dir="ltr" className="font-bold">{success.orderNumber}</span></div>
+              <div className="flex justify-between"><span>کد پیگیری</span><span dir="ltr">{success.trackingCode}</span></div>
+              <div className="flex justify-between"><span>تاریخ</span><span>{formatJalaliDateTime(success.createdAt)}</span></div>
+              <div className="flex justify-between"><span>مشتری</span><span>{success.customerFirstName} {success.customerLastName}</span></div>
+              {success.customerPhone && <div className="flex justify-between"><span>تلفن</span><span dir="ltr">{success.customerPhone}</span></div>}
+              <div className="flex justify-between"><span>نوع سفارش</span><span>{success.orderType === 'online' ? 'آنلاین' : 'حضوری'}</span></div>
+              <div className="flex justify-between"><span>پرداخت</span><span>{{ cash: 'نقدی', card: 'کارت', other: 'سایر' }[success.paymentMethod]}</span></div>
+              <div className="flex justify-between"><span>صندوق‌دار</span><span>{success.cashier || '—'}</span></div>
+            </div>
+            <div className="space-y-1.5 py-2 border-b border-dashed border-black">
+              {success.items?.map(item => (
+                <div key={item.id} className="flex justify-between text-xs gap-2">
+                  <span className="flex-1">{item.quantity}× {item.name}</span>
+                  <span className="flex-shrink-0">
+                    {item.isPriceVariable && !item.priceConfirmed
+                      ? (item.priceLabel || 'قیمت بازار')
+                      : formatPrice(item.subtotal)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="pt-2 space-y-1 text-xs">
+              <div className="flex justify-between"><span>جمع</span><span>{formatPrice(success.subtotal)}</span></div>
+              {success.discount > 0 && <div className="flex justify-between"><span>تخفیف</span><span>-{formatPrice(success.discount)}</span></div>}
+              <div className="flex justify-between text-base font-black pt-1 border-t border-dashed border-black mt-1"><span>مبلغ نهایی</span><span>{formatPrice(success.total)}</span></div>
+            </div>
+            <p className="text-center text-xs mt-4">با تشکر از خرید شما 🌸</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -171,7 +214,7 @@ export default function NewOrder() {
                     <img src={item.image} alt="" className="w-8 h-8 rounded-lg object-cover" />
                     <div>
                       <p className={cn('text-xs font-bold', inCart ? 'text-white' : 'text-zinc-900 dark:text-zinc-100')}>{item.name}</p>
-                      <p className={cn('text-[10px]', inCart ? 'text-white/70' : 'text-brand-600')}>{formatPrice(item.price)}</p>
+                      <p className={cn('text-[10px]', inCart ? 'text-white/70' : 'text-brand-600')}>{formatItemPrice(item)}</p>
                     </div>
                     {inCart && <span className="w-5 h-5 bg-white text-brand-600 rounded-full text-[10px] font-black flex items-center justify-center">{inCart.quantity}</span>}
                   </button>
@@ -218,7 +261,7 @@ export default function NewOrder() {
                       <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                     </div>
                     <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base truncate">{item.name}</h3>
-                    <p className="text-brand-600 dark:text-brand-400 font-black text-lg mt-1">{formatPrice(item.price)}</p>
+                    <p className="text-brand-600 dark:text-brand-400 font-black text-lg mt-1">{formatItemPrice(item)}</p>
                     {inCart && (
                       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-2 -left-2 w-10 h-10 bg-brand-600 text-white rounded-full flex items-center justify-center text-base font-black shadow-lg shadow-brand-500/40">{inCart.quantity}</motion.div>
                     )}

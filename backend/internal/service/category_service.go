@@ -90,6 +90,13 @@ func (s *CategoryService) Delete(ctx context.Context, id uuid.UUID) error {
 	return s.repo.Delete(ctx, id)
 }
 
+func (s *CategoryService) Reorder(ctx context.Context, orderedIDs []uuid.UUID) ([]domain.Category, error) {
+	if err := s.repo.Reorder(ctx, orderedIDs); err != nil {
+		return nil, err
+	}
+	return s.repo.List(ctx)
+}
+
 func generateSlug(name string) string {
 	slug := strings.ToLower(name)
 	slug = strings.ReplaceAll(slug, " ", "-")

@@ -29,11 +29,11 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
         !item.isAvailable && 'opacity-50 grayscale pointer-events-none'
       )}>
         {/* Image */}
-        <div className="relative aspect-[5/4] overflow-hidden group">
+        <div className="relative aspect-[5/4] overflow-hidden group bg-zinc-100 dark:bg-zinc-800">
           <img
             src={item.image}
             alt={item.name}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
             loading="lazy"
           />
           {/* Dark overlay on hover */}

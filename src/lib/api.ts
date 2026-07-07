@@ -85,6 +85,7 @@ export const categoryApi = {
   create: (data: any) => request<any>('/categories', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: any) => request<any>(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => request<void>(`/categories/${id}`, { method: 'DELETE' }),
+  reorder: (ids: string[]) => request<any[]>('/categories/reorder', { method: 'POST', body: JSON.stringify({ ids }) }),
 };
 
 // ─── Menu Items ───

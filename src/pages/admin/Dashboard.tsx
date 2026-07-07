@@ -119,18 +119,20 @@ export default function Dashboard() {
                 <div>
                   <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{stat.label}</p>
                   <p className="mt-2 text-xl font-bold text-zinc-900 dark:text-zinc-100">{stat.value}</p>
-                  {stat.change !== null && (
-                    <div className="flex items-center gap-1 mt-1.5">
-                      {stat.change >= 0 ? (
-                        <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
-                      ) : (
-                        <ArrowDownRight className="w-3.5 h-3.5 text-red-500" />
-                      )}
-                      <span className={cn('text-xs font-medium', stat.change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                        {Math.abs(stat.change).toFixed(1)}% نسبت به دیروز
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1 mt-1.5 h-[18px]">
+                    {stat.change !== null && (
+                      <>
+                        {stat.change >= 0 ? (
+                          <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
+                        ) : (
+                          <ArrowDownRight className="w-3.5 h-3.5 text-red-500" />
+                        )}
+                        <span className={cn('text-xs font-medium', stat.change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                          {Math.abs(stat.change).toFixed(1)}% نسبت به دیروز
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', stat.color)}>
                   <stat.icon className="w-5 h-5" />

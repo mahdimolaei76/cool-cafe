@@ -84,3 +84,31 @@ func (h *CategoryHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *CategoryHandler) Reorder(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		IDs []string `json:"ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	ids := make([]uuid.UUID, 0, len(input.IDs))
+	for _, s := range input.IDs {
+		id, err := uuid.Parse(s)
+		if err != nil {
+			respondError(w, http.StatusBadRequest, "Invalid category ID in list")
+			return
+		}
+		ids = append(ids, id)
+	}
+
+	categories, err := h.categoryService.Reorder(r.Context(), ids)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to reorder categories")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, categories)
+}

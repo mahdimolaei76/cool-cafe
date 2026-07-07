@@ -9,6 +9,14 @@ export function formatPrice(price: number): string {
   return new Intl.NumberFormat('fa-IR').format(price) + ' تومان';
 }
 
+// For display anywhere a MenuItem's price is shown: variable-price items
+// don't have a real number yet, so show their description instead of "۰
+// تومان" (which was confusing admins into thinking the item was free).
+export function formatItemPrice(item: MenuItem): string {
+  if (item.priceType === 'variable') return item.priceLabel || 'قیمت توصیفی';
+  return formatPrice(item.price);
+}
+
 // ─── Tracking Code Generator (client-side offline fallback) ───
 // Matches the format the backend generates: 8 random characters, excluding
 // visually-ambiguous ones (0/O, 1/I), so codes are unique, non-sequential,
@@ -72,6 +80,7 @@ interface AppStore {
   addCategory: (data: Partial<Category>) => Promise<void>;
   updateCategory: (id: string, data: Partial<Category>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
+  reorderCategories: (orderedIds: string[]) => Promise<void>;
 
   // Menu CRUD
   addMenuItem: (data: Partial<MenuItem>) => Promise<void>;
@@ -158,6 +167,26 @@ export const useAppStore = create<AppStore>()(
           set(s => ({ categories: s.categories?.map(c => c.id === id ? { ...c, ...data, updatedAt: new Date().toISOString() } : c) }));
         }
       },
+      reorderCategories: async (orderedIds) => {
+        // Optimistically apply the new order locally first so the UI feels
+        // instant, then sync sort_order with the backend in one atomic
+        // request. If the request fails, re-fetch to resync with the server
+        // instead of leaving the client in a state that only *looks* reordered.
+        set(s => ({
+          categories: orderedIds
+            .map((id, idx) => {
+              const cat = s.categories.find(c => c.id === id);
+              return cat ? { ...cat, order: idx } : null;
+            })
+            .filter(Boolean) as Category[],
+        }));
+        try {
+          await categoryApi.reorder(orderedIds);
+        } catch {
+          await _get().fetchCategories();
+        }
+      },
+
       deleteCategory: async (id) => {
         try { await categoryApi.delete(id); } catch { /* continue */ }
         set(s => ({ categories: s.categories?.filter(c => c.id !== id) }));

@@ -74,3 +74,25 @@ func (r *CategoryRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }
+
+// Reorder atomically assigns sort_order = index (0-based) for each id in
+// orderedIDs, in the order given. Doing this as a single DB transaction
+// avoids the race that two independent Update() calls could hit (both
+// reading stale sort_order values and stepping on each other), and avoids
+// ever leaving two categories with the same sort_order.
+func (r *CategoryRepository) Reorder(ctx context.Context, orderedIDs []uuid.UUID) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	query := `UPDATE categories SET sort_order = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	for i, id := range orderedIDs {
+		if _, err := tx.ExecContext(ctx, query, id, i); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
