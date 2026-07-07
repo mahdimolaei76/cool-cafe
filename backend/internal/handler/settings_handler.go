@@ -20,7 +20,7 @@ func NewSettingsHandler(settingsService *service.SettingsService) *SettingsHandl
 func (h *SettingsHandler) Get(w http.ResponseWriter, r *http.Request) {
 	settings, err := h.settingsService.Get(r.Context())
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to fetch settings")
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to fetch settings", err)
 		return
 	}
 	respondJSON(w, http.StatusOK, settings)
@@ -36,7 +36,7 @@ func (h *SettingsHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	settings, err := h.settingsService.Update(r.Context(), input)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to update settings")
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update settings", err)
 		return
 	}
 

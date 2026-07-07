@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Home, Coffee, Info, Phone, MapPin, Clock, Shield, MessageCircle } from 'lucide-react';
+import { X, Coffee, Info, Phone, MapPin, Clock, Shield, MessageCircle, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/utils/cn';
 import { useAppStore } from '@/store';
@@ -13,10 +13,9 @@ export default function MenuSidebar({ open, onClose }: MenuSidebarProps) {
   const { settings, theme, toggleTheme } = useAppStore();
 
   const menuItems = [
-    { icon: Home, label: 'صفحه اصلی', href: '/' },
     { icon: Coffee, label: 'منو', href: '/' },
-    { icon: Info, label: 'درباره ما', href: '#about' },
-    { icon: Phone, label: 'تماس با ما', href: '#contact' },
+    { icon: Search, label: 'پیگیری سفارش', href: '/track' },
+    { icon: Info, label: 'درباره ما', href: '/about' },
   ];
 
   return (
@@ -45,7 +44,7 @@ export default function MenuSidebar({ open, onClose }: MenuSidebarProps) {
                 </div>
                 <div>
                   <h2 className="font-bold text-zinc-900 dark:text-zinc-100">{settings.name}</h2>
-                  <p className="text-xs text-zinc-400">کافه و رستوران</p>
+                  <p className="text-xs text-zinc-400">کافه</p>
                 </div>
               </div>
               <button
@@ -59,15 +58,15 @@ export default function MenuSidebar({ open, onClose }: MenuSidebarProps) {
             {/* Navigation */}
             <nav className="flex-1 p-4 space-y-1">
               {menuItems?.map((item) => (
-                <a
+                <Link
                   key={item.label}
-                  href={item.href}
+                  to={item.href}
                   onClick={onClose}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                 >
                   <item.icon className="w-5 h-5 text-zinc-400" />
                   <span className="font-medium">{item.label}</span>
-                </a>
+                </Link>
               ))}
 
               <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 mt-4">
@@ -91,7 +90,7 @@ export default function MenuSidebar({ open, onClose }: MenuSidebarProps) {
                 </div>
                 <div className="flex items-center gap-3">
                   <Clock className="w-4 h-4 text-brand-600 flex-shrink-0" />
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">۷ صبح تا ۱۰ شب</p>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">{settings.workingHours || '۷ صبح تا ۱۰ شب'}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="w-4 h-4 text-brand-600 flex-shrink-0" />

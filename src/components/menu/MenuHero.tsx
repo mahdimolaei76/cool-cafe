@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Clock, Wifi, Search } from 'lucide-react';
+import { useAppStore } from '@/store';
 
 export default function MenuHero() {
+  const { settings } = useAppStore();
   return (
     <div className="relative h-[50vh] min-h-[400px] overflow-hidden bg-zinc-950">
       {/* Background Image */}
@@ -54,13 +56,13 @@ export default function MenuHero() {
             </div>
             <div className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white/80 text-xs">
               <Clock className="w-3.5 h-3.5" />
-              ۷ صبح – ۱۰ شب
+              {settings.workingHours || '۷ صبح – ۱۰ شب'}
             </div>
             <div className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white/80 text-xs">
               <Wifi className="w-3.5 h-3.5" />
               وای‌فای رایگان
             </div>
-            <Link to="/track" className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white/80 text-xs hover:bg-white/20 hover:text-white transition-colors">
+            <Link to="/track" className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-brand-800 text-xs font-bold shadow-sm hover:bg-white/90 transition-colors">
               <Search className="w-3.5 h-3.5" />
               پیگیری سفارش
             </Link>

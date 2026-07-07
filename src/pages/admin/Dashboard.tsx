@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { DollarSign, ShoppingBag, TrendingUp, Clock, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, LabelList, Cell } from 'recharts';
 import dayjs from 'dayjs';
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
@@ -187,13 +187,23 @@ export default function Dashboard() {
         >
           <Card>
             <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-4">بر اساس دسته‌بندی</h3>
-            <div className="h-[280px]" dir="ltr">
+            <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={categoryPerformance} layout="vertical" margin={{ left: 0 }}>
+                <BarChart data={categoryPerformance} layout="vertical" margin={{ left: 8, right: 24 }}>
                   <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a1a1aa' }} />
-                  <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#71717a' }} width={70} />
+                  <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#52525b' }} width={110} />
                   <Tooltip content={<ChartTooltip formatValue={(v) => formatPrice(Number(v))} />} />
-                  <Bar dataKey="revenue" fill="#ef4444" radius={[0, 6, 6, 0]} barSize={18} name="درآمد" />
+                  <Bar dataKey="revenue" radius={[0, 6, 6, 0]} barSize={20} name="درآمد">
+                    {categoryPerformance.map((_, i) => (
+                      <Cell key={i} fill={['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6'][i % 6]} />
+                    ))}
+                    <LabelList
+                      dataKey="revenue"
+                      position="right"
+                      formatter={(v: any) => formatPrice(Number(v))}
+                      style={{ fontSize: 11, fill: '#71717a' }}
+                    />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>

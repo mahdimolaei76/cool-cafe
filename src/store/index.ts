@@ -100,7 +100,7 @@ interface AppStore {
   toggleTheme: () => void;
 
   // Settings
-  settings: { name: string; phone: string; email: string; address: string; };
+  settings: { name: string; phone: string; email: string; address: string; workingHours: string; aboutText: string; };
   fetchSettings: () => Promise<void>;
   updateSettings: (s: Partial<AppStore['settings']>) => Promise<void>;
 }
@@ -115,7 +115,14 @@ export const useAppStore = create<AppStore>()(
       loading: false,
       loadingCount: 0,
       apiOnline: false,
-      settings: { name: 'کافه COOL', phone: '۰۲۱-۱۲۳۴۵۶۷۸', email: 'info@coolcafe.ir', address: 'تهران، خیابان ولیعصر' },
+      settings: {
+        name: 'کافه COOL',
+        phone: '۰۲۱-۱۲۳۴۵۶۷۸',
+        email: 'info@coolcafe.ir',
+        address: 'تهران، خیابان ولیعصر',
+        workingHours: '۷ صبح تا ۱۰ شب',
+        aboutText: 'کافه COOL با هدف ارائه بهترین تجربه نوشیدنی و غذا در فضایی گرم و صمیمی راه‌اندازی شده است.',
+      },
 
       // ─── Fetch ───
       fetchCategories: async () => {
@@ -330,6 +337,8 @@ export const useAppStore = create<AppStore>()(
               phone: data?.phone ?? s.settings.phone,
               email: data?.email ?? s.settings.email,
               address: data?.address ?? s.settings.address,
+              workingHours: data?.workingHours ?? s.settings.workingHours,
+              aboutText: data?.aboutText ?? s.settings.aboutText,
             },
             apiOnline: true,
           }));

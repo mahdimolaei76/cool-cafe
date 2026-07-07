@@ -23,7 +23,7 @@ func (h *CategoryHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	categories, err := h.categoryService.List(r.Context(), activeOnly)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to fetch categories")
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to fetch categories", err)
 		return
 	}
 
@@ -39,7 +39,7 @@ func (h *CategoryHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	category, err := h.categoryService.Create(r.Context(), input)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to create category")
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to create category", err)
 		return
 	}
 
@@ -62,7 +62,7 @@ func (h *CategoryHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	category, err := h.categoryService.Update(r.Context(), id, input)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to update category")
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update category", err)
 		return
 	}
 
@@ -78,7 +78,7 @@ func (h *CategoryHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.categoryService.Delete(r.Context(), id); err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to delete category")
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to delete category", err)
 		return
 	}
 
@@ -106,7 +106,7 @@ func (h *CategoryHandler) Reorder(w http.ResponseWriter, r *http.Request) {
 
 	categories, err := h.categoryService.Reorder(r.Context(), ids)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to reorder categories")
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to reorder categories", err)
 		return
 	}
 

@@ -243,7 +243,7 @@ func (r *OrderRepository) loadOrderDetails(ctx context.Context, order *domain.Or
 
 	var timeline []domain.OrderTimeline
 	if err := r.db.SelectContext(ctx, &timeline, `
-		SELECT * FROM order_timeline WHERE order_id = $1 ORDER BY timestamp ASC
+		SELECT * FROM order_timeline WHERE order_id = $1 ORDER BY created_at ASC
 	`, order.ID); err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -134,10 +135,21 @@ const (
 // per-user, since it describes the café itself (shown on the public
 // menu sidebar as well as the admin settings page).
 type Settings struct {
-	ID        int       `db:"id" json:"-"`
-	Name      string    `db:"name" json:"name"`
-	Phone     string    `db:"phone" json:"phone"`
-	Email     string    `db:"email" json:"email"`
-	Address   string    `db:"address" json:"address"`
-	UpdatedAt time.Time `db:"updated_at" json:"updatedAt"`
+	ID           int             `db:"id" json:"-"`
+	Name         string          `db:"name" json:"name"`
+	Phone        string          `db:"phone" json:"phone"`
+	Email        string          `db:"email" json:"email"`
+	Address      string          `db:"address" json:"address"`
+	WorkingHours string          `db:"working_hours" json:"workingHours"`
+	AboutText    string          `db:"about_text" json:"aboutText"`
+	FooterIcons  json.RawMessage `db:"footer_icons" json:"footerIcons"`
+	UpdatedAt    time.Time       `db:"updated_at" json:"updatedAt"`
+}
+
+// FooterIcon is one entry of the (max 5) dynamic bottom-nav icon links
+// configured from the settings page (item 8). Icon is a lucide-react icon
+// name (e.g. "Instagram"), looked up client-side.
+type FooterIcon struct {
+	Icon string `json:"icon"`
+	Link string `json:"link"`
 }

@@ -10,7 +10,7 @@ import Badge from '@/components/ui/Badge';
 import Banner from '@/components/ui/Banner';
 import ScrollRow from '@/components/ui/ScrollRow';
 import Modal from '@/components/ui/Modal';
-import type { Order, OrderStatus } from '@/types';
+import type { OrderStatus } from '@/types';
 import { fromNowFa, formatJalaliDateTime } from '@/utils/jalali';
 
 const statusMap: Record<string, { label: string; color: string; bgColor: string; textColor: string; badgeVariant: 'warning' | 'info' | 'success'; next?: OrderStatus; nextLabel?: string; }> = {

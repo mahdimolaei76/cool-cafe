@@ -137,6 +137,10 @@ export interface CafeSettings {
   email: string;
   address: string;
   theme: 'light' | 'dark' | 'system';
+  /** e.g. "۷ صبح تا ۱۰ شب" — shown wherever working hours used to be hardcoded. */
+  workingHours: string;
+  /** Free-text shown on the public "درباره ما" page. */
+  aboutText: string;
 }
 
 export interface ReportFilters {

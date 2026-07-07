@@ -13,6 +13,7 @@ import Banner from '@/components/ui/Banner';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Pagination from '@/components/ui/Pagination';
+import Separator from '@/components/ui/Separator';
 import type { Order, OrderStatus } from '@/types';
 
 
@@ -105,6 +106,8 @@ export default function OrderManagement() {
         </Button>
       </div>
 
+      <Separator />
+
       {/* Status Quick Filters */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {(['', 'pending', 'preparing', 'ready', 'delivered', 'cancelled'] as const)?.map(status => {
@@ -156,6 +159,7 @@ export default function OrderManagement() {
       </div>
 
       {/* Search */}
+      <Separator />
       <Input
         type="text"
         placeholder="جستجو با شماره سفارش، نام یا تلفن..."
@@ -186,6 +190,7 @@ export default function OrderManagement() {
       )}
 
       {/* All Orders Table */}
+      <Separator />
       <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
         <div className="p-4 border-b border-zinc-100 dark:border-zinc-800">
           <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">

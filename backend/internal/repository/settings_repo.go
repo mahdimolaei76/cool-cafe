@@ -42,18 +42,21 @@ func (r *SettingsRepository) Get(ctx context.Context) (*domain.Settings, error) 
 // Update saves the given fields onto the singleton settings row.
 func (r *SettingsRepository) Update(ctx context.Context, s *domain.Settings) (*domain.Settings, error) {
 	query := `
-		INSERT INTO settings (id, name, phone, email, address, updated_at)
-		VALUES (1, $1, $2, $3, $4, CURRENT_TIMESTAMP)
+		INSERT INTO settings (id, name, phone, email, address, working_hours, about_text, footer_icons, updated_at)
+		VALUES (1, $1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
 		ON CONFLICT (id) DO UPDATE SET
 			name = EXCLUDED.name,
 			phone = EXCLUDED.phone,
 			email = EXCLUDED.email,
 			address = EXCLUDED.address,
+			working_hours = EXCLUDED.working_hours,
+			about_text = EXCLUDED.about_text,
+			footer_icons = EXCLUDED.footer_icons,
 			updated_at = EXCLUDED.updated_at
 		RETURNING *
 	`
 	var updated domain.Settings
-	if err := r.db.GetContext(ctx, &updated, query, s.Name, s.Phone, s.Email, s.Address); err != nil {
+	if err := r.db.GetContext(ctx, &updated, query, s.Name, s.Phone, s.Email, s.Address, s.WorkingHours, s.AboutText, []byte(s.FooterIcons)); err != nil {
 		return nil, err
 	}
 	return &updated, nil

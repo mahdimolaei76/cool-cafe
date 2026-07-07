@@ -23,7 +23,7 @@ func (h *MenuItemHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	items, err := h.menuItemService.List(r.Context(), availableOnly)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to fetch menu items")
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to fetch menu items", err)
 		return
 	}
 
@@ -56,7 +56,7 @@ func (h *MenuItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	item, err := h.menuItemService.Create(r.Context(), input)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to create menu item")
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to create menu item", err)
 		return
 	}
 
@@ -79,7 +79,7 @@ func (h *MenuItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	item, err := h.menuItemService.Update(r.Context(), id, input)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to update menu item")
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update menu item", err)
 		return
 	}
 
@@ -95,7 +95,7 @@ func (h *MenuItemHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.menuItemService.Delete(r.Context(), id); err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to delete menu item")
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to delete menu item", err)
 		return
 	}
 

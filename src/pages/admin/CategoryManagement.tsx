@@ -85,10 +85,12 @@ export default function CategoryManagement() {
     }
   };
 
-  const emojiOptions = [
-    '☕', '🧊', '🍵', '🎂', '🍰', '🥐', '🍳', '🥪', '🥤', '🍕', '🥗', '🍩', '🧁', '🥞', '🍔',
-    '🍫', '🍪', '🥧', '🍮', '🍨', '🍦', '🥛', '🧃', '🍹', '🥂', '🍷', '🍺', '🌭', '🥙', '🌮',
-    '🍟', '🥟', '🍱', '🍜', '🍲', '🥘', '🍝', '🥩', '🍗', '🥓', '🍇', '🍓', '🍍', '🥑', '🍯',
+  const emojiGroups: { label: string; icons: string[] }[] = [
+    { label: 'نوشیدنی گرم', icons: ['☕', '🧊', '🍵'] },
+    { label: 'نوشیدنی سرد', icons: ['🥤', '🧃', '🍹', '🥛', '🥂', '🍷', '🍺'] },
+    { label: 'شیرینی و دسر', icons: ['🎂', '🍰', '🥐', '🧁', '🍩', '🍫', '🍪', '🥧', '🍮', '🍨', '🍦'] },
+    { label: 'صبحانه و غذا', icons: ['🍳', '🥪', '🥞', '🍕', '🥗', '🍔', '🌭', '🥙', '🌮', '🍟', '🥟', '🍱', '🍜', '🍲', '🥘', '🍝', '🥩', '🍗', '🥓'] },
+    { label: 'میوه و سایر', icons: ['🍇', '🍓', '🍍', '🥑', '🍯'] },
   ];
 
   return (
@@ -202,13 +204,30 @@ export default function CategoryManagement() {
             <Button onClick={handleSave} disabled={!form.name}>{editingCat ? 'ذخیره' : 'افزودن'}</Button>
           </div>
         }>
-        <div className="p-6 space-y-4">
-          <Input label="نام" placeholder="نام دسته‌بندی" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
+        <div className="p-6 space-y-5">
+          <div className="flex items-center gap-3">
+            <span className="w-12 h-12 flex-shrink-0 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-2xl">{form.icon}</span>
+            <Input label="نام" placeholder="نام دسته‌بندی" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="flex-1" />
+          </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">آیکون</label>
-            <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
-              {emojiOptions?.map(emoji => (
-                <button key={emoji} type="button" onClick={() => setForm(p => ({ ...p, icon: emoji }))} className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all ${form.icon === emoji ? 'bg-brand-100 ring-2 ring-brand-500 dark:bg-brand-900/30' : 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}>{emoji}</button>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">آیکون</label>
+            <div className="max-h-64 overflow-y-auto pr-1 space-y-3 rounded-xl border border-zinc-100 dark:border-zinc-800 p-3">
+              {emojiGroups.map(group => (
+                <div key={group.label}>
+                  <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 mb-1.5">{group.label}</p>
+                  <div className="grid grid-cols-8 sm:grid-cols-10 gap-1.5">
+                    {group.icons.map(emoji => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => setForm(p => ({ ...p, icon: emoji }))}
+                        className={`aspect-square rounded-xl text-lg flex items-center justify-center transition-all ${form.icon === emoji ? 'bg-brand-100 ring-2 ring-brand-500 dark:bg-brand-900/30' : 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>

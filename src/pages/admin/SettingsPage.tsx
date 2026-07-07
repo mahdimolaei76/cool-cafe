@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Store, Palette, Phone, Mail, MapPin } from 'lucide-react';
+import { Save, Store, Palette, Phone, Mail, MapPin, Clock } from 'lucide-react';
 import { useAppStore } from '@/store';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -31,7 +31,7 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">تنظیمات</h1>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">تنظیمات و اطلاعات</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">مدیریت تنظیمات کافه</p>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -59,6 +59,17 @@ export default function SettingsPage() {
               <Input label="تلفن" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} icon={<Phone className="w-4 h-4" />} />
               <Input label="ایمیل" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} icon={<Mail className="w-4 h-4" />} />
               <Input label="آدرس" value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} icon={<MapPin className="w-4 h-4" />} />
+              <Input label="ساعت کاری" value={form.workingHours ?? ''} onChange={e => setForm(p => ({ ...p, workingHours: e.target.value }))} icon={<Clock className="w-4 h-4" />} placeholder="۷ صبح تا ۱۰ شب" />
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">درباره ما</label>
+                <textarea
+                  value={form.aboutText ?? ''}
+                  onChange={e => setForm(p => ({ ...p, aboutText: e.target.value }))}
+                  rows={4}
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  placeholder="متنی که در صفحه «درباره ما» به مشتری نمایش داده می‌شود"
+                />
+              </div>
             </div>
           </Card>
         </motion.div>
@@ -76,25 +87,17 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">تم</label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center justify-between px-1 py-2">
+                  <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    {theme === 'dark' ? 'حالت تاریک' : 'حالت روشن'}
+                  </label>
                   <button
-                    onClick={() => { if (theme === 'dark') toggleTheme(); }}
-                    className={`p-4 rounded-xl border-2 transition-all ${theme === 'light' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300'}`}
+                    onClick={toggleTheme}
+                    role="switch"
+                    aria-checked={theme === 'dark'}
+                    className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${theme === 'dark' ? 'bg-brand-600' : 'bg-zinc-300'}`}
                   >
-                    <div className="w-full h-16 bg-white rounded-lg border border-zinc-200 mb-2 flex items-center justify-center">
-                      <div className="w-8 h-2 bg-zinc-200 rounded" />
-                    </div>
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">روشن</p>
-                  </button>
-                  <button
-                    onClick={() => { if (theme === 'light') toggleTheme(); }}
-                    className={`p-4 rounded-xl border-2 transition-all ${theme === 'dark' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300'}`}
-                  >
-                    <div className="w-full h-16 bg-zinc-900 rounded-lg border border-zinc-700 mb-2 flex items-center justify-center">
-                      <div className="w-8 h-2 bg-zinc-700 rounded" />
-                    </div>
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">تاریک</p>
+                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${theme === 'dark' ? 'right-1' : 'left-1'}`} />
                   </button>
                 </div>
               </div>

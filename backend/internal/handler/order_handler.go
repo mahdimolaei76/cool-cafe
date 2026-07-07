@@ -41,7 +41,7 @@ func (h *OrderHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.orderService.List(r.Context(), params)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to fetch orders")
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to fetch orders", err)
 		return
 	}
 
@@ -89,7 +89,7 @@ func (h *OrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	order, err := h.orderService.Create(r.Context(), input)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to create order")
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to create order", err)
 		return
 	}
 
@@ -116,7 +116,7 @@ func (h *OrderHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusBadRequest, "Invalid status transition")
 			return
 		}
-		respondError(w, http.StatusInternalServerError, "Failed to update order status")
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update order status", err)
 		return
 	}
 
@@ -159,7 +159,7 @@ func (h *OrderHandler) UpdateItemPrice(w http.ResponseWriter, r *http.Request) {
 		case service.ErrOrderItemNotFound:
 			respondError(w, http.StatusNotFound, "قلم سفارش یافت نشد")
 		default:
-			respondError(w, http.StatusInternalServerError, "Failed to update item price")
+			respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update item price", err)
 		}
 		return
 	}

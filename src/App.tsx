@@ -5,6 +5,7 @@ import { useAppStore } from '@/store';
 import { useAuthStore } from '@/store/authStore';
 import PublicMenu from '@/pages/PublicMenu';
 import OrderTracking from '@/pages/OrderTracking';
+import AboutPage from '@/pages/AboutPage';
 import LoginPage from '@/pages/admin/LoginPage';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ProtectedRoute from '@/components/admin/ProtectedRoute';
@@ -70,6 +71,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<PublicMenu />} />
         <Route path="/track" element={<OrderTracking />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route path="/admin/login" element={<LoginPage />} />
 
         {/* Cashier */}
