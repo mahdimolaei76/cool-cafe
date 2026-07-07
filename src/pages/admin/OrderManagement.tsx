@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Search, Clock, CheckCircle2, XCircle, Truck, ChefHat, RefreshCw, Phone, Receipt, User } from 'lucide-react';
+import { Search, Clock, CheckCircle2, XCircle, Truck, ChefHat, RefreshCw, Phone, Receipt, User, MoreVertical } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
 import Button from '@/components/ui/Button';
@@ -12,6 +12,7 @@ import Badge from '@/components/ui/Badge';
 import Banner from '@/components/ui/Banner';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import Pagination from '@/components/ui/Pagination';
 import type { Order, OrderStatus } from '@/types';
 
 
@@ -34,6 +35,8 @@ export default function OrderManagement() {
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ orderId: string; status: OrderStatus; } | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const filtered = useMemo(() => {
     let result = orders;
@@ -51,6 +54,15 @@ export default function OrderManagement() {
     }
     return result;
   }, [orders, search, statusFilter]);
+
+  // Reset to the first page whenever the filter/search changes the result
+  // set — otherwise the person could land on a now-empty page.
+  useEffect(() => { setPage(1); }, [search, statusFilter]);
+
+  const paginated = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
 
   const handleStatusChange = () => {
     if (confirmAction) {
@@ -202,7 +214,7 @@ export default function OrderManagement() {
                     </td>
                   </tr>
                 ))
-              ) : filtered.length > 0 ? filtered.slice(0, 20).map(order => (
+              ) : filtered.length > 0 ? paginated.map(order => (
                 <tr
                   key={order.id}
                   onClick={() => setSelectedOrder(order)}
@@ -257,6 +269,14 @@ export default function OrderManagement() {
             </tbody>
           </table>
         </div>
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={filtered.length}
+          onPageChange={setPage}
+          onPageSizeChange={size => { setPageSize(size); setPage(1); }}
+          className="border-t border-zinc-100 dark:border-zinc-800"
+        />
       </div>
 
       {/* Order Detail Modal */}
@@ -341,6 +361,20 @@ function OrderDetail({ order, onStatusChange, nextStatus }: {
   const updateOrderItemPrice = useAppStore(s => s.updateOrderItemPrice);
   const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
   const [savingItemId, setSavingItemId] = useState<string | null>(null);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const statusMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close the "jump to any status" menu on outside click.
+  useEffect(() => {
+    if (!statusMenuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (statusMenuRef.current && !statusMenuRef.current.contains(e.target as Node)) setStatusMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [statusMenuOpen]);
+
+  const allStatuses: OrderStatus[] = ['pending', 'preparing', 'ready', 'delivered', 'cancelled'];
 
   const confirmItemPrice = async (itemId: string) => {
     const raw = priceDrafts[itemId];
@@ -508,6 +542,39 @@ function OrderDetail({ order, onStatusChange, nextStatus }: {
           <Button variant="danger" onClick={() => onStatusChange('cancelled')}>
             لغو سفارش
           </Button>
+        )}
+        {order.status !== 'delivered' && order.status !== 'cancelled' && (
+          <div className="relative" ref={statusMenuRef}>
+            <Button variant="outline" onClick={() => setStatusMenuOpen(o => !o)} aria-label="تغییر به وضعیت دیگر" className="!px-3">
+              <MoreVertical className="w-4 h-4" />
+            </Button>
+            <AnimatePresence>
+              {statusMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute bottom-full mb-2 left-0 w-56 bg-white dark:bg-zinc-800 rounded-xl shadow-2xl border border-zinc-100 dark:border-zinc-700 py-1.5 z-10"
+                >
+                  <p className="px-3 py-1.5 text-xs text-zinc-400 font-medium">تغییر مستقیم وضعیت به:</p>
+                  {allStatuses.filter(s => s !== order.status).map(s => {
+                    const sc = statusConfig[s];
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => { onStatusChange(s); setStatusMenuOpen(false); }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-right hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
+                      >
+                        <sc.icon className={cn('w-4 h-4', sc.color)} />
+                        <span className="text-zinc-700 dark:text-zinc-200">{sc.label}</span>
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         )}
       </div>
     </div>

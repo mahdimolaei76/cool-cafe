@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Edit2, Trash2, Star, Eye, EyeOff, Upload, Image, X } from 'lucide-react';
 import { useAppStore, formatItemPrice } from '@/store';
@@ -12,6 +12,7 @@ import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import EmptyState from '@/components/ui/EmptyState';
+import Pagination from '@/components/ui/Pagination';
 import type { MenuItem } from '@/types';
 
 export default function MenuManagement() {
@@ -40,6 +41,14 @@ export default function MenuManagement() {
     }
     return items;
   }, [menuItems, search, filterCategory]);
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  useEffect(() => { setPage(1); }, [search, filterCategory]);
+  const paginated = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
 
   const openCreate = () => {
     setEditingItem(null);
@@ -148,9 +157,10 @@ export default function MenuManagement() {
         </div>
 
         {filtered?.length > 0 ? (
+          <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <AnimatePresence>
-              {filtered?.map((item, index) => {
+              {paginated?.map((item, index) => {
                 const cat = categories.find(c => c.id === item.categoryId);
                 return (
                   <motion.div
@@ -203,6 +213,15 @@ export default function MenuManagement() {
               })}
             </AnimatePresence>
           </div>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={filtered.length}
+            onPageChange={setPage}
+            onPageSizeChange={size => { setPageSize(size); setPage(1); }}
+            className="mt-2 -mx-2"
+          />
+          </>
         ) : (
           <EmptyState
             icon={<Search className="w-6 h-6" />}

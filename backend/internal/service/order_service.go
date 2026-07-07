@@ -84,6 +84,14 @@ type CreateOrderItemInput struct {
 	Name       string     `json:"name"`
 	Price      int64      `json:"price"`
 	Quantity   int        `json:"quantity"`
+	// IsPriceVariable/PriceConfirmed/PriceLabel mirror domain.OrderItem —
+	// carried from the client (which copies them from the menu item's
+	// priceType at add-to-cart time) so a "قیمت بازار" item ordered
+	// without a price yet is correctly tracked as unconfirmed instead of
+	// silently being saved as a normal ۰-price line.
+	IsPriceVariable bool   `json:"isPriceVariable"`
+	PriceConfirmed  bool   `json:"priceConfirmed"`
+	PriceLabel      string `json:"priceLabel"`
 }
 
 type CreateOrderInput struct {
@@ -105,13 +113,27 @@ func (s *OrderService) Create(ctx context.Context, input CreateOrderInput) (*dom
 	orderItems := make([]domain.OrderItem, len(input.Items))
 	for i, item := range input.Items {
 		itemSubtotal := item.Price * int64(item.Quantity)
-		subtotal += itemSubtotal
+
+		// Fixed-price items are always confirmed regardless of what the
+		// client sent — only a genuinely variable item can be unconfirmed.
+		priceConfirmed := item.PriceConfirmed || !item.IsPriceVariable
+
+		// Unconfirmed variable-priced lines don't count toward the order
+		// total yet — same rule UpdateItemPrice uses when recomputing
+		// after the cashier later enters the real price.
+		if priceConfirmed {
+			subtotal += itemSubtotal
+		}
+
 		orderItems[i] = domain.OrderItem{
-			MenuItemID: item.MenuItemID,
-			Name:       item.Name,
-			Price:      item.Price,
-			Quantity:   item.Quantity,
-			Subtotal:   itemSubtotal,
+			MenuItemID:      item.MenuItemID,
+			Name:            item.Name,
+			Price:           item.Price,
+			Quantity:        item.Quantity,
+			Subtotal:        itemSubtotal,
+			IsPriceVariable: item.IsPriceVariable,
+			PriceConfirmed:  priceConfirmed,
+			PriceLabel:      item.PriceLabel,
 		}
 	}
 
@@ -213,25 +235,32 @@ func (s *OrderService) UpdateItemPrice(ctx context.Context, orderID, itemID uuid
 	return s.repo.FindByID(ctx, orderID)
 }
 
+// isValidStatusTransition allows moving directly to any status from any
+// non-terminal status (e.g. skipping straight from "pending" to
+// "delivered" without passing through "preparing"/"ready" first) — the
+// cashier/admin may legitimately need to correct or fast-forward an
+// order's status. Once an order is delivered or cancelled, though, it's
+// terminal: those are final states used for financial reporting and
+// shouldn't be reopened from here.
 func (s *OrderService) isValidStatusTransition(current, next string) bool {
-	validTransitions := map[string][]string{
-		domain.OrderStatusPending:   {domain.OrderStatusPreparing, domain.OrderStatusCancelled},
-		domain.OrderStatusPreparing: {domain.OrderStatusReady, domain.OrderStatusCancelled},
-		domain.OrderStatusReady:     {domain.OrderStatusDelivered, domain.OrderStatusCancelled},
-		domain.OrderStatusDelivered: {},
-		domain.OrderStatusCancelled: {},
-	}
-
-	allowed, ok := validTransitions[current]
-	if !ok {
+	if current == next {
 		return false
 	}
 
-	for _, s := range allowed {
-		if s == next {
-			return true
-		}
+	terminal := map[string]bool{
+		domain.OrderStatusDelivered: true,
+		domain.OrderStatusCancelled: true,
+	}
+	if terminal[current] {
+		return false
 	}
 
-	return false
+	validNext := map[string]bool{
+		domain.OrderStatusPending:   true,
+		domain.OrderStatusPreparing: true,
+		domain.OrderStatusReady:     true,
+		domain.OrderStatusDelivered: true,
+		domain.OrderStatusCancelled: true,
+	}
+	return validNext[next]
 }
