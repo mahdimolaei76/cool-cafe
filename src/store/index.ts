@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import dayjs from 'dayjs';
-import type { Category, MenuItem, Order, CartItem, OrderStatus } from '@/types';
-import { categoryApi, menuApi, orderApi, settingsApi, uploadApi, uuidGenerator } from '@/lib/api';
+import type { Category, MenuItem, Order, CartItem, OrderStatus, Customer } from '@/types';
+import { categoryApi, menuApi, orderApi, settingsApi, uploadApi, customerApi, uuidGenerator } from '@/lib/api';
 
 // ─── Price Formatter ───
 export function formatPrice(price: number): string {
@@ -91,7 +91,15 @@ interface AppStore {
   addOrder: (data: any) => Promise<Order>;
   updateOrderStatus: (id: string, status: OrderStatus, note?: string) => Promise<void>;
   updateOrderItemPrice: (orderId: string, itemId: string, price: number) => Promise<void>;
+  updateOrderPayment: (orderId: string, data: { paymentMethod: string; isPaid: boolean; paidByCredit: boolean }) => Promise<void>;
   trackOrder: (trackingCode: string, phone: string) => Promise<Order | null>;
+
+  // مدیریت مشتری‌ها (پرداخت اعتباری)
+  customers: Customer[];
+  fetchCustomers: (search?: string) => Promise<void>;
+  addCustomer: (data: { phone: string; firstName: string; lastName: string; creditEnabled: boolean }) => Promise<Customer>;
+  updateCustomer: (id: string, data: { phone: string; firstName: string; lastName: string; creditEnabled: boolean }) => Promise<Customer>;
+  deleteCustomer: (id: string) => Promise<void>;
 
   // Upload
   uploadImage: (file: File) => Promise<string>;
@@ -111,6 +119,7 @@ export const useAppStore = create<AppStore>()(
       categories: [],
       menuItems: [],
       orders: [],
+      customers: [],
       theme: 'light',
       loading: false,
       loadingCount: 0,
@@ -223,6 +232,34 @@ export const useAppStore = create<AppStore>()(
         set(s => ({ menuItems: s.menuItems?.filter(m => m.id !== id) }));
       },
 
+      // ─── Customers (پرداخت اعتباری) ───
+      // Unlike categories/menu items, customer data involves real debt/
+      // credit balances — there's no safe offline fallback for these, so
+      // failures are surfaced (thrown) instead of silently faked locally.
+      fetchCustomers: async (search) => {
+        set(s => ({ loading: true, loadingCount: s.loadingCount + 1 }));
+        try {
+          const data = await customerApi.list(search);
+          set({ customers: Array.isArray(data) ? data : [] });
+        } finally {
+          set(s => ({ loadingCount: s.loadingCount - 1, loading: s.loadingCount - 1 > 0 }));
+        }
+      },
+      addCustomer: async (data) => {
+        const created = await customerApi.create(data);
+        set(s => ({ customers: [created, ...s.customers] }));
+        return created;
+      },
+      updateCustomer: async (id, data) => {
+        const updated = await customerApi.update(id, data);
+        set(s => ({ customers: s.customers?.map(c => c.id === id ? { ...c, ...updated } : c) }));
+        return updated;
+      },
+      deleteCustomer: async (id) => {
+        await customerApi.delete(id);
+        set(s => ({ customers: s.customers?.filter(c => c.id !== id) }));
+      },
+
       // ─── Orders ───
       addOrder: async (orderData) => {
         try {
@@ -285,6 +322,16 @@ export const useAppStore = create<AppStore>()(
             const total = Math.max(0, subtotal - o.discount);
             return { ...o, items, subtotal, total, updatedAt: now };
           }),
+        }));
+      },
+
+      updateOrderPayment: async (orderId, data) => {
+        await orderApi.updatePayment(orderId, data);
+        const now = new Date().toISOString();
+        set(s => ({
+          orders: s.orders?.map(o => o.id === orderId
+            ? { ...o, paymentMethod: data.paymentMethod as any, isPaid: data.isPaid, paidByCredit: data.paidByCredit, updatedAt: now }
+            : o),
         }));
       },
 

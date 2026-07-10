@@ -3,7 +3,7 @@ import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Coffee, FolderOpen, ClipboardList, DollarSign,
-  BarChart3, Settings, Menu, X, Sun, Moon, ChevronLeft, ExternalLink, QrCode, LogOut, User
+  BarChart3, Settings, Menu, X, Sun, Moon, ChevronLeft, ExternalLink, QrCode, LogOut, User, Users, Wallet
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAppStore } from '@/store';
@@ -16,6 +16,7 @@ const adminNavItems = [
   { path: '/admin/menu', label: 'منو', icon: Coffee, roles: ['admin'] },
   { path: '/admin/categories', label: 'دسته‌بندی‌ها', icon: FolderOpen, roles: ['admin'] },
   { path: '/admin/orders', label: 'همه سفارش‌ها', icon: ClipboardList, roles: ['admin'], badge: true },
+  { path: '/admin/customers', label: 'مدیریت مشتری‌ها', icon: Users, roles: ['admin'] },
   { path: '/admin/sales', label: 'فروش', icon: DollarSign, roles: ['admin'] },
   { path: '/admin/reports', label: 'گزارش‌ها', icon: BarChart3, roles: ['admin'] },
   { path: '/admin/qr-code', label: 'کد QR', icon: QrCode, roles: ['admin'] },
@@ -26,6 +27,7 @@ const adminNavItems = [
 const cashierNavItems = [
   { path: '/cashier', label: 'سفارش جدید', icon: ClipboardList, exact: true },
   { path: '/cashier/orders', label: 'سفارش‌ها', icon: ClipboardList, badge: true },
+  { path: '/cashier/credit', label: 'مدیریت حساب اعتباری', icon: Wallet },
   { path: '/cashier/dashboard', label: 'گزارش روزانه', icon: BarChart3 },
 ];
 

@@ -167,6 +167,40 @@ func (h *OrderHandler) UpdateItemPrice(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, order)
 }
 
+// UpdatePayment handles PATCH /orders/{id}/payment — the payment method
+// dropdown, "پرداخت شد" checkbox, and "پرداخت اعتباری" checkbox shown in
+// order status-change modals.
+func (h *OrderHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid order ID")
+		return
+	}
+
+	var input service.UpdatePaymentInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	order, err := h.orderService.UpdatePayment(r.Context(), id, input)
+	if err != nil {
+		switch err {
+		case service.ErrCreditPhoneRequired:
+			respondError(w, http.StatusBadRequest, "برای پرداخت اعتباری، شماره تلفن مشتری الزامی است")
+		case service.ErrCustomerNotFound:
+			respondError(w, http.StatusNotFound, "مشتری‌ای با این شماره تلفن یافت نشد")
+		case service.ErrCreditNotEnabled:
+			respondError(w, http.StatusBadRequest, "این مشتری قابلیت پرداخت اعتباری ندارد")
+		default:
+			respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update order payment", err)
+		}
+		return
+	}
+
+	respondJSON(w, http.StatusOK, order)
+}
+
 // TrackOrderRequest is the payload for the public order-tracking lookup.
 type TrackOrderRequest struct {
 	TrackingCode string `json:"trackingCode"`

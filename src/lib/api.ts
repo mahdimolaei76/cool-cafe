@@ -112,8 +112,24 @@ export const orderApi = {
     request<any>(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, note }) }),
   updateItemPrice: (orderId: string, itemId: string, price: number) =>
     request<any>(`/orders/${orderId}/items/${itemId}/price`, { method: 'PATCH', body: JSON.stringify({ price }) }),
+  updatePayment: (orderId: string, data: { paymentMethod: string; isPaid: boolean; paidByCredit: boolean }) =>
+    request<any>(`/orders/${orderId}/payment`, { method: 'PATCH', body: JSON.stringify(data) }),
   track: (trackingCode: string, phone: string) =>
     request<any>('/orders/track', { method: 'POST', body: JSON.stringify({ trackingCode, phone }) }),
+};
+
+// ─── Customers (مدیریت مشتری‌ها + پرداخت اعتباری) ───
+export const customerApi = {
+  list: (search?: string) => request<any[]>(`/customers${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+  get: (id: string) => request<any>(`/customers/${id}`),
+  lookup: (phone: string) => request<any>(`/customers/lookup?phone=${encodeURIComponent(phone)}`),
+  create: (data: { phone: string; firstName: string; lastName: string; creditEnabled: boolean }) =>
+    request<any>('/customers', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: { phone: string; firstName: string; lastName: string; creditEnabled: boolean }) =>
+    request<any>(`/customers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => request<void>(`/customers/${id}`, { method: 'DELETE' }),
+  adjustCredit: (id: string, kind: 'increase' | 'purchase' | 'settle', amount: number) =>
+    request<any>(`/customers/${id}/credit-adjustment`, { method: 'POST', body: JSON.stringify({ kind, amount }) }),
 };
 
 // ─── Settings ───

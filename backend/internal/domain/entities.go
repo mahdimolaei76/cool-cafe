@@ -52,25 +52,47 @@ type MenuItem struct {
 
 // Order represents a customer order
 type Order struct {
-	ID                uuid.UUID       `db:"id" json:"id"`
-	OrderNumber       string          `db:"order_number" json:"orderNumber"`
-	TrackingCode      string          `db:"tracking_code" json:"trackingCode"`
-	CustomerFirstName string          `db:"customer_first_name" json:"customerFirstName"`
-	CustomerLastName  string          `db:"customer_last_name" json:"customerLastName"`
-	CustomerPhone     string          `db:"customer_phone" json:"customerPhone"`
-	Subtotal          int64           `db:"subtotal" json:"subtotal"`
-	Discount          int64           `db:"discount" json:"discount"`
-	Total             int64           `db:"total" json:"total"`
-	Notes             string          `db:"notes" json:"notes"`
-	Status            string          `db:"status" json:"status"`
-	OrderType         string          `db:"order_type" json:"orderType"`
-	PaymentMethod     string          `db:"payment_method" json:"paymentMethod"`
-	CashierID         *uuid.UUID      `db:"cashier_id" json:"cashierId,omitempty"`
-	CashierName       string          `db:"cashier_name" json:"cashier"`
-	CreatedAt         time.Time       `db:"created_at" json:"createdAt"`
-	UpdatedAt         time.Time       `db:"updated_at" json:"updatedAt"`
-	Items             []OrderItem     `db:"-" json:"items"`
-	Timeline          []OrderTimeline `db:"-" json:"timeline"`
+	ID                uuid.UUID  `db:"id" json:"id"`
+	OrderNumber       string     `db:"order_number" json:"orderNumber"`
+	TrackingCode      string     `db:"tracking_code" json:"trackingCode"`
+	CustomerFirstName string     `db:"customer_first_name" json:"customerFirstName"`
+	CustomerLastName  string     `db:"customer_last_name" json:"customerLastName"`
+	CustomerPhone     string     `db:"customer_phone" json:"customerPhone"`
+	Subtotal          int64      `db:"subtotal" json:"subtotal"`
+	Discount          int64      `db:"discount" json:"discount"`
+	Total             int64      `db:"total" json:"total"`
+	Notes             string     `db:"notes" json:"notes"`
+	Status            string     `db:"status" json:"status"`
+	OrderType         string     `db:"order_type" json:"orderType"`
+	PaymentMethod     string     `db:"payment_method" json:"paymentMethod"`
+	// PaidByCredit is true when this order's amount was charged against
+	// the customer's credit account (پرداخت اعتباری) rather than
+	// collected at the register. IsPaid is the separate "پرداخت شد"
+	// checkbox shown next to the payment method dropdown.
+	PaidByCredit bool            `db:"paid_by_credit" json:"paidByCredit"`
+	IsPaid       bool            `db:"is_paid" json:"isPaid"`
+	CashierID    *uuid.UUID      `db:"cashier_id" json:"cashierId,omitempty"`
+	CashierName  string          `db:"cashier_name" json:"cashier"`
+	CreatedAt    time.Time       `db:"created_at" json:"createdAt"`
+	UpdatedAt    time.Time       `db:"updated_at" json:"updatedAt"`
+	Items        []OrderItem     `db:"-" json:"items"`
+	Timeline     []OrderTimeline `db:"-" json:"timeline"`
+}
+
+// Customer represents a café customer managed from the admin panel
+// (مدیریت مشتری‌ها). Customers are matched to orders by phone number.
+// CreditBalance can be positive (customer has pre-paid credit) or
+// negative (customer owes money / بدهی); it may only be toggled between
+// credit-enabled/disabled while the balance is exactly 0.
+type Customer struct {
+	ID            uuid.UUID `db:"id" json:"id"`
+	Phone         string    `db:"phone" json:"phone"`
+	FirstName     string    `db:"first_name" json:"firstName"`
+	LastName      string    `db:"last_name" json:"lastName"`
+	CreditEnabled bool      `db:"credit_enabled" json:"creditEnabled"`
+	CreditBalance int64     `db:"credit_balance" json:"creditBalance"`
+	CreatedAt     time.Time `db:"created_at" json:"createdAt"`
+	UpdatedAt     time.Time `db:"updated_at" json:"updatedAt"`
 }
 
 // OrderItem represents an item in an order

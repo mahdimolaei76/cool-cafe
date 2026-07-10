@@ -14,8 +14,10 @@ import MenuManagement from '@/pages/admin/MenuManagement';
 import CategoryManagement from '@/pages/admin/CategoryManagement';
 import OrderManagement from '@/pages/admin/OrderManagement';
 import NewOrder from '@/pages/admin/NewOrder';
+import CustomerManagement from '@/pages/admin/CustomerManagement';
 import CashierOrders from '@/pages/cashier/CashierOrders';
 import CashierDashboard from '@/pages/cashier/CashierDashboard';
+import CashierCreditManagement from '@/pages/cashier/CashierCreditManagement';
 import Sales from '@/pages/admin/Sales';
 import Reports from '@/pages/admin/Reports';
 import QRCodePage from '@/pages/admin/QRCodePage';
@@ -78,6 +80,7 @@ export default function App() {
         <Route path="/cashier" element={<ProtectedRoute roles={['cashier', 'admin']}><AdminLayout /></ProtectedRoute>}>
           <Route index element={<NewOrder />} />
           <Route path="orders" element={<CashierOrders />} />
+          <Route path="credit" element={<CashierCreditManagement />} />
           <Route path="dashboard" element={<CashierDashboard />} />
         </Route>
 
@@ -87,6 +90,7 @@ export default function App() {
           <Route path="menu" element={<MenuManagement />} />
           <Route path="categories" element={<CategoryManagement />} />
           <Route path="orders" element={<OrderManagement />} />
+          <Route path="customers" element={<CustomerManagement />} />
           <Route path="new-order" element={<NewOrder />} />
           <Route path="sales" element={<Sales />} />
           <Route path="reports" element={<Reports />} />

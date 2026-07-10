@@ -79,6 +79,11 @@ export interface Order {
   status: OrderStatus;
   orderType: OrderType;
   paymentMethod: PaymentMethod;
+  /** True if this order's amount was charged to the customer's credit
+   * account (پرداخت اعتباری) instead of collected at the register. */
+  paidByCredit?: boolean;
+  /** The "پرداخت شد" checkbox — independent of paidByCredit/paymentMethod. */
+  isPaid?: boolean;
   cashier: string;
   timeline: OrderTimeline[];
   createdAt: string;
@@ -88,6 +93,28 @@ export interface Order {
    * server, so kitchen/reports/other devices won't see them yet. */
   _unsynced?: boolean;
 }
+
+// A café customer, managed from "مدیریت مشتری‌ها" in the admin panel.
+// Matched to orders by phone number. creditBalance can be positive
+// (customer has pre-paid credit) or negative (customer owes money /
+// بدهی) — it can only be toggled while the balance is exactly 0.
+export interface Customer {
+  id: string;
+  phone: string;
+  firstName: string;
+  lastName: string;
+  creditEnabled: boolean;
+  creditBalance: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomerWithHistory extends Customer {
+  orders: Order[];
+}
+
+/** Kinds accepted by the "تغییر مقدار بدهی" credit-adjustment modal. */
+export type CreditAdjustKind = 'increase' | 'purchase' | 'settle';
 
 export interface OrderTimeline {
   status: OrderStatus;

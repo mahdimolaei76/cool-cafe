@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Plus, Minus, Trash2, Search, Check, ShoppingCart, User, CreditCard, Banknote, Smartphone, Receipt, Flame, Zap } from 'lucide-react';
+import { Plus, Minus, Trash2, Search, Check, ShoppingCart, User, CreditCard, Banknote, Smartphone, Receipt, Flame, Zap, Wallet } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice, formatItemPrice } from '@/store';
 import { useAuthStore } from '@/store/authStore';
-import { uuidGenerator } from '@/lib/api';
+import { uuidGenerator, customerApi } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
@@ -78,6 +78,44 @@ export default function NewOrder() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // پرداخت اعتباری — checkbox at checkout requires a phone number that
+  // matches an existing customer with credit payment enabled.
+  const [paidByCredit, setPaidByCredit] = useState(false);
+  const [creditCustomer, setCreditCustomer] = useState<{ firstName: string; lastName: string; creditEnabled: boolean; creditBalance: number } | null>(null);
+  const [creditChecking, setCreditChecking] = useState(false);
+  const [creditError, setCreditError] = useState<string | null>(null);
+
+  const handleToggleCredit = async () => {
+    if (paidByCredit) {
+      setPaidByCredit(false);
+      setCreditCustomer(null);
+      setCreditError(null);
+      return;
+    }
+    const phoneErr = iranianMobileError(form.phone, true);
+    if (phoneErr) {
+      setCreditError('برای پرداخت اعتباری، ابتدا شماره تلفن معتبر مشتری را وارد کنید');
+      return;
+    }
+    setCreditChecking(true);
+    setCreditError(null);
+    try {
+      const customer = await customerApi.lookup(form.phone);
+      if (!customer.creditEnabled) {
+        setCreditError('این مشتری قابلیت پرداخت اعتباری ندارد');
+        setCreditCustomer(null);
+        return;
+      }
+      setCreditCustomer(customer);
+      setPaidByCredit(true);
+    } catch {
+      setCreditError('مشتری‌ای با این شماره تلفن یافت نشد');
+      setCreditCustomer(null);
+    } finally {
+      setCreditChecking(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (cart?.length === 0) {
       // eslint-disable-next-line no-console
@@ -103,7 +141,7 @@ export default function NewOrder() {
             priceLabel: isVariable && (c.manualPrice === null || c.manualPrice === undefined) ? (c.menuItem.priceLabel || 'قیمت‌گذاری نشده') : undefined,
           };
         }),
-        subtotal, discount: form.discount, total, notes: form.notes, status: 'pending', orderType: form.orderType, paymentMethod: form.paymentMethod, cashier: user?.name || '',
+        subtotal, discount: form.discount, total, notes: form.notes, status: 'pending', orderType: form.orderType, paymentMethod: form.paymentMethod, paidByCredit, cashier: user?.name || '',
       });
       setSuccess(order);
       toast.success('سفارش با موفقیت ثبت شد');
@@ -128,7 +166,7 @@ export default function NewOrder() {
       setSubmitting(false);
     }
   };
-  const resetOrder = () => { setCart([]); setForm({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person', paymentMethod: 'cash' }); setSuccess(null); };
+  const resetOrder = () => { setCart([]); setForm({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person', paymentMethod: 'cash' }); setSuccess(null); setPaidByCredit(false); setCreditCustomer(null); setCreditError(null); };
 
   // ── Success ──
   if (success) {
@@ -353,6 +391,26 @@ export default function NewOrder() {
               </button>
               <input type="number" placeholder="تخفیف" value={form.discount || ''} onChange={e => setForm(p => ({ ...p, discount: parseInt(e.target.value) || 0 }))} className="w-28 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-transparent text-center text-sm font-bold placeholder:text-zinc-400 focus:outline-none focus:border-brand-500" />
             </div>
+
+            <button
+              onClick={handleToggleCredit}
+              disabled={creditChecking}
+              className={cn(
+                'w-full py-2.5 rounded-xl border-2 flex items-center justify-center gap-2 text-sm font-bold transition-all',
+                paidByCredit ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500'
+              )}
+            >
+              <Wallet className="w-4 h-4" />
+              {creditChecking ? 'در حال بررسی...' : 'پرداخت اعتباری'}
+              {paidByCredit && <Check className="w-4 h-4" />}
+            </button>
+            {creditError && <p className="text-xs text-red-500 text-center">{creditError}</p>}
+            {paidByCredit && creditCustomer && (
+              <div className="text-xs text-center text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl py-2">
+                {creditCustomer.firstName} {creditCustomer.lastName} — {creditCustomer.creditBalance < 0 ? 'بدهی فعلی: ' : 'اعتبار فعلی: '}
+                <span className={creditCustomer.creditBalance < 0 ? 'font-bold text-red-600' : 'font-bold text-emerald-600'}>{formatPrice(Math.abs(creditCustomer.creditBalance))}</span>
+              </div>
+            )}
           </div>
         )}
 

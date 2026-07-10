@@ -110,14 +110,14 @@ func (r *OrderRepository) Create(ctx context.Context, order *domain.Order) error
 	// Insert order
 	orderQuery := `
 		INSERT INTO orders (order_number, tracking_code, customer_first_name, customer_last_name, customer_phone, 
-			subtotal, discount, total, notes, status, order_type, payment_method, cashier_id, cashier_name)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			subtotal, discount, total, notes, status, order_type, payment_method, paid_by_credit, is_paid, cashier_id, cashier_name)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 		RETURNING id, created_at, updated_at
 	`
 	err = tx.QueryRowContext(ctx, orderQuery,
 		order.OrderNumber, order.TrackingCode, order.CustomerFirstName, order.CustomerLastName, order.CustomerPhone,
 		order.Subtotal, order.Discount, order.Total, order.Notes, order.Status,
-		order.OrderType, order.PaymentMethod, order.CashierID, order.CashierName,
+		order.OrderType, order.PaymentMethod, order.PaidByCredit, order.IsPaid, order.CashierID, order.CashierName,
 	).Scan(&order.ID, &order.CreatedAt, &order.UpdatedAt)
 	if err != nil {
 		return err
@@ -227,6 +227,23 @@ func (r *OrderRepository) UpdateItemPrice(ctx context.Context, orderID, itemID u
 	}
 
 	return tx.Commit()
+}
+
+// UpdatePayment updates an order's payment method, "پرداخت شد" flag, and
+// credit-payment flag. This is separate from UpdateStatus since these can
+// be changed from the same modal alongside (or independently of) a status
+// transition.
+func (r *OrderRepository) UpdatePayment(ctx context.Context, id uuid.UUID, paymentMethod string, isPaid, paidByCredit bool) error {
+	query := `
+		UPDATE orders SET
+			payment_method = $2,
+			is_paid = $3,
+			paid_by_credit = $4,
+			updated_at = CURRENT_TIMESTAMP
+		WHERE id = $1
+	`
+	_, err := r.db.ExecContext(ctx, query, id, paymentMethod, isPaid, paidByCredit)
+	return err
 }
 
 // loadOrderDetails populates an order's Items and Timeline, which live in

@@ -14,6 +14,7 @@ import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Pagination from '@/components/ui/Pagination';
 import Separator from '@/components/ui/Separator';
+import OrderPaymentPanel from '@/components/admin/OrderPaymentPanel';
 import type { Order, OrderStatus } from '@/types';
 
 
@@ -410,6 +411,9 @@ function OrderDetail({ order, onStatusChange, nextStatus }: {
           <p className="text-xs text-zinc-500">{formatJalaliDateTime(order.createdAt)}</p>
         </div>
       </div>
+
+      {/* Payment controls (پرداخت شد / پرداخت اعتباری / روش پرداخت) */}
+      <OrderPaymentPanel order={order} />
 
       {/* Customer Info */}
       <div className="grid grid-cols-2 gap-4">

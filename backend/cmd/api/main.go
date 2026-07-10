@@ -70,13 +70,15 @@ func main() {
 	menuItemRepo := repository.NewMenuItemRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
 	settingsRepo := repository.NewSettingsRepository(db)
+	customerRepo := repository.NewCustomerRepository(db)
 
 	// Services
 	jwtSecret := getEnv("JWT_SECRET", "default-secret-change-me")
 	authService := service.NewAuthService(userRepo, jwtSecret)
 	categoryService := service.NewCategoryService(categoryRepo)
 	menuItemService := service.NewMenuItemService(menuItemRepo)
-	orderService := service.NewOrderService(orderRepo)
+	customerService := service.NewCustomerService(customerRepo)
+	orderService := service.NewOrderService(orderRepo, customerService)
 	settingsService := service.NewSettingsService(settingsRepo)
 
 	// Handlers
@@ -85,6 +87,7 @@ func main() {
 	menuItemHandler := handler.NewMenuItemHandler(menuItemService)
 	orderHandler := handler.NewOrderHandler(orderService)
 	settingsHandler := handler.NewSettingsHandler(settingsService)
+	customerHandler := handler.NewCustomerHandler(customerService)
 	uploadHandler := handler.NewUploadHandler(getEnv("UPLOAD_DIR", "./uploads"))
 
 	authMW := appMiddleware.NewAuthMiddleware(jwtSecret)
@@ -134,12 +137,27 @@ func main() {
 			r.Get("/orders/{id}", orderHandler.Get)
 			r.Patch("/orders/{id}/status", orderHandler.UpdateStatus)
 			r.Patch("/orders/{id}/items/{itemId}/price", orderHandler.UpdateItemPrice)
+			r.Patch("/orders/{id}/payment", orderHandler.UpdatePayment)
+
+			// Customer lookup + credit adjustment are used by both admin
+			// and cashier (checkout's پرداخت اعتباری checkbox, and the
+			// cashier's مدیریت حساب اعتباری modal), so these stay outside
+			// the admin-only group below.
+			r.Get("/customers/lookup", customerHandler.Lookup)
+			r.Post("/customers/{id}/credit-adjustment", customerHandler.AdjustCredit)
 
 			r.Post("/upload", uploadHandler.Upload)
 
 			r.Group(func(r chi.Router) {
 				r.Use(authMW.RequireAdmin)
 				r.Put("/settings", settingsHandler.Update)
+
+				// مدیریت مشتری‌ها — full customer CRUD is admin-only.
+				r.Get("/customers", customerHandler.List)
+				r.Get("/customers/{id}", customerHandler.Get)
+				r.Post("/customers", customerHandler.Create)
+				r.Put("/customers/{id}", customerHandler.Update)
+				r.Delete("/customers/{id}", customerHandler.Delete)
 			})
 		})
 	})

@@ -15,14 +15,16 @@ var (
 	ErrInvalidPrice            = errors.New("price must not be negative")
 	ErrItemNotVariablePriced   = errors.New("order item does not have a variable price")
 	ErrOrderItemNotFound       = errors.New("order item not found")
+	ErrCreditPhoneRequired     = errors.New("customer phone is required for credit payment")
 )
 
 type OrderService struct {
-	repo *repository.OrderRepository
+	repo            *repository.OrderRepository
+	customerService *CustomerService
 }
 
-func NewOrderService(repo *repository.OrderRepository) *OrderService {
-	return &OrderService{repo: repo}
+func NewOrderService(repo *repository.OrderRepository, customerService *CustomerService) *OrderService {
+	return &OrderService{repo: repo, customerService: customerService}
 }
 
 type ListOrdersParams struct {
@@ -103,8 +105,14 @@ type CreateOrderInput struct {
 	Notes             string                 `json:"notes"`
 	OrderType         string                 `json:"orderType"`
 	PaymentMethod     string                 `json:"paymentMethod"`
-	CashierID         *uuid.UUID             `json:"cashierId"`
-	CashierName       string                 `json:"cashier"`
+	// PaidByCredit: the cashier checked "پرداخت اعتباری" at checkout —
+	// requires an existing customer (matched by CustomerPhone) with
+	// credit payment enabled; the order total is charged to their
+	// credit account instead of collected at the register.
+	PaidByCredit bool       `json:"paidByCredit"`
+	IsPaid       bool       `json:"isPaid"`
+	CashierID    *uuid.UUID `json:"cashierId"`
+	CashierName  string     `json:"cashier"`
 }
 
 func (s *OrderService) Create(ctx context.Context, input CreateOrderInput) (*domain.Order, error) {
@@ -153,6 +161,21 @@ func (s *OrderService) Create(ctx context.Context, input CreateOrderInput) (*dom
 		paymentMethod = domain.PaymentMethodCash
 	}
 
+	// Credit-paid orders (پرداخت اعتباری) must charge an existing customer
+	// account before the order is saved — if the phone is missing or the
+	// customer/charge fails, the order should not be created at all,
+	// since there'd be no record of how it was actually paid for.
+	isPaid := input.IsPaid
+	if input.PaidByCredit {
+		if input.CustomerPhone == "" {
+			return nil, ErrCreditPhoneRequired
+		}
+		if _, err := s.customerService.ChargeOrder(ctx, input.CustomerPhone, total); err != nil {
+			return nil, err
+		}
+		isPaid = true
+	}
+
 	order := &domain.Order{
 		CustomerFirstName: input.CustomerFirstName,
 		CustomerLastName:  input.CustomerLastName,
@@ -165,6 +188,8 @@ func (s *OrderService) Create(ctx context.Context, input CreateOrderInput) (*dom
 		Status:            domain.OrderStatusPending,
 		OrderType:         orderType,
 		PaymentMethod:     paymentMethod,
+		PaidByCredit:      input.PaidByCredit,
+		IsPaid:            isPaid,
 		CashierID:         input.CashierID,
 		CashierName:       input.CashierName,
 	}
@@ -174,6 +199,44 @@ func (s *OrderService) Create(ctx context.Context, input CreateOrderInput) (*dom
 	}
 
 	return order, nil
+}
+
+type UpdatePaymentInput struct {
+	PaymentMethod string `json:"paymentMethod"`
+	IsPaid        bool   `json:"isPaid"`
+	PaidByCredit  bool   `json:"paidByCredit"`
+}
+
+// UpdatePayment lets a cashier/admin set the payment method, "پرداخت شد"
+// flag, and credit-payment flag from an order's status-change modal. If
+// credit payment is being turned on for the first time (it wasn't already
+// charged), the amount is charged to the customer's credit account now;
+// if it's already applied, flipping the checkbox again doesn't re-charge.
+func (s *OrderService) UpdatePayment(ctx context.Context, id uuid.UUID, input UpdatePaymentInput) (*domain.Order, error) {
+	order, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if input.PaidByCredit && !order.PaidByCredit {
+		if order.CustomerPhone == "" {
+			return nil, ErrCreditPhoneRequired
+		}
+		if _, err := s.customerService.ChargeOrder(ctx, order.CustomerPhone, order.Total); err != nil {
+			return nil, err
+		}
+	}
+
+	paymentMethod := input.PaymentMethod
+	if paymentMethod == "" {
+		paymentMethod = order.PaymentMethod
+	}
+
+	if err := s.repo.UpdatePayment(ctx, id, paymentMethod, input.IsPaid, input.PaidByCredit); err != nil {
+		return nil, err
+	}
+
+	return s.repo.FindByID(ctx, id)
 }
 
 type UpdateStatusInput struct {
