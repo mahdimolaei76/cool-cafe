@@ -170,22 +170,20 @@ func (r *OrderRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status
 	// order becomes 'delivered' (زمان تحویل سفارش) — COALESCE keeps it if
 	// this ever runs twice for some reason instead of overwriting it.
 	updateQuery := `
-		UPDATE orders SET
-			status = $2,
-			delivered_at = CASE WHEN $2 = 'delivered' THEN COALESCE(delivered_at, CURRENT_TIMESTAMP) ELSE delivered_at END,
-			updated_at = CURRENT_TIMESTAMP
-		WHERE id = $1
+        UPDATE orders SET
+            status = $2,
+            delivered_at = CASE 
+                WHEN status != 'delivered' AND $3 = 'delivered'
+                THEN COALESCE(delivered_at, CURRENT_TIMESTAMP)
+                ELSE delivered_at
+            END,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
 	`
-	if _, err = tx.ExecContext(ctx, updateQuery, id, status); err != nil {
+
+	if _, err = tx.ExecContext(ctx, updateQuery, id, status, status); err != nil {
 		return err
 	}
-
-	// Add timeline entry
-	timelineQuery := `INSERT INTO order_timeline (order_id, status, note) VALUES ($1, $2, $3)`
-	if _, err = tx.ExecContext(ctx, timelineQuery, id, status, note); err != nil {
-		return err
-	}
-
 	return tx.Commit()
 }
 
