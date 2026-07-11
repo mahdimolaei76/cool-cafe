@@ -112,11 +112,20 @@ func (h *OrderHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 
 	order, err := h.orderService.UpdateStatus(r.Context(), id, input)
 	if err != nil {
-		if err == service.ErrInvalidStatusTransition {
-			respondError(w, http.StatusBadRequest, "Invalid status transition")
-			return
+		switch err {
+		case service.ErrInvalidStatusTransition:
+			respondError(w, http.StatusBadRequest, "تغییر وضعیت نامعتبر است")
+		case service.ErrPaymentRequiredToDeliver:
+			respondError(w, http.StatusBadRequest, "برای تحویل سفارش باید ابتدا پرداخت انجام شود")
+		case service.ErrOrderLocked:
+			respondError(w, http.StatusBadRequest, "این سفارش تحویل داده شده یا لغو شده و قابل تغییر نیست")
+		case service.ErrCustomerNotFound:
+			respondError(w, http.StatusNotFound, "مشتری‌ای با این شماره تلفن یافت نشد")
+		case service.ErrCreditNotEnabled:
+			respondError(w, http.StatusBadRequest, "این مشتری قابلیت پرداخت اعتباری ندارد")
+		default:
+			respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update order status", err)
 		}
-		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update order status", err)
 		return
 	}
 
@@ -158,6 +167,8 @@ func (h *OrderHandler) UpdateItemPrice(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusBadRequest, "این قلم قیمت متغیر ندارد")
 		case service.ErrOrderItemNotFound:
 			respondError(w, http.StatusNotFound, "قلم سفارش یافت نشد")
+		case service.ErrOrderLocked:
+			respondError(w, http.StatusBadRequest, "این سفارش تحویل داده شده یا لغو شده و قابل تغییر نیست")
 		default:
 			respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update item price", err)
 		}
@@ -192,6 +203,8 @@ func (h *OrderHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusNotFound, "مشتری‌ای با این شماره تلفن یافت نشد")
 		case service.ErrCreditNotEnabled:
 			respondError(w, http.StatusBadRequest, "این مشتری قابلیت پرداخت اعتباری ندارد")
+		case service.ErrOrderLocked:
+			respondError(w, http.StatusBadRequest, "این سفارش تحویل داده شده یا لغو شده و قابل تغییر نیست")
 		default:
 			respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update order payment", err)
 		}

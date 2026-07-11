@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -12,12 +13,12 @@ import (
 )
 
 var (
-	ErrCustomerPhoneRequired  = errors.New("phone is required")
-	ErrCustomerPhoneTaken     = errors.New("phone already registered to another customer")
-	ErrCustomerNotFound       = errors.New("customer not found")
-	ErrCreditToggleWithDebt   = errors.New("credit balance must be settled (zero) before changing credit availability")
-	ErrCreditNotEnabled       = errors.New("customer does not have credit payment enabled")
-	ErrInvalidCreditAmount    = errors.New("amount must be greater than zero")
+	ErrCustomerPhoneRequired   = errors.New("phone is required")
+	ErrCustomerPhoneTaken      = errors.New("phone already registered to another customer")
+	ErrCustomerNotFound        = errors.New("customer not found")
+	ErrCreditToggleWithDebt    = errors.New("credit balance must be settled (zero) before changing credit availability")
+	ErrCreditNotEnabled        = errors.New("customer does not have credit payment enabled")
+	ErrInvalidCreditAmount     = errors.New("amount must be greater than zero")
 	ErrInvalidCreditAdjustKind = errors.New("invalid credit adjustment type")
 )
 
@@ -34,8 +35,31 @@ type CustomerWithHistory struct {
 	Orders []domain.Order `json:"orders"`
 }
 
-func (s *CustomerService) List(ctx context.Context, search string) ([]domain.Customer, error) {
-	return s.repo.List(ctx, search)
+type ListCustomersParams struct {
+	Search string
+	Page   int
+	PageSize int
+}
+
+type ListCustomersResult struct {
+	Customers []domain.Customer `json:"customers"`
+	Total     int               `json:"total"`
+}
+
+func (s *CustomerService) List(ctx context.Context, params ListCustomersParams) (*ListCustomersResult, error) {
+	page := params.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := params.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	customers, total, err := s.repo.List(ctx, params.Search, pageSize, (page-1)*pageSize)
+	if err != nil {
+		return nil, err
+	}
+	return &ListCustomersResult{Customers: customers, Total: total}, nil
 }
 
 func (s *CustomerService) Get(ctx context.Context, id uuid.UUID) (*CustomerWithHistory, error) {
@@ -48,6 +72,48 @@ func (s *CustomerService) Get(ctx context.Context, id uuid.UUID) (*CustomerWithH
 		return nil, err
 	}
 	return &CustomerWithHistory{Customer: *customer, Orders: orders}, nil
+}
+
+type HistoryParams struct {
+	DateFrom      *time.Time
+	DateTo        *time.Time
+	PaymentMethod string
+	Page          int
+	PageSize      int
+}
+
+type HistoryResult struct {
+	Customer domain.Customer               `json:"customer"`
+	Entries  []repository.HistoryEntry     `json:"entries"`
+	Total    int                           `json:"total"`
+}
+
+// GetHistory returns the combined, filtered, paginated order+credit
+// timeline shown in the "تاریخچه سفارشات" modal.
+func (s *CustomerService) GetHistory(ctx context.Context, id uuid.UUID, params HistoryParams) (*HistoryResult, error) {
+	customer, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	page := params.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := params.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	entries, total, err := s.repo.CombinedHistory(ctx, id, customer.Phone, repository.HistoryFilter{
+		DateFrom:      params.DateFrom,
+		DateTo:        params.DateTo,
+		PaymentMethod: params.PaymentMethod,
+		Limit:         pageSize,
+		Offset:        (page - 1) * pageSize,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &HistoryResult{Customer: *customer, Entries: entries, Total: total}, nil
 }
 
 // Lookup finds a customer by phone — used by the cashier checkout's
@@ -131,9 +197,9 @@ func (s *CustomerService) Delete(ctx context.Context, id uuid.UUID) error {
 // Credit adjustment kinds for the "تغییر مقدار بدهی" modal (shared by the
 // admin customer page and the cashier's "مدیریت حساب اعتباری" modal).
 const (
-	CreditAdjustIncrease = "increase" // افزایش اعتبار — customer pays in advance
-	CreditAdjustPurchase = "purchase" // خرید جدید — manually record a purchase against credit
-	CreditAdjustSettle   = "settle"   // تسویه کامل بدهی — zero the balance out
+	CreditAdjustIncrease = domain.CreditHistoryIncrease // افزایش اعتبار — customer pays in advance
+	CreditAdjustPurchase = domain.CreditHistoryPurchase // خرید جدید — manually record a purchase against credit
+	CreditAdjustSettle   = domain.CreditHistorySettle   // تسویه حساب کامل — zero the balance out
 )
 
 func (s *CustomerService) AdjustCredit(ctx context.Context, id uuid.UUID, kind string, amount int64) (*domain.Customer, error) {
@@ -150,23 +216,23 @@ func (s *CustomerService) AdjustCredit(ctx context.Context, id uuid.UUID, kind s
 		if amount <= 0 {
 			return nil, ErrInvalidCreditAmount
 		}
-		return s.repo.AdjustBalance(ctx, id, amount)
+		return s.repo.AdjustBalanceRecorded(ctx, id, amount, kind, nil, "افزایش اعتبار")
 	case CreditAdjustPurchase:
 		if amount <= 0 {
 			return nil, ErrInvalidCreditAmount
 		}
-		return s.repo.AdjustBalance(ctx, id, -amount)
+		return s.repo.AdjustBalanceRecorded(ctx, id, -amount, kind, nil, "خرید جدید")
 	case CreditAdjustSettle:
-		return s.repo.SetBalance(ctx, id, 0)
+		return s.repo.SetBalanceRecorded(ctx, id, 0, kind, "تسویه حساب کامل")
 	default:
 		return nil, ErrInvalidCreditAdjustKind
 	}
 }
 
 // ChargeOrder deducts an order's total from the customer's credit
-// balance (called when an order is paid via پرداخت اعتباری). The
-// customer must exist and have credit payment enabled.
-func (s *CustomerService) ChargeOrder(ctx context.Context, phone string, amount int64) (*domain.Customer, error) {
+// balance. Called only once an order is actually delivered (not at
+// creation/payment-selection time) — see OrderService.UpdateStatus.
+func (s *CustomerService) ChargeOrder(ctx context.Context, phone string, amount int64, orderID uuid.UUID) (*domain.Customer, error) {
 	customer, err := s.repo.FindByPhone(ctx, phone)
 	if err != nil {
 		return nil, ErrCustomerNotFound
@@ -174,5 +240,5 @@ func (s *CustomerService) ChargeOrder(ctx context.Context, phone string, amount 
 	if !customer.CreditEnabled {
 		return nil, ErrCreditNotEnabled
 	}
-	return s.repo.AdjustBalance(ctx, customer.ID, -amount)
+	return s.repo.AdjustBalanceRecorded(ctx, customer.ID, -amount, domain.CreditHistoryOrderCharge, &orderID, "کسر بابت تحویل سفارش")
 }

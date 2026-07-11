@@ -114,10 +114,14 @@ export default function CashierOrders() {
     };
   }, [orders]);
 
-  const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
-    updateOrderStatus(orderId, newStatus);
-    setSelectedOrderId(null);
-    toast.success('وضعیت سفارش بروزرسانی شد');
+  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    try {
+      await updateOrderStatus(orderId, newStatus);
+      setSelectedOrderId(null);
+      toast.success('وضعیت سفارش بروزرسانی شد');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'تغییر وضعیت با خطا مواجه شد');
+    }
   };
 
   return (

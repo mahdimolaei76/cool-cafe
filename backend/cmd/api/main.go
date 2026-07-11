@@ -155,6 +155,7 @@ func main() {
 				// مدیریت مشتری‌ها — full customer CRUD is admin-only.
 				r.Get("/customers", customerHandler.List)
 				r.Get("/customers/{id}", customerHandler.Get)
+				r.Get("/customers/{id}/history", customerHandler.GetHistory)
 				r.Post("/customers", customerHandler.Create)
 				r.Put("/customers/{id}", customerHandler.Update)
 				r.Delete("/customers/{id}", customerHandler.Delete)

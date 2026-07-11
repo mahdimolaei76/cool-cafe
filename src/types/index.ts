@@ -35,7 +35,7 @@ export interface MenuItem {
 
 export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
 export type OrderType = 'in-person' | 'online';
-export type PaymentMethod = 'cash' | 'card' | 'other';
+export type PaymentMethod = 'cash' | 'card' | 'online' | 'credit' | 'other';
 
 export interface OrderItem {
   id: string;
@@ -88,6 +88,9 @@ export interface Order {
   timeline: OrderTimeline[];
   createdAt: string;
   updatedAt: string;
+  /** Set exactly once — the moment the order's status becomes "delivered"
+   * (زمان تحویل سفارش). createdAt already serves as زمان گرفتن سفارش. */
+  deliveredAt?: string;
   /** True only for orders created locally when the backend could not be
    * reached — they exist on this device only and were NOT saved to the
    * server, so kitchen/reports/other devices won't see them yet. */
@@ -113,8 +116,37 @@ export interface CustomerWithHistory extends Customer {
   orders: Order[];
 }
 
+/** One row of a customer's combined order + credit-account timeline
+ * (تاریخچه سفارشات modal) — either a finalized order or a manual/automatic
+ * credit-account change not tied to any specific order. */
+export interface CustomerHistoryEntry {
+  entryType: 'order' | 'credit';
+  id: string;
+  orderNumber?: string;
+  orderStatus?: OrderStatus | '';
+  paymentMethod?: PaymentMethod | '';
+  creditKind?: 'increase' | 'purchase' | 'settle' | 'order_charge' | '';
+  amount: number;
+  createdAt: string;
+  deliveredAt?: string;
+}
+
+export interface CustomerHistoryResult {
+  customer: Customer;
+  entries: CustomerHistoryEntry[];
+  total: number;
+}
+
+export interface CustomerListResult {
+  customers: Customer[];
+  total: number;
+}
+
 /** Kinds accepted by the "تغییر مقدار بدهی" credit-adjustment modal. */
 export type CreditAdjustKind = 'increase' | 'purchase' | 'settle';
+
+/** Alias kept for readability where "order/credit timeline row" is meant. */
+export type HistoryEntry = CustomerHistoryEntry;
 
 export interface OrderTimeline {
   status: OrderStatus;

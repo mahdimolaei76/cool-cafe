@@ -96,7 +96,8 @@ interface AppStore {
 
   // مدیریت مشتری‌ها (پرداخت اعتباری)
   customers: Customer[];
-  fetchCustomers: (search?: string) => Promise<void>;
+  customersTotal: number;
+  fetchCustomers: (params?: { search?: string; page?: number; pageSize?: number }) => Promise<void>;
   addCustomer: (data: { phone: string; firstName: string; lastName: string; creditEnabled: boolean }) => Promise<Customer>;
   updateCustomer: (id: string, data: { phone: string; firstName: string; lastName: string; creditEnabled: boolean }) => Promise<Customer>;
   deleteCustomer: (id: string) => Promise<void>;
@@ -120,6 +121,7 @@ export const useAppStore = create<AppStore>()(
       menuItems: [],
       orders: [],
       customers: [],
+      customersTotal: 0,
       theme: 'light',
       loading: false,
       loadingCount: 0,
@@ -236,11 +238,11 @@ export const useAppStore = create<AppStore>()(
       // Unlike categories/menu items, customer data involves real debt/
       // credit balances — there's no safe offline fallback for these, so
       // failures are surfaced (thrown) instead of silently faked locally.
-      fetchCustomers: async (search) => {
+      fetchCustomers: async (params) => {
         set(s => ({ loading: true, loadingCount: s.loadingCount + 1 }));
         try {
-          const data = await customerApi.list(search);
-          set({ customers: Array.isArray(data) ? data : [] });
+          const data = await customerApi.list(params);
+          set({ customers: Array.isArray(data?.customers) ? data.customers : [], customersTotal: data?.total ?? 0 });
         } finally {
           set(s => ({ loadingCount: s.loadingCount - 1, loading: s.loadingCount - 1 > 0 }));
         }
@@ -292,46 +294,30 @@ export const useAppStore = create<AppStore>()(
         }
       },
       updateOrderStatus: async (id, status, note) => {
-        try {
-          await orderApi.updateStatus(id, status, note);
-        } catch { /* continue */ }
-        const now = new Date().toISOString();
+        // Unlike other offline-tolerant actions, a status change (especially
+        // to "delivered") can be *rejected* by the backend on purpose (e.g.
+        // "must be paid before delivery") — swallowing that error would let
+        // the UI optimistically show the order as delivered anyway, which is
+        // exactly the case we need to prevent.
+        const updated = await orderApi.updateStatus(id, status, note);
         set(s => ({
-          orders: s.orders?.map(o => o.id === id ? {
-            ...o, status, updatedAt: now,
-            timeline: [...(o.timeline || []), { status, timestamp: now, note }],
-          } : o),
+          orders: s.orders?.map(o => o.id === id ? { ...o, ...updated } : o),
         }));
       },
 
       updateOrderItemPrice: async (orderId, itemId, price) => {
-        try {
-          await orderApi.updateItemPrice(orderId, itemId, price);
-        } catch { /* fall through to local-only update below */ }
-        const now = new Date().toISOString();
+        // Propagate errors (e.g. the order was delivered/cancelled and is
+        // now locked) instead of silently applying the change locally.
+        const updated = await orderApi.updateItemPrice(orderId, itemId, price);
         set(s => ({
-          orders: s.orders?.map(o => {
-            if (o.id !== orderId) return o;
-            const items = o.items?.map(it => it.id === itemId
-              ? { ...it, price, subtotal: price * it.quantity, priceConfirmed: true }
-              : it);
-            // Recompute totals from confirmed items only, mirroring the
-            // rule used when the order was first created — an item's
-            // cost only counts once the cashier has actually priced it.
-            const subtotal = items?.reduce((sum, it) => sum + (it.priceConfirmed !== false ? it.subtotal : 0), 0) ?? o.subtotal;
-            const total = Math.max(0, subtotal - o.discount);
-            return { ...o, items, subtotal, total, updatedAt: now };
-          }),
+          orders: s.orders?.map(o => o.id === orderId ? { ...o, ...updated } : o),
         }));
       },
 
       updateOrderPayment: async (orderId, data) => {
-        await orderApi.updatePayment(orderId, data);
-        const now = new Date().toISOString();
+        const updated = await orderApi.updatePayment(orderId, data);
         set(s => ({
-          orders: s.orders?.map(o => o.id === orderId
-            ? { ...o, paymentMethod: data.paymentMethod as any, isPaid: data.isPaid, paidByCredit: data.paidByCredit, updatedAt: now }
-            : o),
+          orders: s.orders?.map(o => o.id === orderId ? { ...o, ...updated } : o),
         }));
       },
 

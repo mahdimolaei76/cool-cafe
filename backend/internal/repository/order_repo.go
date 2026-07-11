@@ -166,8 +166,16 @@ func (r *OrderRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status
 	}
 	defer tx.Rollback()
 
-	// Update order status
-	updateQuery := `UPDATE orders SET status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	// Update order status. delivered_at is stamped only the first time an
+	// order becomes 'delivered' (زمان تحویل سفارش) — COALESCE keeps it if
+	// this ever runs twice for some reason instead of overwriting it.
+	updateQuery := `
+		UPDATE orders SET
+			status = $2,
+			delivered_at = CASE WHEN $2 = 'delivered' THEN COALESCE(delivered_at, CURRENT_TIMESTAMP) ELSE delivered_at END,
+			updated_at = CURRENT_TIMESTAMP
+		WHERE id = $1
+	`
 	if _, err = tx.ExecContext(ctx, updateQuery, id, status); err != nil {
 		return err
 	}

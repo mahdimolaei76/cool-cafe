@@ -16,6 +16,9 @@ import type { Order, OrderType, PaymentMethod, MenuItem } from '@/types';
 import { iranianMobileError } from '@/utils/phone';
 import { formatJalaliDateTime } from '@/utils/jalali';
 
+const paymentMethodLabels: Record<PaymentMethod, string> = { cash: 'نقدی', card: 'کارت', online: 'اینترنتی', credit: 'اعتباری', other: 'سایر' };
+const paymentMethodIcons: Record<PaymentMethod, any> = { cash: Banknote, card: CreditCard, online: Smartphone, credit: Wallet, other: Receipt };
+
 interface CartEntry {
   menuItem: MenuItem;
   quantity: number;
@@ -78,42 +81,55 @@ export default function NewOrder() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // پرداخت اعتباری — checkbox at checkout requires a phone number that
-  // matches an existing customer with credit payment enabled.
-  const [paidByCredit, setPaidByCredit] = useState(false);
+  // ── مودال پرداخت (گزینه پرداخت) ──
+  // ۴ روش اصلی + سایر، تیک «پرداخت در مراحل بعد» که اجازه می‌دهد سفارش
+  // بدون انتخاب روش پرداخت ثبت شود (تصمیم‌گیری در مراحل بعد/مودال تغییر
+  // وضعیت). اعتباری فقط وقتی مشتری این قابلیت را فعال داشته باشد قابل
+  // انتخاب است؛ در این حالت پیش‌نمایش اعتبار فعلی/خرید جدید/اعتبار جدید
+  // نمایش داده می‌شود (اعمال واقعی روی حساب فقط هنگام تحویل انجام می‌شود).
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [deferPayment, setDeferPayment] = useState(false);
   const [creditCustomer, setCreditCustomer] = useState<{ firstName: string; lastName: string; creditEnabled: boolean; creditBalance: number } | null>(null);
   const [creditChecking, setCreditChecking] = useState(false);
   const [creditError, setCreditError] = useState<string | null>(null);
 
-  const handleToggleCredit = async () => {
-    if (paidByCredit) {
-      setPaidByCredit(false);
-      setCreditCustomer(null);
-      setCreditError(null);
-      return;
-    }
+  const paidByCredit = selectedPaymentMethod === 'credit';
+  const isPaid = !deferPayment && !!selectedPaymentMethod;
+
+  const openPaymentModal = async () => {
+    setPaymentModalOpen(true);
     const phoneErr = iranianMobileError(form.phone, true);
-    if (phoneErr) {
-      setCreditError('برای پرداخت اعتباری، ابتدا شماره تلفن معتبر مشتری را وارد کنید');
-      return;
-    }
+    if (phoneErr) { setCreditCustomer(null); return; }
     setCreditChecking(true);
     setCreditError(null);
     try {
       const customer = await customerApi.lookup(form.phone);
-      if (!customer.creditEnabled) {
-        setCreditError('این مشتری قابلیت پرداخت اعتباری ندارد');
-        setCreditCustomer(null);
-        return;
-      }
       setCreditCustomer(customer);
-      setPaidByCredit(true);
     } catch {
-      setCreditError('مشتری‌ای با این شماره تلفن یافت نشد');
       setCreditCustomer(null);
     } finally {
       setCreditChecking(false);
     }
+  };
+
+  const choosePaymentMethod = (m: PaymentMethod) => {
+    if (m === 'credit' && !creditCustomer?.creditEnabled) {
+      setCreditError('این مشتری قابلیت پرداخت اعتباری ندارد');
+      return;
+    }
+    setCreditError(null);
+    setSelectedPaymentMethod(m);
+    setDeferPayment(false);
+  };
+
+  const confirmPaymentModal = () => {
+    if (!deferPayment && !selectedPaymentMethod) {
+      toast.error('یک روش پرداخت انتخاب کنید یا «پرداخت در مراحل بعد» را بزنید');
+      return;
+    }
+    setForm(p => ({ ...p, paymentMethod: selectedPaymentMethod || 'cash' }));
+    setPaymentModalOpen(false);
   };
 
   const handleSubmit = async () => {
@@ -141,7 +157,7 @@ export default function NewOrder() {
             priceLabel: isVariable && (c.manualPrice === null || c.manualPrice === undefined) ? (c.menuItem.priceLabel || 'قیمت‌گذاری نشده') : undefined,
           };
         }),
-        subtotal, discount: form.discount, total, notes: form.notes, status: 'pending', orderType: form.orderType, paymentMethod: form.paymentMethod, paidByCredit, cashier: user?.name || '',
+        subtotal, discount: form.discount, total, notes: form.notes, status: 'pending', orderType: form.orderType, paymentMethod: form.paymentMethod, paidByCredit, isPaid, cashier: user?.name || '',
       });
       setSuccess(order);
       toast.success('سفارش با موفقیت ثبت شد');
@@ -166,7 +182,15 @@ export default function NewOrder() {
       setSubmitting(false);
     }
   };
-  const resetOrder = () => { setCart([]); setForm({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person', paymentMethod: 'cash' }); setSuccess(null); setPaidByCredit(false); setCreditCustomer(null); setCreditError(null); };
+  const resetOrder = () => {
+    setCart([]);
+    setForm({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person', paymentMethod: 'cash' });
+    setSuccess(null);
+    setSelectedPaymentMethod(null);
+    setDeferPayment(false);
+    setCreditCustomer(null);
+    setCreditError(null);
+  };
 
   // ── Success ──
   if (success) {
@@ -206,7 +230,7 @@ export default function NewOrder() {
               <div className="flex justify-between"><span>مشتری</span><span>{success.customerFirstName} {success.customerLastName}</span></div>
               {success.customerPhone && <div className="flex justify-between"><span>تلفن</span><span dir="ltr">{success.customerPhone}</span></div>}
               <div className="flex justify-between"><span>نوع سفارش</span><span>{success.orderType === 'online' ? 'آنلاین' : 'حضوری'}</span></div>
-              <div className="flex justify-between"><span>پرداخت</span><span>{{ cash: 'نقدی', card: 'کارت', other: 'سایر' }[success.paymentMethod]}</span></div>
+              <div className="flex justify-between"><span>پرداخت</span><span>{{ cash: 'نقدی', card: 'کارت', online: 'اینترنتی', credit: 'اعتباری', other: 'سایر' }[success.paymentMethod]}</span></div>
               <div className="flex justify-between"><span>صندوق‌دار</span><span>{success.cashier || '—'}</span></div>
             </div>
             <div className="space-y-1.5 py-2 border-b border-dashed border-black">
@@ -379,11 +403,6 @@ export default function NewOrder() {
                   <t.i className="w-4 h-4" />{t.l}
                 </button>
               ))}
-              {[{ v: 'cash', l: 'نقد', i: Banknote }, { v: 'card', l: 'کارت', i: CreditCard }]?.map(p => (
-                <button key={p.v} onClick={() => setForm(f => ({ ...f, paymentMethod: p.v as PaymentMethod }))} className={cn('flex-1 py-2.5 rounded-xl border-2 flex items-center justify-center gap-2 text-sm font-bold transition-all', form.paymentMethod === p.v ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500')}>
-                  <p.i className="w-4 h-4" />{p.l}
-                </button>
-              ))}
             </div>
             <div className="flex gap-2">
               <button onClick={() => setCustomerModal(true)} className="flex-1 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:border-brand-400 transition-colors flex items-center justify-center gap-2">
@@ -392,19 +411,18 @@ export default function NewOrder() {
               <input type="number" placeholder="تخفیف" value={form.discount || ''} onChange={e => setForm(p => ({ ...p, discount: parseInt(e.target.value) || 0 }))} className="w-28 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-transparent text-center text-sm font-bold placeholder:text-zinc-400 focus:outline-none focus:border-brand-500" />
             </div>
 
+            {/* گزینه پرداخت — باز کردن مودال انتخاب روش پرداخت */}
             <button
-              onClick={handleToggleCredit}
-              disabled={creditChecking}
+              onClick={openPaymentModal}
               className={cn(
                 'w-full py-2.5 rounded-xl border-2 flex items-center justify-center gap-2 text-sm font-bold transition-all',
-                paidByCredit ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500'
+                selectedPaymentMethod && !deferPayment ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : deferPayment ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20 text-amber-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500'
               )}
             >
               <Wallet className="w-4 h-4" />
-              {creditChecking ? 'در حال بررسی...' : 'پرداخت اعتباری'}
-              {paidByCredit && <Check className="w-4 h-4" />}
+              {deferPayment ? 'پرداخت در مراحل بعد' : selectedPaymentMethod ? `روش پرداخت: ${paymentMethodLabels[selectedPaymentMethod]}` : 'گزینه پرداخت'}
+              {selectedPaymentMethod && !deferPayment && <Check className="w-4 h-4" />}
             </button>
-            {creditError && <p className="text-xs text-red-500 text-center">{creditError}</p>}
             {paidByCredit && creditCustomer && (
               <div className="text-xs text-center text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl py-2">
                 {creditCustomer.firstName} {creditCustomer.lastName} — {creditCustomer.creditBalance < 0 ? 'بدهی فعلی: ' : 'اعتبار فعلی: '}
@@ -453,6 +471,74 @@ export default function NewOrder() {
             error={iranianMobileError(form.phone) || undefined}
           />
           <Textarea label="یادداشت" placeholder="توضیحات سفارش..." value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
+        </div>
+      </Modal>
+      {/* Payment Modal — گزینه پرداخت */}
+      <Modal open={paymentModalOpen} onClose={() => setPaymentModalOpen(false)} title="روش پرداخت" footer={
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setPaymentModalOpen(false)}>انصراف</Button>
+          <Button onClick={confirmPaymentModal}>تأیید</Button>
+        </div>
+      }>
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-4 gap-2">
+            {(['cash', 'card', 'online', 'credit'] as PaymentMethod[]).map(m => {
+              const Icon = paymentMethodIcons[m];
+              const disabled = m === 'credit' && (creditChecking || !creditCustomer?.creditEnabled);
+              return (
+                <button
+                  key={m}
+                  disabled={disabled}
+                  onClick={() => choosePaymentMethod(m)}
+                  title={m === 'credit' && !creditChecking && !creditCustomer?.creditEnabled ? 'این مشتری قابلیت پرداخت اعتباری ندارد' : undefined}
+                  className={cn(
+                    'py-2.5 rounded-xl border-2 flex flex-col items-center justify-center gap-1 text-xs font-bold transition-all',
+                    selectedPaymentMethod === m && !deferPayment ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500',
+                    disabled && 'opacity-40 cursor-not-allowed'
+                  )}
+                >
+                  <Icon className="w-4 h-4" />{paymentMethodLabels[m]}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => choosePaymentMethod('other')}
+            className={cn(
+              'w-full py-2 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-medium transition-all',
+              selectedPaymentMethod === 'other' && !deferPayment ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-400'
+            )}
+          >
+            سایر
+          </button>
+
+          {creditError && <p className="text-xs text-red-500 text-center">{creditError}</p>}
+
+          {selectedPaymentMethod === 'credit' && !deferPayment && (
+            creditChecking ? (
+              <div className="h-16 rounded-xl bg-zinc-100 dark:bg-zinc-700/50 animate-pulse" />
+            ) : creditCustomer && (
+              <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl space-y-1 text-xs">
+                <div className="flex justify-between"><span className="text-zinc-400">اعتبار فعلی</span><span className={creditCustomer.creditBalance < 0 ? 'font-bold text-red-600' : 'font-bold text-emerald-600'}>{formatPrice(Math.abs(creditCustomer.creditBalance))}</span></div>
+                <div className="flex justify-between"><span className="text-zinc-400">خرید جدید</span><span className="font-bold text-zinc-700 dark:text-zinc-300">{formatPrice(total)}</span></div>
+                <div className="flex justify-between border-t border-zinc-100 dark:border-zinc-800 pt-1"><span className="text-zinc-400">اعتبار جدید</span><span className={(creditCustomer.creditBalance - total) < 0 ? 'font-bold text-red-600' : 'font-bold text-emerald-600'}>{formatPrice(Math.abs(creditCustomer.creditBalance - total))}</span></div>
+                <p className="text-zinc-400 pt-1">این تغییر تنها هنگام تحویل سفارش در حساب مشتری اعمال می‌شود.</p>
+              </div>
+            )
+          )}
+
+          <label className="flex items-center gap-2 cursor-pointer pt-2 border-t border-zinc-100 dark:border-zinc-800">
+            <input
+              type="checkbox"
+              checked={deferPayment}
+              onChange={e => { setDeferPayment(e.target.checked); if (e.target.checked) setSelectedPaymentMethod(null); }}
+              className="w-4 h-4 rounded"
+            />
+            <span className="text-sm text-zinc-700 dark:text-zinc-300">پرداخت در مراحل بعد</span>
+          </label>
+          {deferPayment && (
+            <p className="text-xs text-zinc-400">سفارش بدون تعیین روش پرداخت ثبت می‌شود؛ می‌توانید بعداً از مدال تغییر وضعیت سفارش آن را مشخص کنید.</p>
+          )}
         </div>
       </Modal>
     </div>

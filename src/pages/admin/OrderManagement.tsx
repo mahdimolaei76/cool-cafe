@@ -27,7 +27,7 @@ const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'i
 };
 
 const typeLabels: Record<string, string> = { 'in-person': 'حضوری', 'online': 'آنلاین' };
-const paymentLabels: Record<string, string> = { 'cash': 'نقدی', 'card': 'کارت', 'other': 'سایر' };
+const paymentLabels: Record<string, string> = { 'cash': 'نقدی', 'card': 'کارت', 'online': 'اینترنتی', 'credit': 'اعتباری', 'other': 'سایر' };
 
 export default function OrderManagement() {
   const { orders: rawOrders, updateOrderStatus, loading } = useAppStore();
@@ -72,11 +72,14 @@ export default function OrderManagement() {
     return filtered.slice(start, start + pageSize);
   }, [filtered, page, pageSize]);
 
-  const handleStatusChange = () => {
-    if (confirmAction) {
-      updateOrderStatus(confirmAction.orderId, confirmAction.status);
-      setConfirmAction(null);
+  const handleStatusChange = async () => {
+    if (!confirmAction) return;
+    try {
+      await updateOrderStatus(confirmAction.orderId, confirmAction.status);
       toast.success('وضعیت سفارش بروزرسانی شد');
+      setConfirmAction(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'تغییر وضعیت با خطا مواجه شد');
     }
   };
 

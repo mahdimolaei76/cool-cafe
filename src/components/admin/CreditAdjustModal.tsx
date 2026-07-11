@@ -80,7 +80,7 @@ export default function CreditAdjustModal({ open, onClose, customer, onAdjust }:
           {([
             { v: 'increase', l: 'افزایش اعتبار' },
             { v: 'purchase', l: 'خرید جدید' },
-            { v: 'settle', l: 'تسویه کامل بدهی' },
+            { v: 'settle', l: 'تسویه حساب کامل' },
           ] as { v: CreditAdjustKind; l: string }[]).map(opt => (
             <button
               key={opt.v}
