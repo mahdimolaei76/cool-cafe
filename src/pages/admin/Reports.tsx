@@ -175,7 +175,7 @@ export default function Reports() {
                     <td className="py-3 px-3 hidden sm:table-cell text-zinc-600 dark:text-zinc-400">{o.customerFirstName} {o.customerLastName}</td>
                     <td className="py-3 px-3"><Badge variant={o.status === 'delivered' ? 'success' : o.status === 'cancelled' ? 'danger' : o.status === 'pending' ? 'warning' : 'info'} dot>{statusLabels[o.status]}</Badge></td>
                     <td className="py-3 px-3 hidden md:table-cell text-zinc-600 dark:text-zinc-400">{o.orderType === 'online' ? 'آنلاین' : 'حضوری'}</td>
-                    <td className="py-3 px-3 hidden md:table-cell text-zinc-600 dark:text-zinc-400">{o.paymentMethod === 'cash' ? 'نقدی' : o.paymentMethod === 'card' ? 'کارت' : 'سایر'}</td>
+                    <td className="py-3 px-3 hidden md:table-cell text-zinc-600 dark:text-zinc-400">{{ cash: 'نقدی', card: 'کارت', online: 'اینترنتی', credit: 'اعتباری', other: 'سایر' }[o.paymentMethod] || o.paymentMethod}</td>
                     <td className="py-3 px-3 font-semibold text-zinc-900 dark:text-zinc-100">{formatPrice(o.total)}</td>
                     <td className="py-3 px-3 hidden lg:table-cell text-zinc-400 text-xs">{formatJalali(o.createdAt, 'MM/DD HH:mm')}</td>
                   </tr>

@@ -27,7 +27,7 @@ const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'i
 };
 
 const typeLabels: Record<string, string> = { 'in-person': 'حضوری', 'online': 'آنلاین' };
-const paymentLabels: Record<string, string> = { 'cash': 'نقدی', 'card': 'کارت', 'other': 'سایر' };
+const paymentLabels: Record<string, string> = { 'cash': 'نقدی', 'card': 'کارت', 'online': 'اینترنتی', 'credit': 'اعتباری', 'other': 'سایر' };
 
 export default function OrderManagement() {
   const { orders: rawOrders, updateOrderStatus, loading } = useAppStore();
@@ -72,11 +72,14 @@ export default function OrderManagement() {
     return filtered.slice(start, start + pageSize);
   }, [filtered, page, pageSize]);
 
-  const handleStatusChange = () => {
-    if (confirmAction) {
-      updateOrderStatus(confirmAction.orderId, confirmAction.status);
-      setConfirmAction(null);
+  const handleStatusChange = async () => {
+    if (!confirmAction) return;
+    try {
+      await updateOrderStatus(confirmAction.orderId, confirmAction.status);
       toast.success('وضعیت سفارش بروزرسانی شد');
+      setConfirmAction(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'تغییر وضعیت با خطا مواجه شد');
     }
   };
 
@@ -230,8 +233,8 @@ export default function OrderManagement() {
                   className="border-b border-zinc-50 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 cursor-pointer transition-colors"
                 >
                   <td className="py-3 px-4">
-                    <span className="font-mono text-xs font-bold text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded" dir="ltr">
-                      {order.orderNumber}
+                    <span className="font-mono text-xs font-black text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-700 px-2.5 py-1 rounded-full" dir="ltr">
+                      #{order.orderNumber.replace('COOL-', '')}
                     </span>
                   </td>
                   <td className="py-3 px-4">

@@ -120,8 +120,23 @@ export const orderApi = {
 
 // ─── Customers (مدیریت مشتری‌ها + پرداخت اعتباری) ───
 export const customerApi = {
-  list: (search?: string) => request<any[]>(`/customers${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+  list: (params?: { search?: string; page?: number; pageSize?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.search) q.set('search', params.search);
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.pageSize) q.set('pageSize', String(params.pageSize));
+    return request<{ customers: any[]; total: number }>(`/customers?${q}`);
+  },
   get: (id: string) => request<any>(`/customers/${id}`),
+  history: (id: string, params?: { page?: number; pageSize?: number; dateFrom?: string; dateTo?: string; paymentMethod?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.pageSize) q.set('pageSize', String(params.pageSize));
+    if (params?.dateFrom) q.set('dateFrom', params.dateFrom);
+    if (params?.dateTo) q.set('dateTo', params.dateTo);
+    if (params?.paymentMethod) q.set('paymentMethod', params.paymentMethod);
+    return request<any>(`/customers/${id}/history?${q}`);
+  },
   lookup: (phone: string) => request<any>(`/customers/lookup?phone=${encodeURIComponent(phone)}`),
   create: (data: { phone: string; firstName: string; lastName: string; creditEnabled: boolean }) =>
     request<any>('/customers', { method: 'POST', body: JSON.stringify(data) }),

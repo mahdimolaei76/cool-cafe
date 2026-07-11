@@ -1,8 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, Star, Eye, EyeOff, Upload, Image, X } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Star, Eye, EyeOff, Upload, Image, X, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react';
 import { useAppStore, formatItemPrice } from '@/store';
 import { cn } from '@/utils/cn';
+import { menuApi } from '@/lib/api';
+import { toast } from 'sonner';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -16,7 +18,7 @@ import Pagination from '@/components/ui/Pagination';
 import type { MenuItem } from '@/types';
 
 export default function MenuManagement() {
-  const { menuItems: rawMenuItems, categories: rawCategories, addMenuItem, updateMenuItem, deleteMenuItem, uploadImage } = useAppStore();
+  const { menuItems: rawMenuItems, categories: rawCategories, addMenuItem, updateMenuItem, deleteMenuItem, uploadImage, fetchMenuItems } = useAppStore();
   const menuItems = rawMenuItems ?? [];
   const categories = rawCategories ?? [];
   const [search, setSearch] = useState('');
@@ -104,6 +106,45 @@ export default function MenuManagement() {
     }
   };
 
+  // ── ترتیب آیتم‌های هر دسته‌بندی ──
+  const [reorderCatId, setReorderCatId] = useState<string | null>(null);
+  const [reorderItems, setReorderItems] = useState<MenuItem[]>([]);
+  const [savingReorder, setSavingReorder] = useState(false);
+
+  const openReorder = (catId: string) => {
+    const catItems = [...menuItems]
+      .filter(i => i.categoryId === catId)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    setReorderItems(catItems);
+    setReorderCatId(catId);
+  };
+
+  const moveItem = (idx: number, dir: -1 | 1) => {
+    setReorderItems(prev => {
+      const arr = [...prev];
+      const swap = idx + dir;
+      if (swap < 0 || swap >= arr.length) return arr;
+      [arr[idx], arr[swap]] = [arr[swap], arr[idx]];
+      return arr;
+    });
+  };
+
+  const saveReorder = async () => {
+    setSavingReorder(true);
+    try {
+      for (let i = 0; i < reorderItems.length; i++) {
+        await menuApi.update(reorderItems[i].id, { ...reorderItems[i], order: i + 1 });
+      }
+      await fetchMenuItems();
+      toast.success('ترتیب آیتم‌ها ذخیره شد');
+      setReorderCatId(null);
+    } catch {
+      toast.error('ذخیره ترتیب با خطا مواجه شد');
+    } finally {
+      setSavingReorder(false);
+    }
+  };
+
   const presetImages = [
     { value: '/images/coffee-hot.jpg', label: 'قهوه گرم' },
     { value: '/images/coffee-cold.jpg', label: 'قهوه سرد' },
@@ -154,6 +195,15 @@ export default function MenuManagement() {
             options={categories?.map(c => ({ value: c.id, label: `${c.icon} ${c.name}` }))}
             className="sm:w-56"
           />
+          {filterCategory && (
+            <Button
+              variant="outline"
+              icon={<ArrowUpDown className="w-4 h-4" />}
+              onClick={() => openReorder(filterCategory)}
+            >
+              ترتیب آیتم‌ها
+            </Button>
+          )}
         </div>
 
         {filtered?.length > 0 ? (
@@ -233,7 +283,7 @@ export default function MenuManagement() {
       </Card>
 
       {/* Create/Edit Modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editingItem ? 'ویرایش آیتم' : 'افزودن آیتم جدید'} size="lg"
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editingItem ? 'ویرایش آیتم' : 'افزودن آیتم جدید'} size="xl"
         footer={
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setModalOpen(false)}>انصراف</Button>
@@ -358,6 +408,50 @@ export default function MenuManagement() {
             </label>
           </div>
 
+        </div>
+      </Modal>
+
+      {/* Item Reorder Modal */}
+      <Modal
+        open={!!reorderCatId}
+        onClose={() => setReorderCatId(null)}
+        title={`ترتیب آیتم‌ها — ${categories.find(c => c.id === reorderCatId)?.icon} ${categories.find(c => c.id === reorderCatId)?.name}`}
+        size="lg"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setReorderCatId(null)}>انصراف</Button>
+            <Button onClick={saveReorder} loading={savingReorder}>ذخیره ترتیب</Button>
+          </div>
+        }
+      >
+        <div className="p-6 space-y-2">
+          {reorderItems.length === 0 ? (
+            <p className="text-zinc-400 text-center py-8">آیتمی در این دسته‌بندی وجود ندارد.</p>
+          ) : reorderItems.map((item, idx) => (
+            <div key={item.id} className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
+              <img src={item.image} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-zinc-900 dark:text-zinc-100 truncate">{item.name}</p>
+                <p className="text-xs text-zinc-400">{formatItemPrice(item)}</p>
+              </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => moveItem(idx, -1)}
+                  disabled={idx === 0}
+                  className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-400 hover:text-brand-600 hover:border-brand-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronUp className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => moveItem(idx, 1)}
+                  disabled={idx === reorderItems.length - 1}
+                  className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-400 hover:text-brand-600 hover:border-brand-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </Modal>
 

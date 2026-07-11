@@ -1,27 +1,33 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Search, Wallet, History, User, Phone } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Wallet, History, User, Phone, Filter } from 'lucide-react';
 import { useAppStore, formatPrice } from '@/store';
 import { customerApi } from '@/lib/api';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import Select from '@/components/ui/Select';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import EmptyState from '@/components/ui/EmptyState';
 import Banner from '@/components/ui/Banner';
+import Pagination from '@/components/ui/Pagination';
+import JalaliDatePicker from '@/components/ui/JalaliDatePicker';
 import CreditAdjustModal from '@/components/admin/CreditAdjustModal';
 import { iranianMobileError, normalizeIranianMobile } from '@/utils/phone';
 import { formatJalaliDateTime } from '@/utils/jalali';
-import type { Customer, CustomerWithHistory, CreditAdjustKind } from '@/types';
+import type { Customer, CreditAdjustKind, HistoryEntry, PaymentMethod } from '@/types';
 
 const statusLabels: Record<string, string> = { delivered: 'تحویل شده', cancelled: 'لغو شده' };
+const creditKindLabels: Record<string, string> = { increase: 'افزایش اعتبار', purchase: 'خرید جدید', settle: 'تسویه حساب کامل', order_charge: 'کسر بابت تحویل سفارش' };
 
 export default function CustomerManagement() {
-  const { customers, fetchCustomers, addCustomer, updateCustomer, deleteCustomer } = useAppStore();
+  const { customers, customersTotal, fetchCustomers, addCustomer, updateCustomer, deleteCustomer } = useAppStore();
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
@@ -31,16 +37,28 @@ export default function CustomerManagement() {
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [creditModalCustomer, setCreditModalCustomer] = useState<Customer | null>(null);
-  const [historyCustomer, setHistoryCustomer] = useState<CustomerWithHistory | null>(null);
+
+  // ── تاریخچه سفارشات modal state ──
+  const [historyCustomer, setHistoryCustomer] = useState<Customer | null>(null);
+  const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
+  const [historyTotal, setHistoryTotal] = useState(0);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(10);
+  const [historyDateFrom, setHistoryDateFrom] = useState('');
+  const [historyDateTo, setHistoryDateTo] = useState('');
+  const [historyPaymentFilter, setHistoryPaymentFilter] = useState<'' | PaymentMethod>('');
 
   useEffect(() => {
     let active = true;
     setLoading(true);
-    fetchCustomers(search).finally(() => { if (active) setLoading(false); });
+    fetchCustomers({ search, page, pageSize }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search, page, pageSize]);
+
+  // Reset to page 1 whenever the search text changes the result set.
+  useEffect(() => { setPage(1); }, [search]);
 
   const sorted = useMemo(
     () => [...(customers ?? [])].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
@@ -71,6 +89,7 @@ export default function CustomerManagement() {
       else await addCustomer(data);
       toast.success('اطلاعات مشتری ذخیره شد');
       setModalOpen(false);
+      fetchCustomers({ search, page, pageSize });
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'ثبت اطلاعات با خطا مواجه شد');
     } finally {
@@ -83,6 +102,7 @@ export default function CustomerManagement() {
     try {
       await deleteCustomer(deleteId);
       toast.success('مشتری حذف شد');
+      fetchCustomers({ search, page, pageSize });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'حذف با خطا مواجه شد');
     } finally {
@@ -93,22 +113,48 @@ export default function CustomerManagement() {
   const handleAdjust = async (kind: CreditAdjustKind, amount: number) => {
     if (!creditModalCustomer) return;
     const updated = await customerApi.adjustCredit(creditModalCustomer.id, kind, amount);
-    await fetchCustomers(search);
+    await fetchCustomers({ search, page, pageSize });
     setCreditModalCustomer(updated);
   };
 
-  const openHistory = async (c: Customer) => {
+  const loadHistory = async (c: Customer, opts?: { page?: number }) => {
     setHistoryLoading(true);
-    setHistoryCustomer({ ...c, orders: [] });
     try {
-      const data = await customerApi.get(c.id);
-      setHistoryCustomer(data);
+      const p = opts?.page ?? historyPage;
+      const data = await customerApi.history(c.id, {
+        page: p,
+        pageSize: historyPageSize,
+        dateFrom: historyDateFrom || undefined,
+        dateTo: historyDateTo || undefined,
+        paymentMethod: historyPaymentFilter || undefined,
+      });
+      setHistoryEntries(data.entries || []);
+      setHistoryTotal(data.total || 0);
     } catch {
-      toast.error('دریافت تاریخچه سفارشات با خطا مواجه شد');
+      toast.error('دریافت تاریخچه با خطا مواجه شد');
     } finally {
       setHistoryLoading(false);
     }
   };
+
+  const openHistory = (c: Customer) => {
+    setHistoryCustomer(c);
+    setHistoryPage(1);
+    setHistoryDateFrom('');
+    setHistoryDateTo('');
+    setHistoryPaymentFilter('');
+    setHistoryEntries([]);
+    setHistoryTotal(0);
+    loadHistory(c, { page: 1 });
+  };
+
+  // Re-fetch whenever a history filter or page/pageSize changes, while the
+  // modal is open — the modal's size/shape never changes, only its content.
+  useEffect(() => {
+    if (!historyCustomer) return;
+    loadHistory(historyCustomer, { page: historyPage });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyPage, historyPageSize, historyDateFrom, historyDateTo, historyPaymentFilter]);
 
   // بستن دسترسی به تغییر وضعیت پرداخت اعتباری وقتی حساب صفر نیست —
   // همان محدودیتی که در بک‌اند هم اعمال می‌شود.
@@ -119,7 +165,7 @@ export default function CustomerManagement() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">مدیریت مشتری‌ها</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{customers?.length ?? 0} مشتری</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{customersTotal ?? 0} مشتری</p>
         </div>
         <Button onClick={openCreate} icon={<Plus className="w-4 h-4" />}>افزودن مشتری</Button>
       </div>
@@ -153,7 +199,15 @@ export default function CustomerManagement() {
                 </tr>
               </thead>
               <tbody>
-                {sorted.map(c => {
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} className="border-b border-zinc-50 dark:border-zinc-800/50">
+                      <td colSpan={5} className="py-3 px-4">
+                        <div className="h-4 bg-zinc-100 dark:bg-zinc-800 rounded animate-pulse" />
+                      </td>
+                    </tr>
+                  ))
+                ) : sorted.map(c => {
                   const debt = c.creditBalance < 0;
                   return (
                     <tr key={c.id} className="border-b border-zinc-50 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/30">
@@ -186,6 +240,14 @@ export default function CustomerManagement() {
             </table>
           </div>
         )}
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={customersTotal ?? 0}
+          onPageChange={setPage}
+          onPageSizeChange={size => { setPageSize(size); setPage(1); }}
+          className="border-t border-zinc-100 dark:border-zinc-800"
+        />
       </Card>
 
       {/* Create / Edit Modal */}
@@ -251,27 +313,82 @@ export default function CustomerManagement() {
         onAdjust={handleAdjust}
       />
 
-      {/* Order history modal */}
-      <Modal open={!!historyCustomer} onClose={() => setHistoryCustomer(null)} title={historyCustomer ? `تاریخچه سفارشات — ${historyCustomer.firstName} ${historyCustomer.lastName}` : ''}>
-        <div className="p-6 space-y-3">
-          {historyLoading ? (
-            <div className="h-24 flex items-center justify-center text-zinc-400 text-sm">در حال بارگذاری...</div>
-          ) : historyCustomer?.orders?.length ? (
-            historyCustomer.orders.map(o => (
-              <div key={o.id} className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl flex items-center justify-between">
-                <div>
-                  <p className="font-mono text-xs font-bold text-zinc-900 dark:text-zinc-100" dir="ltr">{o.orderNumber}</p>
-                  <p className="text-xs text-zinc-400 mt-0.5">{formatJalaliDateTime(o.createdAt)}</p>
-                </div>
-                <div className="text-left">
-                  <p className="font-bold text-zinc-900 dark:text-zinc-100">{formatPrice(o.total)}</p>
-                  <Badge variant={o.status === 'cancelled' ? 'danger' : 'default'}>{statusLabels[o.status] || o.status}</Badge>
-                </div>
+      {/* Order + credit history modal — fixed size/shape; only its
+          content (filters/rows/pagination) changes while loading. */}
+      <Modal open={!!historyCustomer} onClose={() => setHistoryCustomer(null)} title={historyCustomer ? `تاریخچه سفارشات — ${historyCustomer.firstName} ${historyCustomer.lastName}` : ''} size="xl">
+        <div className="p-6 space-y-5">
+          {/* بخش فیلترها */}
+          <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/60 dark:bg-zinc-800/30 space-y-3">
+            <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+              <Filter className="w-3.5 h-3.5" />فیلترها
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <JalaliDatePicker label="از تاریخ" value={historyDateFrom} onChange={v => { setHistoryDateFrom(v); setHistoryPage(1); }} />
+              <JalaliDatePicker label="تا تاریخ" value={historyDateTo} onChange={v => { setHistoryDateTo(v); setHistoryPage(1); }} />
+              <div className="col-span-2">
+                <Select
+                  label="نوع پرداخت"
+                  value={historyPaymentFilter}
+                  onChange={e => { setHistoryPaymentFilter(e.target.value as any); setHistoryPage(1); }}
+                  options={[
+                    { value: '', label: 'همه روش‌های پرداخت' },
+                    { value: 'cash', label: 'نقدی' },
+                    { value: 'card', label: 'کارت' },
+                    { value: 'online', label: 'اینترنتی' },
+                    { value: 'credit', label: 'اعتباری (تغییرات حساب)' },
+                    { value: 'other', label: 'سایر' },
+                  ]}
+                />
               </div>
-            ))
-          ) : (
-            <p className="text-sm text-zinc-400 text-center py-8">سفارش تحویل‌شده یا لغوشده‌ای برای این مشتری ثبت نشده است.</p>
-          )}
+            </div>
+          </div>
+
+          <div className="space-y-3 min-h-[280px]">
+            {historyLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl h-16 animate-pulse" />
+              ))
+            ) : historyEntries.length ? (
+              historyEntries.map(entry => (
+                <div key={`${entry.entryType}-${entry.id}`} className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl flex items-center justify-between">
+                  <div>
+                    {entry.entryType === 'order' ? (
+                      <>
+                        <p className="font-mono text-xs font-bold text-zinc-900 dark:text-zinc-100" dir="ltr">{entry.orderNumber}</p>
+                        <p className="text-xs text-zinc-400 mt-0.5">{formatJalaliDateTime(entry.createdAt)}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">{creditKindLabels[entry.creditKind || ''] || 'اعتباری'}</p>
+                        <p className="text-xs text-zinc-400 mt-0.5">{formatJalaliDateTime(entry.createdAt)}</p>
+                      </>
+                    )}
+                  </div>
+                  <div className="text-left">
+                    <p className={entry.amount < 0 ? 'font-bold text-red-600' : 'font-bold text-emerald-600'}>
+                      {entry.entryType === 'credit' ? (entry.amount < 0 ? '-' : '+') : ''}{formatPrice(Math.abs(entry.amount))}
+                    </p>
+                    {entry.entryType === 'order' ? (
+                      <Badge variant={entry.orderStatus === 'cancelled' ? 'danger' : 'default'}>{statusLabels[entry.orderStatus || ''] || entry.orderStatus}</Badge>
+                    ) : (
+                      <Badge variant="info">اعتباری</Badge>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-zinc-400 text-center py-16">موردی برای این فیلتر یافت نشد.</p>
+            )}
+          </div>
+
+          <Pagination
+            page={historyPage}
+            pageSize={historyPageSize}
+            total={historyTotal}
+            onPageChange={setHistoryPage}
+            onPageSizeChange={size => { setHistoryPageSize(size); setHistoryPage(1); }}
+            pageSizeOptions={[10, 20, 50]}
+          />
         </div>
       </Modal>
 

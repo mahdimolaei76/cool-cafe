@@ -11,11 +11,13 @@ import (
 )
 
 var (
-	ErrInvalidStatusTransition = errors.New("invalid status transition")
-	ErrInvalidPrice            = errors.New("price must not be negative")
-	ErrItemNotVariablePriced   = errors.New("order item does not have a variable price")
-	ErrOrderItemNotFound       = errors.New("order item not found")
-	ErrCreditPhoneRequired     = errors.New("customer phone is required for credit payment")
+	ErrInvalidStatusTransition   = errors.New("invalid status transition")
+	ErrInvalidPrice              = errors.New("price must not be negative")
+	ErrItemNotVariablePriced     = errors.New("order item does not have a variable price")
+	ErrOrderItemNotFound         = errors.New("order item not found")
+	ErrCreditPhoneRequired       = errors.New("customer phone is required for credit payment")
+	ErrOrderLocked               = errors.New("order has been delivered/cancelled and can no longer be changed")
+	ErrPaymentRequiredToDeliver  = errors.New("order must be marked as paid before it can be delivered")
 )
 
 type OrderService struct {
@@ -105,10 +107,10 @@ type CreateOrderInput struct {
 	Notes             string                 `json:"notes"`
 	OrderType         string                 `json:"orderType"`
 	PaymentMethod     string                 `json:"paymentMethod"`
-	// PaidByCredit: the cashier checked "پرداخت اعتباری" at checkout —
+	// PaidByCredit: the cashier selected "پرداخت اعتباری" at checkout —
 	// requires an existing customer (matched by CustomerPhone) with
-	// credit payment enabled; the order total is charged to their
-	// credit account instead of collected at the register.
+	// credit payment enabled. The actual balance deduction only happens
+	// once the order is delivered (see UpdateStatus), not here.
 	PaidByCredit bool       `json:"paidByCredit"`
 	IsPaid       bool       `json:"isPaid"`
 	CashierID    *uuid.UUID `json:"cashierId"`
@@ -161,19 +163,21 @@ func (s *OrderService) Create(ctx context.Context, input CreateOrderInput) (*dom
 		paymentMethod = domain.PaymentMethodCash
 	}
 
-	// Credit-paid orders (پرداخت اعتباری) must charge an existing customer
-	// account before the order is saved — if the phone is missing or the
-	// customer/charge fails, the order should not be created at all,
-	// since there'd be no record of how it was actually paid for.
-	isPaid := input.IsPaid
-	if input.PaidByCredit {
-		if input.CustomerPhone == "" {
-			return nil, ErrCreditPhoneRequired
+	paidByCredit := input.PaidByCredit || paymentMethod == domain.PaymentMethodCredit
+	if paidByCredit && input.CustomerPhone == "" {
+		return nil, ErrCreditPhoneRequired
+	}
+	if paidByCredit {
+		// Just verify the customer exists & has credit enabled — the
+		// actual balance deduction is deferred until delivery.
+		customer, err := s.customerService.Lookup(ctx, input.CustomerPhone)
+		if err != nil || customer == nil {
+			return nil, ErrCustomerNotFound
 		}
-		if _, err := s.customerService.ChargeOrder(ctx, input.CustomerPhone, total); err != nil {
-			return nil, err
+		if !customer.CreditEnabled {
+			return nil, ErrCreditNotEnabled
 		}
-		isPaid = true
+		paymentMethod = domain.PaymentMethodCredit
 	}
 
 	order := &domain.Order{
@@ -188,8 +192,8 @@ func (s *OrderService) Create(ctx context.Context, input CreateOrderInput) (*dom
 		Status:            domain.OrderStatusPending,
 		OrderType:         orderType,
 		PaymentMethod:     paymentMethod,
-		PaidByCredit:      input.PaidByCredit,
-		IsPaid:            isPaid,
+		PaidByCredit:      paidByCredit,
+		IsPaid:            input.IsPaid,
 		CashierID:         input.CashierID,
 		CashierName:       input.CashierName,
 	}
@@ -208,23 +212,19 @@ type UpdatePaymentInput struct {
 }
 
 // UpdatePayment lets a cashier/admin set the payment method, "پرداخت شد"
-// flag, and credit-payment flag from an order's status-change modal. If
-// credit payment is being turned on for the first time (it wasn't already
-// charged), the amount is charged to the customer's credit account now;
-// if it's already applied, flipping the checkbox again doesn't re-charge.
+// flag, and credit-payment flag from an order's status-change modal.
+// Every change here is saved immediately, but it's only a *selection* —
+// the customer's credit balance itself is only actually charged once the
+// order is delivered (see UpdateStatus). Locked entirely once the order
+// has reached a final state (delivered/cancelled).
 func (s *OrderService) UpdatePayment(ctx context.Context, id uuid.UUID, input UpdatePaymentInput) (*domain.Order, error) {
 	order, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	if input.PaidByCredit && !order.PaidByCredit {
-		if order.CustomerPhone == "" {
-			return nil, ErrCreditPhoneRequired
-		}
-		if _, err := s.customerService.ChargeOrder(ctx, order.CustomerPhone, order.Total); err != nil {
-			return nil, err
-		}
+	if order.Status == domain.OrderStatusDelivered || order.Status == domain.OrderStatusCancelled {
+		return nil, ErrOrderLocked
 	}
 
 	paymentMethod := input.PaymentMethod
@@ -232,7 +232,21 @@ func (s *OrderService) UpdatePayment(ctx context.Context, id uuid.UUID, input Up
 		paymentMethod = order.PaymentMethod
 	}
 
-	if err := s.repo.UpdatePayment(ctx, id, paymentMethod, input.IsPaid, input.PaidByCredit); err != nil {
+	paidByCredit := input.PaidByCredit || paymentMethod == domain.PaymentMethodCredit
+	if paidByCredit {
+		if order.CustomerPhone == "" {
+			return nil, ErrCreditPhoneRequired
+		}
+		customer, err := s.customerService.Lookup(ctx, order.CustomerPhone)
+		if err != nil || customer == nil {
+			return nil, ErrCustomerNotFound
+		}
+		if !customer.CreditEnabled {
+			return nil, ErrCreditNotEnabled
+		}
+	}
+
+	if err := s.repo.UpdatePayment(ctx, id, paymentMethod, input.IsPaid, paidByCredit); err != nil {
 		return nil, err
 	}
 
@@ -255,8 +269,24 @@ func (s *OrderService) UpdateStatus(ctx context.Context, id uuid.UUID, input Upd
 		return nil, ErrInvalidStatusTransition
 	}
 
+	// Delivery requires the "پرداخت شد" checkbox to already be checked —
+	// otherwise an order could be handed over without being recorded as
+	// paid at all.
+	if input.Status == domain.OrderStatusDelivered && !order.IsPaid {
+		return nil, ErrPaymentRequiredToDeliver
+	}
+
 	if err := s.repo.UpdateStatus(ctx, id, input.Status, input.Note); err != nil {
 		return nil, err
+	}
+
+	// Only now — at the moment of actual delivery — does a credit-paid
+	// order's amount get charged against the customer's credit account.
+	// Before this point the UI only *shows* what the charge would be.
+	if input.Status == domain.OrderStatusDelivered && order.PaidByCredit && order.CustomerPhone != "" {
+		if _, err := s.customerService.ChargeOrder(ctx, order.CustomerPhone, order.Total, order.ID); err != nil {
+			return nil, err
+		}
 	}
 
 	return s.repo.FindByID(ctx, id)
@@ -275,6 +305,10 @@ func (s *OrderService) UpdateItemPrice(ctx context.Context, orderID, itemID uuid
 	order, err := s.repo.FindByID(ctx, orderID)
 	if err != nil {
 		return nil, err
+	}
+
+	if order.Status == domain.OrderStatusDelivered || order.Status == domain.OrderStatusCancelled {
+		return nil, ErrOrderLocked
 	}
 
 	var found bool

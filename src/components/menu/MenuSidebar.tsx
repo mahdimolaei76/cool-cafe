@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Coffee, Info, Phone, MapPin, Clock, Shield, MessageCircle, Search, Sun, Moon } from 'lucide-react';
+import { X, Coffee, Info, Phone, MapPin, Clock, Shield, Search, Sun, Moon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/utils/cn';
 import { useAppStore } from '@/store';
@@ -122,15 +122,18 @@ export default function MenuSidebar({ open, onClose }: MenuSidebarProps) {
               </button>
             </div>
 
-            {/* Social */}
+            {/* Contact */}
             <div className="p-4 border-t border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center justify-center gap-4">
-                <a href="#" className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-pink-500 transition-colors">
-                  <MessageCircle className="w-5 h-5" />
-                </a>
-                <a href="#" className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-green-500 transition-colors">
-                  <Phone className="w-5 h-5" />
-                </a>
+                {settings.phone && (
+                  <a
+                    href={`tel:${settings.phone}`}
+                    title={`تلفن کافه: ${settings.phone}`}
+                    className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-green-500 transition-colors"
+                  >
+                    <Phone className="w-5 h-5" />
+                  </a>
+                )}
               </div>
               <p className="text-center text-xs text-zinc-400 mt-3">نسخه ۱.۰.۰</p>
             </div>

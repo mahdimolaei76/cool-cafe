@@ -3,6 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -20,12 +22,14 @@ func NewCustomerHandler(customerService *service.CustomerService) *CustomerHandl
 
 func (h *CustomerHandler) List(w http.ResponseWriter, r *http.Request) {
 	search := r.URL.Query().Get("search")
-	customers, err := h.customerService.List(r.Context(), search)
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	pageSize, _ := strconv.Atoi(r.URL.Query().Get("pageSize"))
+	result, err := h.customerService.List(r.Context(), service.ListCustomersParams{Search: search, Page: page, PageSize: pageSize})
 	if err != nil {
 		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to fetch customers", err)
 		return
 	}
-	respondJSON(w, http.StatusOK, customers)
+	respondJSON(w, http.StatusOK, result)
 }
 
 // Lookup handles GET /customers/lookup?phone=... — used by the cashier
@@ -56,6 +60,37 @@ func (h *CustomerHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondJSON(w, http.StatusOK, customer)
+}
+
+// GetHistory handles GET /customers/{id}/history — the filterable,
+// paginated combined order+credit timeline for the "تاریخچه سفارشات" modal.
+func (h *CustomerHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid customer ID")
+		return
+	}
+	q := r.URL.Query()
+	page, _ := strconv.Atoi(q.Get("page"))
+	pageSize, _ := strconv.Atoi(q.Get("pageSize"))
+	params := service.HistoryParams{PaymentMethod: q.Get("paymentMethod"), Page: page, PageSize: pageSize}
+	if from := q.Get("dateFrom"); from != "" {
+		if t, err := time.Parse("2006-01-02", from); err == nil {
+			params.DateFrom = &t
+		}
+	}
+	if to := q.Get("dateTo"); to != "" {
+		if t, err := time.Parse("2006-01-02", to); err == nil {
+			t = t.Add(24*time.Hour - time.Second)
+			params.DateTo = &t
+		}
+	}
+	result, err := h.customerService.GetHistory(r.Context(), id, params)
+	if err != nil {
+		respondError(w, http.StatusNotFound, "مشتری یافت نشد")
+		return
+	}
+	respondJSON(w, http.StatusOK, result)
 }
 
 func (h *CustomerHandler) Create(w http.ResponseWriter, r *http.Request) {

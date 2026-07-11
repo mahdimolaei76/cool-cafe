@@ -80,7 +80,7 @@ export default function CreditAdjustModal({ open, onClose, customer, onAdjust }:
           {([
             { v: 'increase', l: 'افزایش اعتبار' },
             { v: 'purchase', l: 'خرید جدید' },
-            { v: 'settle', l: 'تسویه کامل بدهی' },
+            { v: 'settle', l: 'تسویه حساب کامل' },
           ] as { v: CreditAdjustKind; l: string }[]).map(opt => (
             <button
               key={opt.v}
@@ -97,22 +97,23 @@ export default function CreditAdjustModal({ open, onClose, customer, onAdjust }:
           ))}
         </div>
 
-        {kind !== 'settle' && (
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">مبلغ (تومان)</label>
-            <input
-              type="number"
-              inputMode="numeric"
-              placeholder="مبلغ را وارد کنید"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-            />
-          </div>
-        )}
-        {kind === 'settle' && (
-          <p className="text-sm text-zinc-500">با تأیید، حساب اعتباری این مشتری صفر می‌شود.</p>
-        )}
+        <div className="min-h-[76px]">
+          {kind !== 'settle' ? (
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">مبلغ (تومان)</label>
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder="مبلغ را وارد کنید"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-500">با تأیید، حساب اعتباری این مشتری صفر می‌شود.</p>
+          )}
+        </div>
       </div>
     </Modal>
   );

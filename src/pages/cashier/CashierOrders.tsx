@@ -114,10 +114,14 @@ export default function CashierOrders() {
     };
   }, [orders]);
 
-  const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
-    updateOrderStatus(orderId, newStatus);
-    setSelectedOrderId(null);
-    toast.success('وضعیت سفارش بروزرسانی شد');
+  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    try {
+      await updateOrderStatus(orderId, newStatus);
+      setSelectedOrderId(null);
+      toast.success('وضعیت سفارش بروزرسانی شد');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'تغییر وضعیت با خطا مواجه شد');
+    }
   };
 
   return (
@@ -206,7 +210,7 @@ export default function CashierOrders() {
                     className={cn('bg-white dark:bg-zinc-800 rounded-2xl border p-4 cursor-pointer transition-all hover:shadow-lg', isUrgent ? 'border-red-300 dark:border-red-800' : 'border-zinc-200 dark:border-zinc-700')}>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-black text-zinc-900 dark:text-zinc-100" dir="ltr">#{order.orderNumber.replace('COOL-', '')}</span>
+                        <span className="font-mono text-xs font-black px-2.5 py-1 bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-full" dir="ltr">#{order.orderNumber.replace('COOL-', '')}</span>
                         {isUrgent && <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse"><Bell className="w-3 h-3 inline" /> فوری</span>}
                       </div>
                       {config && <Badge variant={config.badgeVariant} dot>{config.label}</Badge>}
