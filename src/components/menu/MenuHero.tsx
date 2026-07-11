@@ -58,10 +58,6 @@ export default function MenuHero() {
               <Clock className="w-3.5 h-3.5" />
               {settings.workingHours || '۷ صبح – ۱۰ شب'}
             </div>
-            <div className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white/80 text-xs">
-              <Wifi className="w-3.5 h-3.5" />
-              وای‌فای رایگان
-            </div>
             <Link to="/track" className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-brand-800 text-xs font-bold shadow-sm hover:bg-white/90 transition-colors">
               <Search className="w-3.5 h-3.5" />
               پیگیری سفارش

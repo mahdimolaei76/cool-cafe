@@ -17,7 +17,6 @@ export default function CashierCreditManagement() {
   const [searching, setSearching] = useState(false);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
 
   const handleSearch = async () => {
     const err = iranianMobileError(phone, true);
@@ -86,13 +85,8 @@ export default function CashierCreditManagement() {
               {formatPrice(Math.abs(customer.creditBalance))}
             </span>
           </div>
-          <Button className="w-full" icon={<Wallet className="w-4 h-4" />} onClick={() => setModalOpen(true)}>
-            تغییر مقدار بدهی
-          </Button>
         </div>
       )}
-
-      <CreditAdjustModal open={modalOpen} onClose={() => setModalOpen(false)} customer={customer} onAdjust={handleAdjust} />
     </div>
   );
 }
