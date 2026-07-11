@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Check, Wallet, Banknote, CreditCard, Smartphone, MoreHorizontal } from 'lucide-react';
+import { Wallet, Banknote, CreditCard, Smartphone, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
 import { customerApi } from '@/lib/api';
@@ -89,7 +89,7 @@ export default function OrderPaymentPanel({ order }: { order: Order }) {
         </p>
       )}
 
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-5 gap-1.5">
         {mainMethods.map(m => {
           const disabled = saving || isLocked || (m.v === 'credit' && (customerLoading || !customerHasCredit));
           return (
@@ -101,27 +101,27 @@ export default function OrderPaymentPanel({ order }: { order: Order }) {
               className={cn(
                 'py-2 rounded-lg border-2 flex flex-col items-center justify-center gap-1 text-xs font-bold transition-all',
                 paymentMethod === m.v ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500',
-                disabled && 'opacity-40 cursor-not-allowed'
+                disabled && 'opacity-40 cursor-not-allowed',
+                m.v === 'credit' && customerLoading && 'animate-pulse'
               )}
             >
               <m.i className="w-3.5 h-3.5" />{m.l}
             </button>
           );
         })}
+        {/* گزینه کوچک‌تر «سایر» — کنار ۴ گزینه اصلی، نه در ردیف جدا */}
+        <button
+          disabled={saving || isLocked}
+          onClick={() => persist({ paymentMethod: 'other' })}
+          className={cn(
+            'py-2 rounded-lg border flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition-all',
+            paymentMethod === 'other' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-400',
+            (saving || isLocked) && 'opacity-40 cursor-not-allowed'
+          )}
+        >
+          <MoreHorizontal className="w-3 h-3" />سایر
+        </button>
       </div>
-
-      {/* گزینه کوچک‌تر «سایر» */}
-      <button
-        disabled={saving || isLocked}
-        onClick={() => persist({ paymentMethod: 'other' })}
-        className={cn(
-          'w-full py-1.5 rounded-lg border flex items-center justify-center gap-1.5 text-[11px] font-medium transition-all',
-          paymentMethod === 'other' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-400',
-          (saving || isLocked) && 'opacity-40 cursor-not-allowed'
-        )}
-      >
-        <MoreHorizontal className="w-3 h-3" />سایر
-      </button>
 
       {paymentMethod === 'credit' && (
         customerLoading ? (
@@ -138,9 +138,7 @@ export default function OrderPaymentPanel({ order }: { order: Order }) {
 
       <label className={cn('flex items-center gap-2', isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer')}>
         <input type="checkbox" disabled={saving || isLocked} checked={isPaid} onChange={e => persist({ isPaid: e.target.checked })} className="w-4 h-4 rounded" />
-        <span className="text-sm text-zinc-700 dark:text-zinc-300 flex items-center gap-1">
-          <Check className="w-3.5 h-3.5" />پرداخت شد
-        </span>
+        <span className="text-sm text-zinc-700 dark:text-zinc-300">پرداخت شد</span>
       </label>
       {!isPaid && !isLocked && (
         <p className="text-xs text-zinc-400">تا این تیک زده نشود، امکان تحویل سفارش وجود نخواهد داشت.</p>

@@ -39,6 +39,15 @@ export default function NewOrder() {
   const [cart, setCart] = useState<CartEntry[]>([]);
   const [success, setSuccess] = useState<Order | null>(null);
   const [customerModal, setCustomerModal] = useState(false);
+  const [customerDraft, setCustomerDraft] = useState({ firstName: '', lastName: '', phone: '', notes: '' });
+  const openCustomerModal = () => {
+    setCustomerDraft({ firstName: form.firstName, lastName: form.lastName, phone: form.phone, notes: form.notes });
+    setCustomerModal(true);
+  };
+  const confirmCustomerModal = () => {
+    setForm(p => ({ ...p, ...customerDraft }));
+    setCustomerModal(false);
+  };
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person' as OrderType, paymentMethod: 'cash' as PaymentMethod });
 
   const activeCategories = categories?.filter(c => c.isActive).sort((a, b) => a.order - b.order);
@@ -88,21 +97,28 @@ export default function NewOrder() {
   // انتخاب است؛ در این حالت پیش‌نمایش اعتبار فعلی/خرید جدید/اعتبار جدید
   // نمایش داده می‌شود (اعمال واقعی روی حساب فقط هنگام تحویل انجام می‌شود).
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
-  const [deferPayment, setDeferPayment] = useState(false);
+  // مقدار تایید شده (نمایش داده می‌شود و در سفارش ثبت می‌شود)
+  const [confirmedPaymentMethod, setConfirmedPaymentMethod] = useState<PaymentMethod | null>('cash');
+  const [confirmedDefer, setConfirmedDefer] = useState(false);
+  // مقدار موقت داخل مودال — تا «تأیید» زده نشود چیزی commit نمی‌شود، پس
+  // زدن «انصراف» هیچ تغییری در انتخاب فعلی سفارش ایجاد نمی‌کند.
+  const [draftPaymentMethod, setDraftPaymentMethod] = useState<PaymentMethod | null>('cash');
+  const [draftDefer, setDraftDefer] = useState(false);
   const [creditCustomer, setCreditCustomer] = useState<{ firstName: string; lastName: string; creditEnabled: boolean; creditBalance: number } | null>(null);
   const [creditChecking, setCreditChecking] = useState(false);
   const [creditError, setCreditError] = useState<string | null>(null);
 
-  const paidByCredit = selectedPaymentMethod === 'credit';
-  const isPaid = !deferPayment && !!selectedPaymentMethod;
+  const paidByCredit = confirmedPaymentMethod === 'credit';
+  const isPaid = !confirmedDefer && !!confirmedPaymentMethod;
 
   const openPaymentModal = async () => {
+    setDraftPaymentMethod(confirmedPaymentMethod);
+    setDraftDefer(confirmedDefer);
+    setCreditError(null);
     setPaymentModalOpen(true);
     const phoneErr = iranianMobileError(form.phone, true);
     if (phoneErr) { setCreditCustomer(null); return; }
     setCreditChecking(true);
-    setCreditError(null);
     try {
       const customer = await customerApi.lookup(form.phone);
       setCreditCustomer(customer);
@@ -119,16 +135,18 @@ export default function NewOrder() {
       return;
     }
     setCreditError(null);
-    setSelectedPaymentMethod(m);
-    setDeferPayment(false);
+    setDraftPaymentMethod(m);
+    setDraftDefer(false);
   };
 
   const confirmPaymentModal = () => {
-    if (!deferPayment && !selectedPaymentMethod) {
+    if (!draftDefer && !draftPaymentMethod) {
       toast.error('یک روش پرداخت انتخاب کنید یا «پرداخت در مراحل بعد» را بزنید');
       return;
     }
-    setForm(p => ({ ...p, paymentMethod: selectedPaymentMethod || 'cash' }));
+    setConfirmedPaymentMethod(draftPaymentMethod);
+    setConfirmedDefer(draftDefer);
+    setForm(p => ({ ...p, paymentMethod: draftPaymentMethod || 'cash' }));
     setPaymentModalOpen(false);
   };
 
@@ -186,10 +204,13 @@ export default function NewOrder() {
     setCart([]);
     setForm({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person', paymentMethod: 'cash' });
     setSuccess(null);
-    setSelectedPaymentMethod(null);
-    setDeferPayment(false);
+    setConfirmedPaymentMethod('cash');
+    setConfirmedDefer(false);
+    setDraftPaymentMethod('cash');
+    setDraftDefer(false);
     setCreditCustomer(null);
     setCreditError(null);
+    setCustomerDraft({ firstName: '', lastName: '', phone: '', notes: '' });
   };
 
   // ── Success ──
@@ -405,7 +426,7 @@ export default function NewOrder() {
               ))}
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setCustomerModal(true)} className="flex-1 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:border-brand-400 transition-colors flex items-center justify-center gap-2">
+              <button onClick={openCustomerModal} className="flex-1 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:border-brand-400 transition-colors flex items-center justify-center gap-2">
                 <User className="w-4 h-4" />{form.firstName ? `${form.firstName} ${form.lastName}` : 'مشتری'}
               </button>
               <input type="number" placeholder="تخفیف" value={form.discount || ''} onChange={e => setForm(p => ({ ...p, discount: parseInt(e.target.value) || 0 }))} className="w-28 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-transparent text-center text-sm font-bold placeholder:text-zinc-400 focus:outline-none focus:border-brand-500" />
@@ -416,12 +437,12 @@ export default function NewOrder() {
               onClick={openPaymentModal}
               className={cn(
                 'w-full py-2.5 rounded-xl border-2 flex items-center justify-center gap-2 text-sm font-bold transition-all',
-                selectedPaymentMethod && !deferPayment ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : deferPayment ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20 text-amber-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500'
+                confirmedPaymentMethod && !confirmedDefer ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : confirmedDefer ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20 text-amber-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500'
               )}
             >
               <Wallet className="w-4 h-4" />
-              {deferPayment ? 'پرداخت در مراحل بعد' : selectedPaymentMethod ? `روش پرداخت: ${paymentMethodLabels[selectedPaymentMethod]}` : 'گزینه پرداخت'}
-              {selectedPaymentMethod && !deferPayment && <Check className="w-4 h-4" />}
+              {confirmedDefer ? 'پرداخت در مراحل بعد' : confirmedPaymentMethod ? `روش پرداخت: ${paymentMethodLabels[confirmedPaymentMethod]}` : 'گزینه پرداخت'}
+              {confirmedPaymentMethod && !confirmedDefer && <Check className="w-4 h-4" />}
             </button>
             {paidByCredit && creditCustomer && (
               <div className="text-xs text-center text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl py-2">
@@ -455,22 +476,22 @@ export default function NewOrder() {
       <Modal open={customerModal} onClose={() => setCustomerModal(false)} title="اطلاعات مشتری" footer={
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={() => setCustomerModal(false)}>انصراف</Button>
-          <Button onClick={() => setCustomerModal(false)}>تأیید</Button>
+          <Button onClick={confirmCustomerModal}>تأیید</Button>
         </div>
       }>
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="نام" placeholder="نام" value={form.firstName} onChange={e => setForm(p => ({ ...p, firstName: e.target.value }))} />
-            <Input label="نام خانوادگی" placeholder="نام خانوادگی" value={form.lastName} onChange={e => setForm(p => ({ ...p, lastName: e.target.value }))} />
+            <Input label="نام" placeholder="نام" value={customerDraft.firstName} onChange={e => setCustomerDraft(p => ({ ...p, firstName: e.target.value }))} />
+            <Input label="نام خانوادگی" placeholder="نام خانوادگی" value={customerDraft.lastName} onChange={e => setCustomerDraft(p => ({ ...p, lastName: e.target.value }))} />
           </div>
           <Input
             label="شماره تماس"
             placeholder="۰۹۱۲۳۴۵۶۷۸۹"
-            value={form.phone}
-            onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
-            error={iranianMobileError(form.phone) || undefined}
+            value={customerDraft.phone}
+            onChange={e => setCustomerDraft(p => ({ ...p, phone: e.target.value }))}
+            error={iranianMobileError(customerDraft.phone) || undefined}
           />
-          <Textarea label="یادداشت" placeholder="توضیحات سفارش..." value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
+          <Textarea label="یادداشت" placeholder="توضیحات سفارش..." value={customerDraft.notes} onChange={e => setCustomerDraft(p => ({ ...p, notes: e.target.value }))} />
         </div>
       </Modal>
       {/* Payment Modal — گزینه پرداخت */}
@@ -481,7 +502,7 @@ export default function NewOrder() {
         </div>
       }>
         <div className="p-6 space-y-4">
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-5 gap-1.5">
             {(['cash', 'card', 'online', 'credit'] as PaymentMethod[]).map(m => {
               const Icon = paymentMethodIcons[m];
               const disabled = m === 'credit' && (creditChecking || !creditCustomer?.creditEnabled);
@@ -493,7 +514,7 @@ export default function NewOrder() {
                   title={m === 'credit' && !creditChecking && !creditCustomer?.creditEnabled ? 'این مشتری قابلیت پرداخت اعتباری ندارد' : undefined}
                   className={cn(
                     'py-2.5 rounded-xl border-2 flex flex-col items-center justify-center gap-1 text-xs font-bold transition-all',
-                    selectedPaymentMethod === m && !deferPayment ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500',
+                    draftPaymentMethod === m && !draftDefer ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500',
                     disabled && 'opacity-40 cursor-not-allowed'
                   )}
                 >
@@ -501,20 +522,21 @@ export default function NewOrder() {
                 </button>
               );
             })}
+            {/* گزینه کوچک‌تر «سایر» — کنار ۴ گزینه اصلی، نه در ردیف جدا */}
+            <button
+              onClick={() => choosePaymentMethod('other')}
+              className={cn(
+                'py-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition-all',
+                draftPaymentMethod === 'other' && !draftDefer ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-400'
+              )}
+            >
+              سایر
+            </button>
           </div>
-          <button
-            onClick={() => choosePaymentMethod('other')}
-            className={cn(
-              'w-full py-2 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-medium transition-all',
-              selectedPaymentMethod === 'other' && !deferPayment ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-400'
-            )}
-          >
-            سایر
-          </button>
 
           {creditError && <p className="text-xs text-red-500 text-center">{creditError}</p>}
 
-          {selectedPaymentMethod === 'credit' && !deferPayment && (
+          {draftPaymentMethod === 'credit' && !draftDefer && (
             creditChecking ? (
               <div className="h-16 rounded-xl bg-zinc-100 dark:bg-zinc-700/50 animate-pulse" />
             ) : creditCustomer && (
@@ -530,13 +552,13 @@ export default function NewOrder() {
           <label className="flex items-center gap-2 cursor-pointer pt-2 border-t border-zinc-100 dark:border-zinc-800">
             <input
               type="checkbox"
-              checked={deferPayment}
-              onChange={e => { setDeferPayment(e.target.checked); if (e.target.checked) setSelectedPaymentMethod(null); }}
+              checked={draftDefer}
+              onChange={e => { setDraftDefer(e.target.checked); if (e.target.checked) setDraftPaymentMethod(null); }}
               className="w-4 h-4 rounded"
             />
             <span className="text-sm text-zinc-700 dark:text-zinc-300">پرداخت در مراحل بعد</span>
           </label>
-          {deferPayment && (
+          {draftDefer && (
             <p className="text-xs text-zinc-400">سفارش بدون تعیین روش پرداخت ثبت می‌شود؛ می‌توانید بعداً از مدال تغییر وضعیت سفارش آن را مشخص کنید.</p>
           )}
         </div>

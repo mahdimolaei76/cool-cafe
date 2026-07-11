@@ -1,4 +1,4 @@
-import { ChevronRight, ChevronLeft } from 'lucide-react';
+import { ChevronRight, ChevronLeft, ChevronDown } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 interface PaginationProps {
@@ -46,16 +46,19 @@ export default function Pagination({
         <span>
           {total === 0 ? 'موردی یافت نشد' : `نمایش ${from.toLocaleString('fa-IR')} تا ${to.toLocaleString('fa-IR')} از ${total.toLocaleString('fa-IR')}`}
         </span>
-        <select
-          value={pageSize}
-          onChange={e => onPageSizeChange(Number(e.target.value))}
-          aria-label="تعداد در هر صفحه"
-          className="mr-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
-        >
-          {pageSizeOptions?.map(size => (
-            <option key={size} value={size}>{size} در صفحه</option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            value={pageSize}
+            onChange={e => onPageSizeChange(Number(e.target.value))}
+            aria-label="تعداد در هر صفحه"
+            className="appearance-none mr-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs pl-7 pr-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500/30 cursor-pointer"
+          >
+            {pageSizeOptions?.map(size => (
+              <option key={size} value={size}>{size} در صفحه</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
+        </div>
       </div>
 
       {totalPages > 1 && (

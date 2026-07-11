@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Search, Wallet, History, User, Phone } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Wallet, History, User, Phone, Filter } from 'lucide-react';
 import { useAppStore, formatPrice } from '@/store';
 import { customerApi } from '@/lib/api';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import Select from '@/components/ui/Select';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import EmptyState from '@/components/ui/EmptyState';
 import Banner from '@/components/ui/Banner';
 import Pagination from '@/components/ui/Pagination';
+import JalaliDatePicker from '@/components/ui/JalaliDatePicker';
 import CreditAdjustModal from '@/components/admin/CreditAdjustModal';
 import { iranianMobileError, normalizeIranianMobile } from '@/utils/phone';
 import { formatJalaliDateTime } from '@/utils/jalali';
@@ -313,40 +315,35 @@ export default function CustomerManagement() {
 
       {/* Order + credit history modal — fixed size/shape; only its
           content (filters/rows/pagination) changes while loading. */}
-      <Modal open={!!historyCustomer} onClose={() => setHistoryCustomer(null)} title={historyCustomer ? `تاریخچه سفارشات — ${historyCustomer.firstName} ${historyCustomer.lastName}` : ''} size="lg">
-        <div className="p-6 space-y-4">
-          {/* Filters */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <input
-              type="date"
-              value={historyDateFrom}
-              onChange={e => { setHistoryDateFrom(e.target.value); setHistoryPage(1); }}
-              className="px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-              aria-label="از تاریخ"
-            />
-            <input
-              type="date"
-              value={historyDateTo}
-              onChange={e => { setHistoryDateTo(e.target.value); setHistoryPage(1); }}
-              className="px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-              aria-label="تا تاریخ"
-            />
-            <select
-              value={historyPaymentFilter}
-              onChange={e => { setHistoryPaymentFilter(e.target.value as any); setHistoryPage(1); }}
-              className="col-span-2 sm:col-span-2 px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-              aria-label="نوع پرداخت"
-            >
-              <option value="">همه روش‌های پرداخت</option>
-              <option value="cash">نقدی</option>
-              <option value="card">کارت</option>
-              <option value="online">اینترنتی</option>
-              <option value="credit">اعتباری (تغییرات حساب)</option>
-              <option value="other">سایر</option>
-            </select>
+      <Modal open={!!historyCustomer} onClose={() => setHistoryCustomer(null)} title={historyCustomer ? `تاریخچه سفارشات — ${historyCustomer.firstName} ${historyCustomer.lastName}` : ''} size="xl">
+        <div className="p-6 space-y-5">
+          {/* بخش فیلترها */}
+          <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/60 dark:bg-zinc-800/30 space-y-3">
+            <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+              <Filter className="w-3.5 h-3.5" />فیلترها
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <JalaliDatePicker label="از تاریخ" value={historyDateFrom} onChange={v => { setHistoryDateFrom(v); setHistoryPage(1); }} />
+              <JalaliDatePicker label="تا تاریخ" value={historyDateTo} onChange={v => { setHistoryDateTo(v); setHistoryPage(1); }} />
+              <div className="col-span-2">
+                <Select
+                  label="نوع پرداخت"
+                  value={historyPaymentFilter}
+                  onChange={e => { setHistoryPaymentFilter(e.target.value as any); setHistoryPage(1); }}
+                  options={[
+                    { value: '', label: 'همه روش‌های پرداخت' },
+                    { value: 'cash', label: 'نقدی' },
+                    { value: 'card', label: 'کارت' },
+                    { value: 'online', label: 'اینترنتی' },
+                    { value: 'credit', label: 'اعتباری (تغییرات حساب)' },
+                    { value: 'other', label: 'سایر' },
+                  ]}
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-3 min-h-[240px]">
+          <div className="space-y-3 min-h-[280px]">
             {historyLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl h-16 animate-pulse" />
