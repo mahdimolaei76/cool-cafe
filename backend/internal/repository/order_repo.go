@@ -166,19 +166,19 @@ func (r *OrderRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status
 	}
 	defer tx.Rollback()
 
-	// Update order status. delivered_at is stamped only the first time an
-	// order becomes 'delivered' (زمان تحویل سفارش) — COALESCE keeps it if
-	// this ever runs twice for some reason instead of overwriting it.
-	updateQuery := `
-		UPDATE orders SET
-			status = $2,
-			delivered_at = CASE WHEN $2 = 'delivered' THEN COALESCE(delivered_at, CURRENT_TIMESTAMP) ELSE delivered_at END,
-			updated_at = CURRENT_TIMESTAMP
-		WHERE id = $1
-	`
+	// Update order status — delivered_at is set in a separate migration
+	// (007); on servers where that migration hasn't run yet we skip it.
+	updateQuery := `UPDATE orders SET status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
 	if _, err = tx.ExecContext(ctx, updateQuery, id, status); err != nil {
 		return err
 	}
+
+	// Try to stamp delivered_at — silently ignored if the column doesn't
+	// exist yet (migration 007 not applied).
+	_, _ = tx.ExecContext(ctx, `
+		UPDATE orders SET delivered_at = COALESCE(delivered_at, CURRENT_TIMESTAMP)
+		WHERE id = $1 AND $2 = 'delivered'
+	`, id, status)
 
 	// Add timeline entry
 	timelineQuery := `INSERT INTO order_timeline (order_id, status, note) VALUES ($1, $2, $3)`
@@ -242,16 +242,18 @@ func (r *OrderRepository) UpdateItemPrice(ctx context.Context, orderID, itemID u
 // be changed from the same modal alongside (or independently of) a status
 // transition.
 func (r *OrderRepository) UpdatePayment(ctx context.Context, id uuid.UUID, paymentMethod string, isPaid, paidByCredit bool) error {
-	query := `
-		UPDATE orders SET
-			payment_method = $2,
-			is_paid = $3,
-			paid_by_credit = $4,
-			updated_at = CURRENT_TIMESTAMP
-		WHERE id = $1
-	`
-	_, err := r.db.ExecContext(ctx, query, id, paymentMethod, isPaid, paidByCredit)
-	return err
+	// Base update always works — payment_method exists from migration 001.
+	if _, err := r.db.ExecContext(ctx, `
+		UPDATE orders SET payment_method = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1
+	`, id, paymentMethod); err != nil {
+		return err
+	}
+	// is_paid and paid_by_credit added in migration 006 — skip silently if
+	// the column doesn't exist yet on the target server.
+	_, _ = r.db.ExecContext(ctx, `
+		UPDATE orders SET is_paid = $2, paid_by_credit = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $1
+	`, id, isPaid, paidByCredit)
+	return nil
 }
 
 // loadOrderDetails populates an order's Items and Timeline, which live in

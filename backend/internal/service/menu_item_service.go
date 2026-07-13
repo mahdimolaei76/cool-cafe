@@ -123,3 +123,23 @@ func (s *MenuItemService) Update(ctx context.Context, id uuid.UUID, input Update
 func (s *MenuItemService) Delete(ctx context.Context, id uuid.UUID) error {
 	return s.repo.Delete(ctx, id)
 }
+
+// ListByCategory returns items for a single category, sorted by sort_order.
+func (s *MenuItemService) ListByCategory(ctx context.Context, categoryID uuid.UUID) ([]domain.MenuItem, error) {
+	return s.repo.ListByCategory(ctx, categoryID)
+}
+
+// ReorderItems sets sort_order 1..N on the given item IDs (in the order
+// they appear in the slice). Items not in the list are unaffected.
+func (s *MenuItemService) ReorderItems(ctx context.Context, ids []string) error {
+	for i, idStr := range ids {
+		id, err := uuid.Parse(idStr)
+		if err != nil {
+			return err
+		}
+		if err := s.repo.UpdateSortOrder(ctx, id, i+1); err != nil {
+			return err
+		}
+	}
+	return nil
+}

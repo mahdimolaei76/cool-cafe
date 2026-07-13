@@ -5,6 +5,7 @@ import { CheckCircle2, Bell, Search, DollarSign, ShoppingBag, TrendingUp, X, Clo
 import dayjs from 'dayjs';
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
+import { useOrderPolling } from '@/hooks/useOrderPolling';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Banner from '@/components/ui/Banner';
@@ -34,6 +35,7 @@ const allStatuses: OrderStatus[] = ['pending', 'preparing', 'ready', 'delivered'
 
 export default function CashierOrders() {
   const { orders: rawOrders, updateOrderStatus, updateOrderItemPrice, loading } = useAppStore();
+  useOrderPolling();
   const orders = rawOrders ?? [];
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');

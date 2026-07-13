@@ -92,9 +92,11 @@ export const categoryApi = {
 export const menuApi = {
   list: (availableOnly = false) => request<any[]>(`/menu${availableOnly ? '?available=true' : '?available=false'}`),
   get: (id: string) => request<any>(`/menu/${id}`),
+  byCategory: (categoryId: string) => request<any[]>(`/menu/by-category/${categoryId}`),
   create: (data: any) => request<any>('/menu', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: any) => request<any>(`/menu/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => request<void>(`/menu/${id}`, { method: 'DELETE' }),
+  reorder: (ids: string[]) => request<void>('/menu/reorder', { method: 'PATCH', body: JSON.stringify({ ids }) }),
 };
 
 // ─── Orders ───

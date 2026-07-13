@@ -45,6 +45,7 @@ type MenuItem struct {
 	ImageURL    string     `db:"image_url" json:"image"`
 	IsAvailable bool       `db:"is_available" json:"isAvailable"`
 	IsFeatured  bool       `db:"is_featured" json:"isFeatured"`
+	SortOrder   int        `db:"sort_order" json:"order"`
 	CreatedAt   time.Time  `db:"created_at" json:"createdAt"`
 	UpdatedAt   time.Time  `db:"updated_at" json:"updatedAt"`
 	Category    *Category  `db:"-" json:"category,omitempty"`

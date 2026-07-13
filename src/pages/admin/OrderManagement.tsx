@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Search, Clock, CheckCircle2, XCircle, Truck, ChefHat, RefreshCw, Phone, Receipt, User, MoreVertical } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { useOrderPolling } from '@/hooks/useOrderPolling';
 import { useAppStore, formatPrice } from '@/store';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -31,6 +32,7 @@ const paymentLabels: Record<string, string> = { 'cash': 'نقدی', 'card': 'ک�
 
 export default function OrderManagement() {
   const { orders: rawOrders, updateOrderStatus, loading } = useAppStore();
+  useOrderPolling();
   const orders = rawOrders ?? [];
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');

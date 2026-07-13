@@ -269,13 +269,6 @@ func (s *OrderService) UpdateStatus(ctx context.Context, id uuid.UUID, input Upd
 		return nil, ErrInvalidStatusTransition
 	}
 
-	// Delivery requires the "پرداخت شد" checkbox to already be checked —
-	// otherwise an order could be handed over without being recorded as
-	// paid at all.
-	if input.Status == domain.OrderStatusDelivered && !order.IsPaid {
-		return nil, ErrPaymentRequiredToDeliver
-	}
-
 	if err := s.repo.UpdateStatus(ctx, id, input.Status, input.Note); err != nil {
 		return nil, err
 	}

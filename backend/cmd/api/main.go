@@ -113,6 +113,7 @@ func main() {
 		r.Get("/categories", categoryHandler.List)
 		r.Get("/menu", menuItemHandler.List)
 		r.Get("/menu/{id}", menuItemHandler.Get)
+		r.Get("/menu/by-category/{categoryId}", menuItemHandler.ListByCategory)
 		r.Post("/orders", orderHandler.Create)
 		r.Post("/orders/track", orderHandler.Track)
 		r.Get("/settings", settingsHandler.Get)
@@ -132,6 +133,7 @@ func main() {
 			r.Post("/menu", menuItemHandler.Create)
 			r.Put("/menu/{id}", menuItemHandler.Update)
 			r.Delete("/menu/{id}", menuItemHandler.Delete)
+			r.Patch("/menu/reorder", menuItemHandler.ReorderItems)
 
 			r.Get("/orders", orderHandler.List)
 			r.Get("/orders/{id}", orderHandler.Get)

@@ -29,6 +29,8 @@ export interface MenuItem {
   image: string;
   isAvailable: boolean;
   isFeatured: boolean;
+  /** Display order within this item's category (sort_order from the DB). */
+  order: number;
   createdAt: string;
   updatedAt: string;
 }
