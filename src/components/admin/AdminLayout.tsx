@@ -8,6 +8,7 @@ import {
 import { cn } from '@/utils/cn';
 import { useAppStore } from '@/store';
 import { useAuthStore } from '@/store/authStore';
+import { useOrderPolling } from '@/hooks/useOrderPolling';
 import ScrollRow from '@/components/ui/ScrollRow';
 
 // منوی Admin
@@ -36,6 +37,7 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, toggleTheme, orders: rawOrders, apiOnline } = useAppStore();
+  useOrderPolling();
   const { user, logout } = useAuthStore();
   const orders = rawOrders ?? [];
 

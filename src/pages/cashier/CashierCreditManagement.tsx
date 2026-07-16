@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Search, Wallet, Phone, User } from 'lucide-react';
+import { Search,  Phone, User } from 'lucide-react';
 import { formatPrice } from '@/store';
 import { customerApi } from '@/lib/api';
 import Button from '@/components/ui/Button';
@@ -17,6 +17,7 @@ export default function CashierCreditManagement() {
   const [searching, setSearching] = useState(false);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const handleSearch = async () => {
     const err = iranianMobileError(phone, true);
@@ -87,6 +88,8 @@ export default function CashierCreditManagement() {
           </div>
         </div>
       )}
+
+      <CreditAdjustModal open={modalOpen} onClose={() => setModalOpen(false)} customer={customer} onAdjust={handleAdjust} />
     </div>
   );
 }

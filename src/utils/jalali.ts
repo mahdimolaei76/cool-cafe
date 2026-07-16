@@ -120,7 +120,21 @@ function d2j(jdn: number): JalaliDate {
   return { jy, jm, jd };
 }
 
-/** Convert a Gregorian JS Date to Jalali (year, month, day). */
+/**
+ * Parse a date input robustly. ISO strings from the backend always come
+ * in UTC (with or without explicit 'Z') — we force UTC interpretation so
+ * the same timestamp shows the same Jalali date regardless of the browser's
+ * local timezone.
+ */
+function parseDate(input: string | number | Date): Date {
+  if (input instanceof Date) return input;
+  if (typeof input === 'number') return new Date(input);
+  // If the string already has a timezone indicator leave it alone.
+  // Otherwise append 'Z' so JS parses it as UTC, not local time.
+  const s = String(input).trim();
+  const hasZone = /[Zz]$|[+-]\d{2}:?\d{2}$/.test(s);
+  return new Date(hasZone ? s : s + 'Z');
+}
 export function toJalali(date: Date): JalaliDate {
   const jdn = g2d(date.getFullYear(), date.getMonth() + 1, date.getDate());
   return d2j(jdn);
@@ -148,7 +162,7 @@ function pad2(n: number): string {
  * HH, mm, ss.
  */
 export function formatJalali(input: string | number | Date, format = 'YYYY/MM/DD'): string {
-  const date = input instanceof Date ? input : new Date(input);
+  const date = parseDate(input);
   if (Number.isNaN(date.getTime())) return '';
 
   const { jy, jm, jd } = toJalali(date);
@@ -183,7 +197,7 @@ export function formatJalaliDateTime(input: string | number | Date): string {
 
 /** Relative time in Persian, e.g. "۵ دقیقه پیش" / "چند لحظه پیش". */
 export function fromNowFa(input: string | number | Date): string {
-  const date = input instanceof Date ? input : new Date(input);
+  const date = parseDate(input);
   const diffSec = Math.round((Date.now() - date.getTime()) / 1000);
   const abs = Math.abs(diffSec);
   const future = diffSec < 0;
