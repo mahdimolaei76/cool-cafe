@@ -110,14 +110,14 @@ func (r *OrderRepository) Create(ctx context.Context, order *domain.Order) error
 	// Insert order
 	orderQuery := `
 		INSERT INTO orders (order_number, tracking_code, customer_first_name, customer_last_name, customer_phone, 
-			subtotal, discount, total, notes, status, order_type, payment_method, paid_by_credit, is_paid, cashier_id, cashier_name)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+			subtotal, discount, service_charge, total, notes, status, order_type, is_takeaway, payment_method, paid_by_credit, is_paid, cashier_id, cashier_name)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 		RETURNING id, created_at, updated_at
 	`
 	err = tx.QueryRowContext(ctx, orderQuery,
 		order.OrderNumber, order.TrackingCode, order.CustomerFirstName, order.CustomerLastName, order.CustomerPhone,
-		order.Subtotal, order.Discount, order.Total, order.Notes, order.Status,
-		order.OrderType, order.PaymentMethod, order.PaidByCredit, order.IsPaid, order.CashierID, order.CashierName,
+		order.Subtotal, order.Discount, order.ServiceCharge, order.Total, order.Notes, order.Status,
+		order.OrderType, order.IsTakeaway, order.PaymentMethod, order.PaidByCredit, order.IsPaid, order.CashierID, order.CashierName,
 	).Scan(&order.ID, &order.CreatedAt, &order.UpdatedAt)
 	if err != nil {
 		return err
@@ -276,6 +276,13 @@ func (r *OrderRepository) loadOrderDetails(ctx context.Context, order *domain.Or
 	}
 	order.Timeline = timeline
 
+	// Load payment events (silently skip if the table doesn't exist yet)
+	var events []domain.OrderPaymentEvent
+	_ = r.db.SelectContext(ctx, &events, `
+		SELECT * FROM order_payment_events WHERE order_id = $1 ORDER BY created_at ASC
+	`, order.ID)
+	order.PaymentEvents = events
+
 	return nil
 }
 
@@ -366,4 +373,89 @@ func (r *OrderRepository) GetStatsByDateRange(ctx context.Context, from, to time
 	stats["avgOrderValue"] = avgOrderValue
 
 	return stats, nil
+}
+
+// UpdateTotal sets a manual price override on an order and records a
+// payment event. cashierName is included for audit purposes.
+func (r *OrderRepository) UpdateTotal(ctx context.Context, orderID uuid.UUID, newTotal int64, cashierName string) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var oldTotal int64
+	if err := tx.GetContext(ctx, &oldTotal, `SELECT total FROM orders WHERE id = $1`, orderID); err != nil {
+		return err
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE orders SET total = $2, price_override = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1
+	`, orderID, newTotal); err != nil {
+		return err
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO order_payment_events (order_id, kind, old_value, new_value, cashier)
+		VALUES ($1, 'price_override', $2, $3, $4)
+	`, orderID, fmt.Sprintf("%d", oldTotal), fmt.Sprintf("%d", newTotal), cashierName); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// UpdateServiceCharge sets the service charge on an order and recalculates total.
+func (r *OrderRepository) UpdateServiceCharge(ctx context.Context, orderID uuid.UUID, serviceCharge int64, cashierName string) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var order struct {
+		OldServiceCharge int64  `db:"service_charge"`
+		Subtotal         int64  `db:"subtotal"`
+		Discount         int64  `db:"discount"`
+		PriceOverride    *int64 `db:"price_override"`
+	}
+	if err := tx.GetContext(ctx, &order, `SELECT service_charge, subtotal, discount, price_override FROM orders WHERE id = $1`, orderID); err != nil {
+		return err
+	}
+
+	// Only recalculate if there's no manual price override
+	newTotal := order.Subtotal - order.Discount + serviceCharge
+	if order.PriceOverride != nil {
+		newTotal = *order.PriceOverride
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE orders SET service_charge = $2, total = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $1
+	`, orderID, serviceCharge, newTotal); err != nil {
+		return err
+	}
+
+	_, _ = tx.ExecContext(ctx, `
+		INSERT INTO order_payment_events (order_id, kind, old_value, new_value, cashier)
+		VALUES ($1, 'service_charge', $2, $3, $4)
+	`, orderID, fmt.Sprintf("%d", order.OldServiceCharge), fmt.Sprintf("%d", serviceCharge), cashierName)
+
+	return tx.Commit()
+}
+
+// UpdateItemServiceCharge sets the service charge on a specific order item.
+func (r *OrderRepository) UpdateItemServiceCharge(ctx context.Context, orderID, itemID uuid.UUID, serviceCharge int64, cashierName string) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE order_items SET service_charge = $3 WHERE id = $2 AND order_id = $1
+	`, orderID, itemID, serviceCharge)
+	return err
+}
+
+// AddPaymentEvent records an arbitrary payment/operation event for audit.
+func (r *OrderRepository) AddPaymentEvent(ctx context.Context, orderID uuid.UUID, kind, oldVal, newVal, cashierName string) error {
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO order_payment_events (order_id, kind, old_value, new_value, cashier)
+		VALUES ($1, $2, $3, $4, $5)
+	`, orderID, kind, oldVal, newVal, cashierName)
+	return err
 }

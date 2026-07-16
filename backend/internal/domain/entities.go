@@ -61,27 +61,40 @@ type Order struct {
 	CustomerPhone     string     `db:"customer_phone" json:"customerPhone"`
 	Subtotal          int64      `db:"subtotal" json:"subtotal"`
 	Discount          int64      `db:"discount" json:"discount"`
+	ServiceCharge     int64      `db:"service_charge" json:"serviceCharge"`
+	// PriceOverride: when set, overrides the calculated total (subtotal - discount + service_charge)
+	// with a manually entered amount. NULL = use calculated total.
+	PriceOverride     *int64     `db:"price_override" json:"priceOverride,omitempty"`
 	Total             int64      `db:"total" json:"total"`
 	Notes             string     `db:"notes" json:"notes"`
 	Status            string     `db:"status" json:"status"`
 	OrderType         string     `db:"order_type" json:"orderType"`
+	// IsTakeaway marks this as a takeaway (بیرون‌بر) order
+	IsTakeaway        bool       `db:"is_takeaway" json:"isTakeaway"`
 	PaymentMethod     string     `db:"payment_method" json:"paymentMethod"`
-	// PaidByCredit is true when this order's amount was charged against
-	// the customer's credit account (پرداخت اعتباری) rather than
-	// collected at the register. IsPaid is the separate "پرداخت شد"
-	// checkbox shown next to the payment method dropdown.
-	PaidByCredit bool            `db:"paid_by_credit" json:"paidByCredit"`
-	IsPaid       bool            `db:"is_paid" json:"isPaid"`
-	CashierID    *uuid.UUID      `db:"cashier_id" json:"cashierId,omitempty"`
-	CashierName  string          `db:"cashier_name" json:"cashier"`
-	CreatedAt    time.Time       `db:"created_at" json:"createdAt"`
-	UpdatedAt    time.Time       `db:"updated_at" json:"updatedAt"`
-	// DeliveredAt is set exactly once, the moment the order's status
-	// transitions to "delivered" (زمان تحویل سفارش). CreatedAt already
-	// serves as the "زمان گرفتن سفارش".
-	DeliveredAt *time.Time      `db:"delivered_at" json:"deliveredAt,omitempty"`
-	Items       []OrderItem     `db:"-" json:"items"`
-	Timeline    []OrderTimeline `db:"-" json:"timeline"`
+	PaidByCredit      bool       `db:"paid_by_credit" json:"paidByCredit"`
+	IsPaid            bool       `db:"is_paid" json:"isPaid"`
+	CashierID         *uuid.UUID `db:"cashier_id" json:"cashierId,omitempty"`
+	CashierName       string     `db:"cashier_name" json:"cashier"`
+	CreatedAt         time.Time  `db:"created_at" json:"createdAt"`
+	UpdatedAt         time.Time  `db:"updated_at" json:"updatedAt"`
+	DeliveredAt       *time.Time `db:"delivered_at" json:"deliveredAt,omitempty"`
+	Items             []OrderItem          `db:"-" json:"items"`
+	Timeline          []OrderTimeline      `db:"-" json:"timeline"`
+	PaymentEvents     []OrderPaymentEvent  `db:"-" json:"paymentEvents"`
+}
+
+// OrderPaymentEvent is one entry in the per-order payment log — shown
+// alongside the status timeline but with distinct styling.
+type OrderPaymentEvent struct {
+	ID        uuid.UUID `db:"id" json:"id"`
+	OrderID   uuid.UUID `db:"order_id" json:"orderId"`
+	Kind      string    `db:"kind" json:"kind"`  // price_override | payment_method | paid | service_charge
+	OldValue  string    `db:"old_value" json:"oldValue"`
+	NewValue  string    `db:"new_value" json:"newValue"`
+	Note      string    `db:"note" json:"note,omitempty"`
+	Cashier   string    `db:"cashier" json:"cashier,omitempty"`
+	CreatedAt time.Time `db:"created_at" json:"createdAt"`
 }
 
 // Customer represents a café customer managed from the admin panel
@@ -109,11 +122,8 @@ type OrderItem struct {
 	Price           int64      `db:"price" json:"price"`
 	Quantity        int        `db:"quantity" json:"quantity"`
 	Subtotal        int64      `db:"subtotal" json:"subtotal"`
+	ServiceCharge   int64      `db:"service_charge" json:"serviceCharge"`
 	Notes           string     `db:"notes" json:"notes,omitempty"`
-	// IsPriceVariable/PriceConfirmed/PriceLabel support items whose price
-	// isn't fixed (e.g. "قیمت بازار"): the cashier fills in Price later,
-	// and until PriceConfirmed is true this line is excluded from the
-	// order's subtotal/total rather than silently counted as free.
 	IsPriceVariable bool       `db:"is_price_variable" json:"isPriceVariable"`
 	PriceConfirmed  bool       `db:"price_confirmed" json:"priceConfirmed"`
 	PriceLabel      string     `db:"price_label" json:"priceLabel,omitempty"`
@@ -190,15 +200,17 @@ const (
 // per-user, since it describes the café itself (shown on the public
 // menu sidebar as well as the admin settings page).
 type Settings struct {
-	ID           int             `db:"id" json:"-"`
-	Name         string          `db:"name" json:"name"`
-	Phone        string          `db:"phone" json:"phone"`
-	Email        string          `db:"email" json:"email"`
-	Address      string          `db:"address" json:"address"`
-	WorkingHours string          `db:"working_hours" json:"workingHours"`
-	AboutText    string          `db:"about_text" json:"aboutText"`
-	FooterIcons  json.RawMessage `db:"footer_icons" json:"footerIcons"`
-	UpdatedAt    time.Time       `db:"updated_at" json:"updatedAt"`
+	ID                  int             `db:"id" json:"-"`
+	Name                string          `db:"name" json:"name"`
+	Phone               string          `db:"phone" json:"phone"`
+	Email               string          `db:"email" json:"email"`
+	Address             string          `db:"address" json:"address"`
+	WorkingHours        string          `db:"working_hours" json:"workingHours"`
+	AboutText           string          `db:"about_text" json:"aboutText"`
+	FooterIcons         json.RawMessage `db:"footer_icons" json:"footerIcons"`
+	TakeawayFeeEnabled  bool            `db:"takeaway_fee_enabled" json:"takeawayFeeEnabled"`
+	TakeawayFee         int64           `db:"takeaway_fee" json:"takeawayFee"`
+	UpdatedAt           time.Time       `db:"updated_at" json:"updatedAt"`
 }
 
 // FooterIcon is one entry of the (max 5) dynamic bottom-nav icon links

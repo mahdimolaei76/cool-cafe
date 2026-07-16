@@ -116,6 +116,12 @@ export const orderApi = {
     request<any>(`/orders/${orderId}/items/${itemId}/price`, { method: 'PATCH', body: JSON.stringify({ price }) }),
   updatePayment: (orderId: string, data: { paymentMethod: string; isPaid: boolean; paidByCredit: boolean }) =>
     request<any>(`/orders/${orderId}/payment`, { method: 'PATCH', body: JSON.stringify(data) }),
+  updateTotal: (id: string, total: number, cashier = '') =>
+    request<any>(`/orders/${id}/total`, { method: 'PATCH', body: JSON.stringify({ total, cashier }) }),
+  updateServiceCharge: (id: string, serviceCharge: number, cashier = '') =>
+    request<any>(`/orders/${id}/service-charge`, { method: 'PATCH', body: JSON.stringify({ serviceCharge, cashier }) }),
+  updateItemServiceCharge: (orderId: string, itemId: string, serviceCharge: number, cashier = '') =>
+    request<any>(`/orders/${orderId}/items/${itemId}/service-charge`, { method: 'PATCH', body: JSON.stringify({ serviceCharge, cashier }) }),
   track: (trackingCode: string, phone: string) =>
     request<any>('/orders/track', { method: 'POST', body: JSON.stringify({ trackingCode, phone }) }),
 };
@@ -152,7 +158,7 @@ export const customerApi = {
 // ─── Settings ───
 export const settingsApi = {
   get: () => request<any>('/settings'),
-  update: (data: { name: string; phone: string; email: string; address: string }) =>
+  update: (data: any) =>
     request<any>('/settings', { method: 'PUT', body: JSON.stringify(data) }),
 };
 

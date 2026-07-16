@@ -39,25 +39,28 @@ export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered' | 'can
 export type OrderType = 'in-person' | 'online';
 export type PaymentMethod = 'cash' | 'card' | 'online' | 'credit' | 'other';
 
+export interface OrderPaymentEvent {
+  id: string;
+  orderId: string;
+  kind: 'price_override' | 'payment_method' | 'paid' | 'service_charge';
+  oldValue: string;
+  newValue: string;
+  note?: string;
+  cashier?: string;
+  createdAt: string;
+}
+
 export interface OrderItem {
   id: string;
   menuItemId: string;
   menuItem?: MenuItem;
   name: string;
-  /** For variable-priced items this is 0 (or a placeholder) until the
-   * cashier confirms the real price — see `priceConfirmed`. */
   price: number;
   quantity: number;
   subtotal: number;
-  /** True if this line's price still needs to be set by the cashier
-   * (copied from the menu item's priceType at the time it was ordered,
-   * since prices/labels can change later but the order shouldn't). */
+  serviceCharge: number;
   isPriceVariable?: boolean;
-  /** For variable-priced items: false until a cashier enters the actual
-   * price during order processing/confirmation. Fixed-price items are
-   * always considered confirmed. */
   priceConfirmed?: boolean;
-  /** Free-text label shown in place of a price while unconfirmed, e.g. "قیمت بازار". */
   priceLabel?: string;
 }
 
@@ -69,33 +72,24 @@ export interface Order {
   customerLastName: string;
   customerPhone: string;
   items: OrderItem[];
-  /** Sum of confirmed/fixed-price items only. Items with an unconfirmed
-   * variable price (see OrderItem.priceConfirmed) are excluded — they're
-   * tracked separately, like a pending line the cashier still needs to
-   * price, rather than silently counted as free or blocking the rest of
-   * the order from being totaled. */
   subtotal: number;
   discount: number;
+  serviceCharge: number;
+  priceOverride?: number;
   total: number;
   notes: string;
   status: OrderStatus;
   orderType: OrderType;
+  isTakeaway: boolean;
   paymentMethod: PaymentMethod;
-  /** True if this order's amount was charged to the customer's credit
-   * account (پرداخت اعتباری) instead of collected at the register. */
   paidByCredit?: boolean;
-  /** The "پرداخت شد" checkbox — independent of paidByCredit/paymentMethod. */
   isPaid?: boolean;
   cashier: string;
   timeline: OrderTimeline[];
+  paymentEvents?: OrderPaymentEvent[];
   createdAt: string;
   updatedAt: string;
-  /** Set exactly once — the moment the order's status becomes "delivered"
-   * (زمان تحویل سفارش). createdAt already serves as زمان گرفتن سفارش. */
   deliveredAt?: string;
-  /** True only for orders created locally when the backend could not be
-   * reached — they exist on this device only and were NOT saved to the
-   * server, so kitchen/reports/other devices won't see them yet. */
   _unsynced?: boolean;
 }
 
@@ -198,10 +192,10 @@ export interface CafeSettings {
   email: string;
   address: string;
   theme: 'light' | 'dark' | 'system';
-  /** e.g. "۷ صبح تا ۱۰ شب" — shown wherever working hours used to be hardcoded. */
   workingHours: string;
-  /** Free-text shown on the public "درباره ما" page. */
   aboutText: string;
+  takeawayFeeEnabled: boolean;
+  takeawayFee: number;
 }
 
 export interface ReportFilters {

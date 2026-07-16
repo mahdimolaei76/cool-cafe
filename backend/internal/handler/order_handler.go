@@ -247,3 +247,89 @@ func (h *OrderHandler) Track(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, http.StatusOK, order)
 }
+
+// UpdateTotal handles PATCH /orders/{id}/total — sets a manual price override.
+func (h *OrderHandler) UpdateTotal(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid order ID")
+		return
+	}
+	var input struct {
+		Total      int64  `json:"total"`
+		CashierName string `json:"cashier"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	order, err := h.orderService.UpdateTotal(r.Context(), id, input.Total, input.CashierName)
+	if err != nil {
+		if err == service.ErrOrderLocked {
+			respondError(w, http.StatusBadRequest, "این سفارش تحویل داده شده یا لغو شده و قابل تغییر نیست")
+			return
+		}
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update total", err)
+		return
+	}
+	respondJSON(w, http.StatusOK, order)
+}
+
+// UpdateServiceCharge handles PATCH /orders/{id}/service-charge
+func (h *OrderHandler) UpdateServiceCharge(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid order ID")
+		return
+	}
+	var input struct {
+		ServiceCharge int64  `json:"serviceCharge"`
+		CashierName   string `json:"cashier"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	order, err := h.orderService.UpdateServiceCharge(r.Context(), id, input.ServiceCharge, input.CashierName)
+	if err != nil {
+		if err == service.ErrOrderLocked {
+			respondError(w, http.StatusBadRequest, "این سفارش تحویل داده شده یا لغو شده و قابل تغییر نیست")
+			return
+		}
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update service charge", err)
+		return
+	}
+	respondJSON(w, http.StatusOK, order)
+}
+
+// UpdateItemServiceCharge handles PATCH /orders/{id}/items/{itemId}/service-charge
+func (h *OrderHandler) UpdateItemServiceCharge(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid order ID")
+		return
+	}
+	itemID, err := uuid.Parse(chi.URLParam(r, "itemId"))
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid item ID")
+		return
+	}
+	var input struct {
+		ServiceCharge int64  `json:"serviceCharge"`
+		CashierName   string `json:"cashier"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	order, err := h.orderService.UpdateItemServiceCharge(r.Context(), id, itemID, input.ServiceCharge, input.CashierName)
+	if err != nil {
+		if err == service.ErrOrderLocked {
+			respondError(w, http.StatusBadRequest, "این سفارش تحویل داده شده یا لغو شده و قابل تغییر نیست")
+			return
+		}
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update item service charge", err)
+		return
+	}
+	respondJSON(w, http.StatusOK, order)
+}

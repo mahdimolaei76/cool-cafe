@@ -104,17 +104,15 @@ type CreateOrderInput struct {
 	CustomerPhone     string                 `json:"customerPhone"`
 	Items             []CreateOrderItemInput `json:"items"`
 	Discount          int64                  `json:"discount"`
+	ServiceCharge     int64                  `json:"serviceCharge"`
 	Notes             string                 `json:"notes"`
 	OrderType         string                 `json:"orderType"`
+	IsTakeaway        bool                   `json:"isTakeaway"`
 	PaymentMethod     string                 `json:"paymentMethod"`
-	// PaidByCredit: the cashier selected "پرداخت اعتباری" at checkout —
-	// requires an existing customer (matched by CustomerPhone) with
-	// credit payment enabled. The actual balance deduction only happens
-	// once the order is delivered (see UpdateStatus), not here.
-	PaidByCredit bool       `json:"paidByCredit"`
-	IsPaid       bool       `json:"isPaid"`
-	CashierID    *uuid.UUID `json:"cashierId"`
-	CashierName  string     `json:"cashier"`
+	PaidByCredit      bool                   `json:"paidByCredit"`
+	IsPaid            bool                   `json:"isPaid"`
+	CashierID         *uuid.UUID             `json:"cashierId"`
+	CashierName       string                 `json:"cashier"`
 }
 
 func (s *OrderService) Create(ctx context.Context, input CreateOrderInput) (*domain.Order, error) {
@@ -147,7 +145,7 @@ func (s *OrderService) Create(ctx context.Context, input CreateOrderInput) (*dom
 		}
 	}
 
-	total := subtotal - input.Discount
+	total := subtotal - input.Discount + input.ServiceCharge
 	if total < 0 {
 		total = 0
 	}
@@ -187,10 +185,12 @@ func (s *OrderService) Create(ctx context.Context, input CreateOrderInput) (*dom
 		Items:             orderItems,
 		Subtotal:          subtotal,
 		Discount:          input.Discount,
+		ServiceCharge:     input.ServiceCharge,
 		Total:             total,
 		Notes:             input.Notes,
 		Status:            domain.OrderStatusPending,
 		OrderType:         orderType,
+		IsTakeaway:        input.IsTakeaway,
 		PaymentMethod:     paymentMethod,
 		PaidByCredit:      paidByCredit,
 		IsPaid:            input.IsPaid,
@@ -353,4 +353,49 @@ func (s *OrderService) isValidStatusTransition(current, next string) bool {
 		domain.OrderStatusCancelled: true,
 	}
 	return validNext[next]
+}
+
+// UpdateTotal sets a manual price override on an order.
+func (s *OrderService) UpdateTotal(ctx context.Context, orderID uuid.UUID, newTotal int64, cashierName string) (*domain.Order, error) {
+	order, err := s.repo.FindByID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+	if order.Status == domain.OrderStatusDelivered || order.Status == domain.OrderStatusCancelled {
+		return nil, ErrOrderLocked
+	}
+	if err := s.repo.UpdateTotal(ctx, orderID, newTotal, cashierName); err != nil {
+		return nil, err
+	}
+	return s.repo.FindByID(ctx, orderID)
+}
+
+// UpdateServiceCharge sets the service charge on an order and recalculates total.
+func (s *OrderService) UpdateServiceCharge(ctx context.Context, orderID uuid.UUID, serviceCharge int64, cashierName string) (*domain.Order, error) {
+	order, err := s.repo.FindByID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+	if order.Status == domain.OrderStatusDelivered || order.Status == domain.OrderStatusCancelled {
+		return nil, ErrOrderLocked
+	}
+	if err := s.repo.UpdateServiceCharge(ctx, orderID, serviceCharge, cashierName); err != nil {
+		return nil, err
+	}
+	return s.repo.FindByID(ctx, orderID)
+}
+
+// UpdateItemServiceCharge sets the service charge on a specific order item.
+func (s *OrderService) UpdateItemServiceCharge(ctx context.Context, orderID, itemID uuid.UUID, serviceCharge int64, cashierName string) (*domain.Order, error) {
+	order, err := s.repo.FindByID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+	if order.Status == domain.OrderStatusDelivered || order.Status == domain.OrderStatusCancelled {
+		return nil, ErrOrderLocked
+	}
+	if err := s.repo.UpdateItemServiceCharge(ctx, orderID, itemID, serviceCharge, cashierName); err != nil {
+		return nil, err
+	}
+	return s.repo.FindByID(ctx, orderID)
 }

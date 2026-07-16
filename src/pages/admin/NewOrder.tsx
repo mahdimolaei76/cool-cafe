@@ -48,7 +48,7 @@ export default function NewOrder() {
     setForm(p => ({ ...p, ...customerDraft }));
     setCustomerModal(false);
   };
-  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person' as OrderType, paymentMethod: 'cash' as PaymentMethod });
+  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person' as OrderType, paymentMethod: 'cash' as PaymentMethod, isTakeaway: false });
 
   const activeCategories = categories?.filter(c => c.isActive).sort((a, b) => a.order - b.order);
 
@@ -83,7 +83,9 @@ export default function NewOrder() {
 
   const lineTotal = (c: CartEntry) => c.menuItem.priceType === 'variable' ? (c.manualPrice ?? 0) * c.quantity : c.menuItem.price * c.quantity;
   const subtotal = cart.reduce((s, c) => s + lineTotal(c), 0);
-  const total = Math.max(0, subtotal - form.discount);
+  const takeawayFee = (form.isTakeaway && settings?.takeawayFeeEnabled && settings.takeawayFee > 0)
+    ? (settings.takeawayFee ?? 0) : 0;
+  const total = Math.max(0, subtotal - form.discount + takeawayFee);
   const hasUnpricedVariableItems = cart.some(c => c.menuItem.priceType === 'variable' && (c.manualPrice === null || c.manualPrice === undefined));
   const itemCount = cart.reduce((s, c) => s + c.quantity, 0);
 
@@ -175,7 +177,7 @@ export default function NewOrder() {
             priceLabel: isVariable && (c.manualPrice === null || c.manualPrice === undefined) ? (c.menuItem.priceLabel || 'قیمت‌گذاری نشده') : undefined,
           };
         }),
-        subtotal, discount: form.discount, total, notes: form.notes, status: 'pending', orderType: form.orderType, paymentMethod: form.paymentMethod, paidByCredit, isPaid, cashier: user?.name || '',
+        subtotal, discount: form.discount, serviceCharge: takeawayFee, total, notes: form.notes, status: 'pending', orderType: form.orderType, isTakeaway: form.isTakeaway, paymentMethod: form.paymentMethod, paidByCredit, isPaid, cashier: user?.name || '',
       });
       setSuccess(order);
       toast.success('سفارش با موفقیت ثبت شد');
@@ -202,7 +204,7 @@ export default function NewOrder() {
   };
   const resetOrder = () => {
     setCart([]);
-    setForm({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person', paymentMethod: 'cash' });
+    setForm({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person', paymentMethod: 'cash', isTakeaway: false });
     setSuccess(null);
     setConfirmedPaymentMethod('cash');
     setConfirmedDefer(false);
@@ -250,7 +252,7 @@ export default function NewOrder() {
               <div className="flex justify-between"><span>تاریخ</span><span>{formatJalaliDateTime(success.createdAt)}</span></div>
               <div className="flex justify-between"><span>مشتری</span><span>{success.customerFirstName} {success.customerLastName}</span></div>
               {success.customerPhone && <div className="flex justify-between"><span>تلفن</span><span dir="ltr">{success.customerPhone}</span></div>}
-              <div className="flex justify-between"><span>نوع سفارش</span><span>{success.orderType === 'online' ? 'آنلاین' : 'حضوری'}</span></div>
+              <div className="flex justify-between"><span>نوع سفارش</span><span>{success.orderType === 'online' ? 'آنلاین' : 'حضوری'}{success.isTakeaway ? ' · بیرون‌بر 🥡' : ''}</span></div>
               <div className="flex justify-between"><span>پرداخت</span><span>{{ cash: 'نقدی', card: 'کارت', online: 'اینترنتی', credit: 'اعتباری', other: 'سایر' }[success.paymentMethod]}</span></div>
               <div className="flex justify-between"><span>صندوق‌دار</span><span>{success.cashier || '—'}</span></div>
             </div>
@@ -461,7 +463,22 @@ export default function NewOrder() {
                   <t.i className="w-4 h-4" />{t.l}
                 </button>
               ))}
+              {/* بیرون‌بر */}
+              <button
+                onClick={() => setForm(p => ({ ...p, isTakeaway: !p.isTakeaway }))}
+                className={cn('flex-1 py-2.5 rounded-xl border-2 flex items-center justify-center gap-2 text-sm font-bold transition-all',
+                  form.isTakeaway ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500'
+                )}
+              >
+                🥡 بیرون‌بر
+              </button>
             </div>
+            {/* نمایش هزینه بیرون‌بر اگه فعال باشه */}
+            {form.isTakeaway && settings?.takeawayFeeEnabled && takeawayFee > 0 && (
+              <div className="text-xs text-orange-600 text-center bg-orange-50 dark:bg-orange-900/20 rounded-xl py-2">
+                هزینه بیرون‌بر: +{formatPrice(takeawayFee)} اضافه شد
+              </div>
+            )}
             <div className="flex gap-2">
               <button onClick={openCustomerModal} className="flex-1 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:border-brand-400 transition-colors flex items-center justify-center gap-2">
                 <User className="w-4 h-4" />{form.firstName ? `${form.firstName} ${form.lastName}` : 'مشتری'}

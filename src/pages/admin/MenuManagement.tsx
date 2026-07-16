@@ -16,7 +16,7 @@ import Pagination from '@/components/ui/Pagination';
 import type { MenuItem } from '@/types';
 
 export default function MenuManagement() {
-  const { menuItems: rawMenuItems, categories: rawCategories, addMenuItem, updateMenuItem, deleteMenuItem, uploadImage } = useAppStore();
+  const { menuItems: rawMenuItems, categories: rawCategories, addMenuItem, updateMenuItem, deleteMenuItem, uploadImage, settings, updateSettings } = useAppStore();
   const menuItems = rawMenuItems ?? [];
   const categories = rawCategories ?? [];
   const [search, setSearch] = useState('');
@@ -120,6 +120,35 @@ export default function MenuManagement() {
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{menuItems?.length} آیتم</p>
         </div>
         <Button onClick={openCreate} icon={<Plus className="w-4 h-4" />}>افزودن آیتم</Button>
+      </div>
+
+      {/* تنظیمات بیرون‌بر */}
+      <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-2xl border border-orange-100 dark:border-orange-900/30 flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">🥡</span>
+          <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">هزینه بیرون‌بر</span>
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!!settings?.takeawayFeeEnabled}
+            onChange={e => updateSettings({ takeawayFeeEnabled: e.target.checked })}
+            className="w-4 h-4 rounded"
+          />
+          <span className="text-sm text-zinc-600 dark:text-zinc-400">فعال</span>
+        </label>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-500">مبلغ (تومان):</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={settings?.takeawayFee ?? 0}
+            onChange={e => updateSettings({ takeawayFee: parseInt(e.target.value) || 0 })}
+            disabled={!settings?.takeawayFeeEnabled}
+            className="w-28 px-3 py-1.5 rounded-lg border border-orange-200 dark:border-orange-800 bg-white dark:bg-zinc-900 text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-400/30 disabled:opacity-40"
+          />
+        </div>
+        <p className="text-xs text-zinc-400">به صورت خودکار روی سفارشات بیرون‌بر اضافه می‌شود</p>
       </div>
 
       {/* Stats */}

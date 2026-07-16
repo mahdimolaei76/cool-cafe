@@ -15,6 +15,7 @@ import Pagination from '@/components/ui/Pagination';
 import type { OrderStatus } from '@/types';
 import { fromNowFa, formatJalaliDateTime } from '@/utils/jalali';
 import OrderPaymentPanel from '@/components/admin/OrderPaymentPanel';
+import OrderPricePanel from '@/components/admin/OrderPricePanel';
 
 const statusMap: Record<string, { label: string; color: string; bgColor: string; textColor: string; badgeVariant: 'warning' | 'info' | 'success'; next?: OrderStatus; nextLabel?: string; }> = {
   pending: { label: 'در انتظار', color: 'bg-amber-500', bgColor: 'bg-amber-50 dark:bg-amber-900/20', textColor: 'text-amber-700 dark:text-amber-400', badgeVariant: 'warning', next: 'preparing', nextLabel: 'شروع آماده‌سازی' },
@@ -318,6 +319,7 @@ export default function CashierOrders() {
               </div>
             </div>
             <OrderPaymentPanel order={selectedOrder} />
+            <OrderPricePanel order={selectedOrder} />
             <div className="space-y-2">
               {selectedOrder.items?.map(item => {
                 const needsPricing = item.isPriceVariable && !item.priceConfirmed;

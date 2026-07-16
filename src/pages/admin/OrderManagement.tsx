@@ -16,6 +16,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Pagination from '@/components/ui/Pagination';
 import Separator from '@/components/ui/Separator';
 import OrderPaymentPanel from '@/components/admin/OrderPaymentPanel';
+import OrderPricePanel from '@/components/admin/OrderPricePanel';
 import type { Order, OrderStatus } from '@/types';
 
 
@@ -424,8 +425,11 @@ function OrderDetail({ order, onStatusChange, nextStatus }: {
         </div>
       </div>
 
-      {/* Payment controls (پرداخت شد / پرداخت اعتباری / روش پرداخت) */}
+      {/* Payment controls */}
       <OrderPaymentPanel order={order} />
+
+      {/* Price controls — manual total override, service charge, payment event log */}
+      <OrderPricePanel order={order} />
 
       {/* Customer Info */}
       <div className="grid grid-cols-2 gap-4">
