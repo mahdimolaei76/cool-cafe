@@ -28,36 +28,30 @@ export default function MenuHero() {
     setActiveSlide((prev) =>
       prev === slides.length - 1 ? 0 : prev + 1
     );
+
+    resetTimer();
   };
-
-
   const prevSlide = () => {
     setActiveSlide((prev) =>
       prev === 0 ? slides.length - 1 : prev - 1
     );
+
+    resetTimer();
   };
-
-
   const goToSlide = (index: number) => {
     setActiveSlide(index);
+    resetTimer();
   };
 
-
-  useEffect(() => {
-    if (imagesReady) {
-      setActiveSlide(0);
-      timerRef.current = setInterval(() => {
-        nextSlide();
-      }, AUTO_PLAY_DURATION);
-
-
-      return () => {
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-        }
-      };
+  const resetTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
     }
-  }, [imagesReady]);
+
+    timerRef.current = setInterval(() => {
+      nextSlide();
+    }, AUTO_PLAY_DURATION);
+  };
 
   // Keyboard navigation
   useEffect(() => {
@@ -86,17 +80,24 @@ export default function MenuHero() {
     };
   }, []);
   useEffect(() => {
-    let cancelled = false;
+    if (!imagesReady) return;
+    setActiveSlide(0);
+    resetTimer();
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [imagesReady]);
 
+  useEffect(() => {
+    let cancelled = false;
     Promise.all(
       slides.map((src) => {
         return new Promise<void>((resolve) => {
           const img = new Image();
-
           img.src = src;
-
           const done = () => resolve();
-
           img.onload = () => {
             if (img.decode) {
               img.decode().then(done).catch(done);
@@ -104,7 +105,6 @@ export default function MenuHero() {
               done();
             }
           };
-
           img.onerror = done;
         });
       })
@@ -113,13 +113,11 @@ export default function MenuHero() {
         setImagesReady(true);
       }
     });
-
     return () => {
       cancelled = true;
     };
   }, []);
   const currentSlides = imagesReady ? slides : [slides[0]];
-
   return (
     <div
       className="
@@ -131,12 +129,9 @@ export default function MenuHero() {
       bg-zinc-950
       "
     >
-
       {/* Background Slider */}
       <div className="absolute inset-0">
-
         <AnimatePresence mode="wait">
-
           {currentSlides.map((slide, index) => (
             <div
               key={slide}
@@ -146,20 +141,17 @@ export default function MenuHero() {
       overflow-hidden
     "
             >
-
               {/* Background blurred image */}
               <motion.img
                 src={slide}
-                className="
-        absolute
-        inset-0
-        w-full
-        h-full
-        object-cover
-        scale-110
-        blur-2xl
-        brightness-50
-      "
+                className="absolute
+                    inset-0
+                    w-full
+                    h-full
+                    object-cover
+                    scale-110
+                    blur-2xl
+                    brightness-50"
                 animate={{
                   opacity: index === activeSlide ? 1 : 0,
                 }}

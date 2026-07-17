@@ -136,7 +136,7 @@ export default function OrderPricePanel({ order }: { order: Order }) {
         {order.takeawayOverride && (order.takeawayFee ?? 0) > 0 && (
           <div className="flex justify-between text-amber-600">
             <span className="flex items-center gap-1"><Package className="w-3 h-3" />بیرون‌بر</span>
-            <span>+ {formatPrice(order.takeawayFee)}</span>
+            <span>+ {formatPrice(order?.takeawayFee || 0)}</span>
           </div>
         )}
         {order.priceOverride != null && (
