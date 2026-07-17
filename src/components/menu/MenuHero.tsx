@@ -3,32 +3,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   Clock,
-  Wifi,
   Search,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
 
 import { useAppStore } from '@/store';
-
 const slides = [
   '/images/hero-1.jpg',
   '/images/hero-2.jpg',
   '/images/hero-3.jpg',
   '/images/hero-4.jpg',
 ];
-
+const logoIcon = '/images/logo.jpg'
 const AUTO_PLAY_DURATION = 5000;
 
 export default function MenuHero() {
   const { settings } = useAppStore();
 
   const [activeSlide, setActiveSlide] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-
+  const [imagesReady, setImagesReady] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-
   const nextSlide = () => {
     setActiveSlide((prev) =>
       prev === slides.length - 1 ? 0 : prev + 1
@@ -49,20 +44,20 @@ export default function MenuHero() {
 
 
   useEffect(() => {
-    if (isHovered) return;
+    if (imagesReady) {
+      setActiveSlide(0);
+      timerRef.current = setInterval(() => {
+        nextSlide();
+      }, AUTO_PLAY_DURATION);
 
-    timerRef.current = setInterval(() => {
-      nextSlide();
-    }, AUTO_PLAY_DURATION);
 
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [isHovered]);
-
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+      };
+    }
+  }, [imagesReady]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -90,19 +85,51 @@ export default function MenuHero() {
       );
     };
   }, []);
+  useEffect(() => {
+    let cancelled = false;
 
+    Promise.all(
+      slides.map((src) => {
+        return new Promise<void>((resolve) => {
+          const img = new Image();
+
+          img.src = src;
+
+          const done = () => resolve();
+
+          img.onload = () => {
+            if (img.decode) {
+              img.decode().then(done).catch(done);
+            } else {
+              done();
+            }
+          };
+
+          img.onerror = done;
+        });
+      })
+    ).then(() => {
+      if (!cancelled) {
+        setImagesReady(true);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const currentSlides = imagesReady ? slides : [slides[0]];
 
   return (
     <div
       className="
-        relative
-        h-[50vh]
-        min-h-[400px]
-        overflow-hidden
-        bg-zinc-950
+      relative
+      h-[60vh]
+      min-h-[420px]
+      max-h-[700px]
+      overflow-hidden
+      bg-zinc-950
       "
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
 
       {/* Background Slider */}
@@ -110,53 +137,63 @@ export default function MenuHero() {
 
         <AnimatePresence mode="wait">
 
-          <motion.img
-            key={activeSlide}
-            src={slides[activeSlide]}
-            alt="کافه COOL"
-            initial={{
-              opacity: 0,
-              scale: 1,
-              filter: 'blur(4px)',
-            }}
-            animate={{
-              opacity: 1,
-              scale: 1.12,
-              x: [0, -15],
-              y: [0, -8],
-              filter: 'blur(0px)',
-            }}
-            exit={{
-              opacity: 0,
-              scale: 1.18,
-              filter: 'blur(3px)',
-            }}
-            transition={{
-              opacity: {
-                duration: 1,
-              },
-              scale: {
-                duration: 7,
-                ease: 'linear',
-              },
-              x: {
-                duration: 7,
-                ease: 'linear',
-              },
-              y: {
-                duration: 7,
-                ease: 'linear',
-              },
-            }}
-            className="
-              absolute
-              inset-0
-              w-full
-              h-full
-              object-cover
-            "
-          />
+          {currentSlides.map((slide, index) => (
+            <div
+              key={slide}
+              className="
+      absolute
+      inset-0
+      overflow-hidden
+    "
+            >
 
+              {/* Background blurred image */}
+              <motion.img
+                src={slide}
+                className="
+        absolute
+        inset-0
+        w-full
+        h-full
+        object-cover
+        scale-110
+        blur-2xl
+        brightness-50
+      "
+                animate={{
+                  opacity: index === activeSlide ? 1 : 0,
+                }}
+                transition={{
+                  duration: 1,
+                }}
+              />
+
+
+              {/* Main image */}
+              <motion.img
+                src={slide}
+                loading="eager"
+                decoding="async"
+                className="
+        absolute
+        inset-0
+        w-full
+        h-full
+        object-contain
+        mx-auto
+      "
+                initial={false}
+                animate={{
+                  opacity: index === activeSlide ? 1 : 0,
+                  scale: index === activeSlide ? 1.05 : 1,
+                }}
+                transition={{
+                  duration: 1,
+                }}
+              />
+
+            </div>
+          ))}
         </AnimatePresence>
 
 
@@ -303,20 +340,18 @@ export default function MenuHero() {
             "
           >
 
-            <span
+            <img
               className="
                 text-brand-600
                 font-black
                 text-3xl
                 md:text-4xl
+                rounded-3xl
               "
-              style={{
-                fontFamily:
-                  'Playfair Display, serif',
-              }}
+              src={logoIcon}
             >
-              C
-            </span>
+
+            </img>
 
           </motion.div>
 
@@ -383,40 +418,6 @@ export default function MenuHero() {
             "
           >
 
-
-            <div
-              className="
-                flex
-                items-center
-                gap-1.5
-                px-4
-                py-2
-                rounded-full
-                bg-white/10
-                backdrop-blur-md
-                border
-                border-white/10
-                text-white/80
-                text-xs
-              "
-            >
-
-              <span
-                className="
-                  w-2
-                  h-2
-                  rounded-full
-                  bg-emerald-400
-                  animate-pulse
-                "
-              />
-
-              اکنون باز است
-
-            </div>
-
-
-
             <div
               className="
                 flex
@@ -442,36 +443,6 @@ export default function MenuHero() {
               />
 
               {settings.workingHours || '۷ صبح – ۱۰ شب'}
-
-            </div>
-
-
-
-            <div
-              className="
-                flex
-                items-center
-                gap-1.5
-                px-4
-                py-2
-                rounded-full
-                bg-white/10
-                backdrop-blur-md
-                border
-                border-white/10
-                text-white/80
-                text-xs
-              "
-            >
-
-              <Wifi
-                className="
-                  w-3.5
-                  h-3.5
-                "
-              />
-
-              وای‌فای رایگان
 
             </div>
 
