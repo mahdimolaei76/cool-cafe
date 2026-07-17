@@ -399,3 +399,18 @@ func (s *OrderService) UpdateItemServiceCharge(ctx context.Context, orderID, ite
 	}
 	return s.repo.FindByID(ctx, orderID)
 }
+
+// UpdateTakeawayOverride sets the takeaway fee override on an order.
+func (s *OrderService) UpdateTakeawayOverride(ctx context.Context, orderID uuid.UUID, takeawayOverride bool, takeawayFee int64, cashierName string) (*domain.Order, error) {
+	order, err := s.repo.FindByID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+	if order.Status == domain.OrderStatusDelivered || order.Status == domain.OrderStatusCancelled {
+		return nil, ErrOrderLocked
+	}
+	if err := s.repo.UpdateTakeawayOverride(ctx, orderID, takeawayOverride, takeawayFee, cashierName); err != nil {
+		return nil, err
+	}
+	return s.repo.FindByID(ctx, orderID)
+}

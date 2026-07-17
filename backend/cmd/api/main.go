@@ -143,6 +143,7 @@ func main() {
 			r.Patch("/orders/{id}/total", orderHandler.UpdateTotal)
 			r.Patch("/orders/{id}/service-charge", orderHandler.UpdateServiceCharge)
 			r.Patch("/orders/{id}/items/{itemId}/service-charge", orderHandler.UpdateItemServiceCharge)
+			r.Patch("/orders/{id}/takeaway-override", orderHandler.UpdateTakeawayOverride)
 
 			// Customer lookup + credit adjustment are used by both admin
 			// and cashier (checkout's پرداخت اعتباری checkbox, and the

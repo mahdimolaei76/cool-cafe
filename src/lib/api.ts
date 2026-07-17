@@ -122,6 +122,8 @@ export const orderApi = {
     request<any>(`/orders/${id}/service-charge`, { method: 'PATCH', body: JSON.stringify({ serviceCharge, cashier }) }),
   updateItemServiceCharge: (orderId: string, itemId: string, serviceCharge: number, cashier = '') =>
     request<any>(`/orders/${orderId}/items/${itemId}/service-charge`, { method: 'PATCH', body: JSON.stringify({ serviceCharge, cashier }) }),
+  updateTakeawayOverride: (id: string, takeawayOverride: boolean, takeawayFee: number, cashier = '') =>
+    request<any>(`/orders/${id}/takeaway-override`, { method: 'PATCH', body: JSON.stringify({ takeawayOverride, takeawayFee, cashier }) }),
   track: (trackingCode: string, phone: string) =>
     request<any>('/orders/track', { method: 'POST', body: JSON.stringify({ trackingCode, phone }) }),
 };

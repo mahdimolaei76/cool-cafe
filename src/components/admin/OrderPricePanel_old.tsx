@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { DollarSign, Wrench, AlertTriangle, Clock, ChevronDown, ChevronUp, Package } from 'lucide-react';
+import { DollarSign, Wrench, AlertTriangle, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAppStore, formatPrice } from '@/store';
 import { orderApi } from '@/lib/api';
@@ -26,7 +26,6 @@ function fmt(kind: string, val: string): string {
   if (!val) return '—';
   if (kind === 'payment_method') return paymentMethodLabel[val] ?? val;
   if (kind === 'paid') return val === 'true' ? 'پرداخت شد' : 'پرداخت نشد';
-  if (kind === 'takeaway_override') return val === 'true' ? 'فعال' : 'غیرفعال';
   const n = parseInt(val);
   return isNaN(n) ? val : formatPrice(n);
 }
@@ -35,7 +34,7 @@ const locked = (o: Order) => o.status === 'delivered' || o.status === 'cancelled
 
 /**
  * OrderPricePanel — نمایش اطلاعات مالی سفارش، امکان تغییر مبلغ کل،
- * اضافه کردن حق‌الخدمه بیرون‌بر، و لاگ تاریخچه عملیات پرداخت.
+ * اضافه کردن سرویس، و لاگ تاریخچه عملیات پرداخت.
  * استفاده در مودال جزئیات سفارش (مدیر و صندوق‌دار).
  */
 export default function OrderPricePanel({ order }: { order: Order }) {
@@ -51,12 +50,6 @@ export default function OrderPricePanel({ order }: { order: Order }) {
   // سرویس کل سفارش
   const [serviceCharge, setServiceCharge] = useState(String(order.serviceCharge ?? 0));
   const [savingService, setSavingService] = useState(false);
-
-  // حق‌الخدمه بیرون‌بر
-  const [takeawayOverride, setTakeawayOverride] = useState(!!order.takeawayOverride);
-  const [takeawayFee, setTakeawayFee] = useState(String(order.takeawayFee ?? 0));
-  const [savingTakeaway, setSavingTakeaway] = useState(false);
-  const [confirmTakeaway, setConfirmTakeaway] = useState(false);
 
   // نمایش لاگ پرداخت
   const [logExpanded, setLogExpanded] = useState(false);
@@ -92,25 +85,6 @@ export default function OrderPricePanel({ order }: { order: Order }) {
     }
   };
 
-  const handleUpdateTakeaway = async () => {
-    const fee = parseInt(takeawayFee.replace(/[^0-9]/g, '')) || 0;
-    if (!takeawayOverride && fee > 0) {
-      toast.error('ابتدا حق‌الخدمه بیرون‌بر را فعال کنید');
-      return;
-    }
-    setSavingTakeaway(true);
-    try {
-      await orderApi.updateTakeawayOverride(order.id, takeawayOverride, takeawayOverride ? fee : 0, user?.name ?? '');
-      await fetchOrders();
-      setConfirmTakeaway(false);
-      toast.success('حق‌الخدمه بیرون‌بر بروزرسانی شد');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'خطا در ذخیره حق‌الخدمه');
-    } finally {
-      setSavingTakeaway(false);
-    }
-  };
-
   const events: OrderPaymentEvent[] = order.paymentEvents ?? [];
 
   return (
@@ -131,12 +105,6 @@ export default function OrderPricePanel({ order }: { order: Order }) {
           <div className="flex justify-between text-amber-600">
             <span>سرویس</span>
             <span>+ {formatPrice(order.serviceCharge)}</span>
-          </div>
-        )}
-        {order.takeawayOverride && (order.takeawayFee ?? 0) > 0 && (
-          <div className="flex justify-between text-amber-600">
-            <span className="flex items-center gap-1"><Package className="w-3 h-3" />بیرون‌بر</span>
-            <span>+ {formatPrice(order.takeawayFee)}</span>
           </div>
         )}
         {order.priceOverride != null && (
@@ -174,44 +142,6 @@ export default function OrderPricePanel({ order }: { order: Order }) {
               </button>
             </div>
           </div>
-
-          {/* ── حق‌الخدمه بیرون‌بر ── */}
-          {order.isTakeaway && (
-            <div className="p-3 bg-white dark:bg-zinc-900 rounded-xl border border-green-200 dark:border-green-800 space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-green-600">حق‌الخدمه بیرون‌بر</p>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={takeawayOverride}
-                    onChange={e => setTakeawayOverride(e.target.checked)}
-                    className="w-4 h-4 rounded"
-                    disabled={savingTakeaway}
-                  />
-                  <span className="text-xs text-zinc-600 dark:text-zinc-400">فعال</span>
-                </label>
-              </div>
-              {takeawayOverride && (
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    placeholder="مبلغ حق‌الخدمه (تومان)"
-                    value={takeawayFee}
-                    onChange={e => setTakeawayFee(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-green-200 dark:border-green-800 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20"
-                  />
-                  <button
-                    onClick={() => setConfirmTakeaway(true)}
-                    disabled={savingTakeaway}
-                    className="px-3 py-2 rounded-lg bg-green-600 text-white text-xs font-bold hover:bg-green-700 disabled:opacity-50 transition-colors"
-                  >
-                    {savingTakeaway ? '...' : 'ثبت'}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* ── تغییر مبلغ دستی ── */}
           <div className="p-3 bg-white dark:bg-zinc-900 rounded-xl border border-amber-200 dark:border-amber-800 space-y-2">
@@ -253,11 +183,11 @@ export default function OrderPricePanel({ order }: { order: Order }) {
             <div className="divide-y divide-blue-50 dark:divide-blue-900/30 bg-white dark:bg-zinc-900">
               {events.map(ev => (
                 <div key={ev.id} className="px-4 py-2.5 flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
+                  <div>
                     <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{kindLabel[ev.kind] ?? ev.kind}</p>
-                    <p className="text-[11px] text-zinc-400 mt-0.5 break-words">
+                    <p className="text-[11px] text-zinc-400 mt-0.5">
                       {fmt(ev.kind, ev.oldValue)} → {fmt(ev.kind, ev.newValue)}
-                      {ev.cashier && <span className="mr-1 text-zinc-300"> · {ev.cashier}</span>}
+                      {ev.cashier && <span className="mr-1 text-zinc-300">· {ev.cashier}</span>}
                     </p>
                   </div>
                   <span className="text-[10px] text-zinc-400 flex-shrink-0 flex items-center gap-0.5">
@@ -270,23 +200,77 @@ export default function OrderPricePanel({ order }: { order: Order }) {
         </div>
       )}
 
+      {/* ── item-level service charge ── */}
+      {!isLocked && order.items?.length > 0 && (
+        <ItemServiceChargeList order={order} cashierName={user?.name ?? ''} onSaved={fetchOrders} />
+      )}
+
       <ConfirmDialog
         open={confirmTotal}
         onClose={() => setConfirmTotal(false)}
         onConfirm={handleUpdateTotal}
         title="تغییر مبلغ سفارش"
-        message={`آیا مطمئنید می‌خواهید مبلغ این سفارش را به ${formatPrice(parseInt(newTotal.replace(/[^0-9]/g, '') || '0'))} تغییر دهید؟`}
+        message={`آیا مطمئنید می‌خواهید مبلغ این سفارش را به ${formatPrice(parseInt(newTotal.replace(/[^0-9]/g, '') || '0'))} تغییر دهید؟ این تغییر در کل سیستم اعمال می‌شود.`}
         confirmText="بله، تغییر بده"
       />
+    </div>
+  );
+}
 
-      <ConfirmDialog
-        open={confirmTakeaway}
-        onClose={() => setConfirmTakeaway(false)}
-        onConfirm={handleUpdateTakeaway}
-        title="حق‌الخدمه بیرون‌بر"
-        message={`آیا مطمئنید می‌خواهید حق‌الخدمه بیرون‌بر را ${takeawayOverride ? 'به ' + formatPrice(parseInt(takeawayFee.replace(/[^0-9]/g, '') || '0')) : 'غیرفعال'} کنید؟`}
-        confirmText="بله، ثبت بده"
-      />
+/** نمایش هزینه سرویس هر آیتم — بصورت collapsible */
+function ItemServiceChargeList({ order, cashierName, onSaved }: { order: Order; cashierName: string; onSaved: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const [vals, setVals] = useState<Record<string, string>>(() =>
+    Object.fromEntries(order.items.map(i => [i.id, String(i.serviceCharge ?? 0)]))
+  );
+  const [saving, setSaving] = useState<string | null>(null);
+
+  const save = async (itemId: string) => {
+    const n = parseInt(vals[itemId]?.replace(/[^0-9]/g, '') || '0');
+    setSaving(itemId);
+    try {
+      await orderApi.updateItemServiceCharge(order.id, itemId, n, cashierName);
+      onSaved();
+      toast.success('سرویس آیتم ذخیره شد');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'خطا');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="w-full px-4 py-2.5 flex items-center justify-between bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 text-xs font-bold"
+      >
+        <span>سرویس هر آیتم</span>
+        {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </button>
+      {expanded && (
+        <div className="divide-y divide-zinc-50 dark:divide-zinc-800/50 bg-white dark:bg-zinc-900">
+          {order.items.map(item => (
+            <div key={item.id} className="px-3 py-2 flex items-center gap-2">
+              <span className="flex-1 text-xs text-zinc-700 dark:text-zinc-300 truncate">{item.name}</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={vals[item.id] ?? '0'}
+                onChange={e => setVals(p => ({ ...p, [item.id]: e.target.value }))}
+                className={cn("w-24 px-2 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent text-xs text-center focus:outline-none focus:ring-1 focus:ring-brand-500/30")}
+              />
+              <button
+                onClick={() => save(item.id)}
+                disabled={saving === item.id}
+                className="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-[11px] font-bold hover:bg-brand-100 hover:text-brand-700 disabled:opacity-40 transition-colors"
+              >
+                {saving === item.id ? '...' : 'ثبت'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

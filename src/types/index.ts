@@ -42,7 +42,7 @@ export type PaymentMethod = 'cash' | 'card' | 'online' | 'credit' | 'other';
 export interface OrderPaymentEvent {
   id: string;
   orderId: string;
-  kind: 'price_override' | 'payment_method' | 'paid' | 'service_charge';
+  kind: 'price_override' | 'payment_method' | 'paid' | 'service_charge' | 'takeaway_override' | 'item_service_deleted';
   oldValue: string;
   newValue: string;
   note?: string;
@@ -58,7 +58,7 @@ export interface OrderItem {
   price: number;
   quantity: number;
   subtotal: number;
-  serviceCharge: number;
+  serviceCharge?: number; // deprecated - مدیریت نمی‌شود
   isPriceVariable?: boolean;
   priceConfirmed?: boolean;
   priceLabel?: string;
@@ -81,6 +81,8 @@ export interface Order {
   status: OrderStatus;
   orderType: OrderType;
   isTakeaway: boolean;
+  takeawayOverride?: boolean; // آیا حق‌الخدمه بیرون‌بر اعمال شود
+  takeawayFee?: number; // مبلغ حق‌الخدمه بیرون‌بر
   paymentMethod: PaymentMethod;
   paidByCredit?: boolean;
   isPaid?: boolean;

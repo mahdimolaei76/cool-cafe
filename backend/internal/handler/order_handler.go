@@ -333,3 +333,31 @@ func (h *OrderHandler) UpdateItemServiceCharge(w http.ResponseWriter, r *http.Re
 	}
 	respondJSON(w, http.StatusOK, order)
 }
+
+// UpdateTakeawayOverride handles PATCH /orders/{id}/takeaway-override
+func (h *OrderHandler) UpdateTakeawayOverride(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid order ID")
+		return
+	}
+	var input struct {
+		TakeawayOverride bool   `json:"takeawayOverride"`
+		TakeawayFee      int64  `json:"takeawayFee"`
+		CashierName      string `json:"cashier"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	order, err := h.orderService.UpdateTakeawayOverride(r.Context(), id, input.TakeawayOverride, input.TakeawayFee, input.CashierName)
+	if err != nil {
+		if err == service.ErrOrderLocked {
+			respondError(w, http.StatusBadRequest, "این سفارش تحویل داده شده یا لغو شده و قابل تغییر نیست")
+			return
+		}
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update takeaway override", err)
+		return
+	}
+	respondJSON(w, http.StatusOK, order)
+}

@@ -451,6 +451,52 @@ func (r *OrderRepository) UpdateItemServiceCharge(ctx context.Context, orderID, 
 	return err
 }
 
+// UpdateTakeawayOverride sets the takeaway override flag and fee on an order.
+func (r *OrderRepository) UpdateTakeawayOverride(ctx context.Context, orderID uuid.UUID, takeawayOverride bool, takeawayFee int64, cashierName string) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var order struct {
+		Subtotal      int64  `db:"subtotal"`
+		Discount      int64  `db:"discount"`
+		ServiceCharge int64  `db:"service_charge"`
+		PriceOverride *int64 `db:"price_override"`
+		OldOverride   bool   `db:"takeaway_override"`
+		OldFee        int64  `db:"takeaway_fee"`
+	}
+	if err := tx.GetContext(ctx, &order, `
+		SELECT subtotal, discount, service_charge, price_override, takeaway_override, takeaway_fee FROM orders WHERE id = $1
+	`, orderID); err != nil {
+		return err
+	}
+
+	// Calculate new total
+	newTotal := order.Subtotal - order.Discount + order.ServiceCharge
+	if takeawayOverride {
+		newTotal += takeawayFee
+	}
+	if order.PriceOverride != nil {
+		newTotal = *order.PriceOverride
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE orders SET takeaway_override = $2, takeaway_fee = $3, total = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $1
+	`, orderID, takeawayOverride, takeawayFee, newTotal); err != nil {
+		return err
+	}
+
+	// Record in payment events
+	_, _ = tx.ExecContext(ctx, `
+		INSERT INTO order_payment_events (order_id, kind, old_value, new_value, cashier)
+		VALUES ($1, 'takeaway_override', $2, $3, $4)
+	`, orderID, fmt.Sprintf("%v", order.OldOverride), fmt.Sprintf("%v", takeawayOverride), cashierName)
+
+	return tx.Commit()
+}
+
 // AddPaymentEvent records an arbitrary payment/operation event for audit.
 func (r *OrderRepository) AddPaymentEvent(ctx context.Context, orderID uuid.UUID, kind, oldVal, newVal, cashierName string) error {
 	_, err := r.db.ExecContext(ctx, `
