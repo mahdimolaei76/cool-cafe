@@ -69,12 +69,11 @@ type Order struct {
 	Notes             string     `db:"notes" json:"notes"`
 	Status            string     `db:"status" json:"status"`
 	OrderType         string     `db:"order_type" json:"orderType"`
-	// IsTakeaway marks this as a takeaway (بیرون‌بر) order
+	// IsTakeaway: نوع تحویل — true = بیرون‌بر | false = در محل
 	IsTakeaway        bool       `db:"is_takeaway" json:"isTakeaway"`
-	// TakeawayOverride: if true, apply takeaway fee to the total
-	TakeawayOverride  bool       `db:"takeaway_override" json:"takeawayOverride"`
-	// TakeawayFee: amount to add to total if TakeawayOverride is true
-	TakeawayFee       int64      `db:"takeaway_fee" json:"takeawayFee"`
+	// TakeawayOverride/TakeawayFee: legacy columns kept for DB compat — not used in business logic
+	TakeawayOverride  bool       `db:"takeaway_override" json:"-"`
+	TakeawayFee       int64      `db:"takeaway_fee" json:"-"`
 	PaymentMethod     string     `db:"payment_method" json:"paymentMethod"`
 	PaidByCredit      bool       `db:"paid_by_credit" json:"paidByCredit"`
 	IsPaid            bool       `db:"is_paid" json:"isPaid"`
@@ -93,7 +92,7 @@ type Order struct {
 type OrderPaymentEvent struct {
 	ID        uuid.UUID `db:"id" json:"id"`
 	OrderID   uuid.UUID `db:"order_id" json:"orderId"`
-	Kind      string    `db:"kind" json:"kind"`  // price_override | payment_method | paid | service_charge | takeaway_override | item_service_deleted
+	Kind      string    `db:"kind" json:"kind"`  // price_override | payment_method | paid | service_charge
 	OldValue  string    `db:"old_value" json:"oldValue"`
 	NewValue  string    `db:"new_value" json:"newValue"`
 	Note      string    `db:"note" json:"note,omitempty"`

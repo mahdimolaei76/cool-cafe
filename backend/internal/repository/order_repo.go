@@ -242,17 +242,36 @@ func (r *OrderRepository) UpdateItemPrice(ctx context.Context, orderID, itemID u
 // be changed from the same modal alongside (or independently of) a status
 // transition.
 func (r *OrderRepository) UpdatePayment(ctx context.Context, id uuid.UUID, paymentMethod string, isPaid, paidByCredit bool) error {
-	// Base update always works — payment_method exists from migration 001.
+	// Read old values for logging
+	var old struct {
+		PaymentMethod string `db:"payment_method"`
+		IsPaid        bool   `db:"is_paid"`
+	}
+	_ = r.db.GetContext(ctx, &old, `SELECT payment_method, is_paid FROM orders WHERE id = $1`, id)
+
 	if _, err := r.db.ExecContext(ctx, `
 		UPDATE orders SET payment_method = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1
 	`, id, paymentMethod); err != nil {
 		return err
 	}
-	// is_paid and paid_by_credit added in migration 006 — skip silently if
-	// the column doesn't exist yet on the target server.
+	// is_paid and paid_by_credit added in migration 006
 	_, _ = r.db.ExecContext(ctx, `
 		UPDATE orders SET is_paid = $2, paid_by_credit = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $1
 	`, id, isPaid, paidByCredit)
+
+	// Log events
+	if old.PaymentMethod != paymentMethod {
+		_, _ = r.db.ExecContext(ctx, `
+			INSERT INTO order_payment_events (order_id, kind, old_value, new_value)
+			VALUES ($1, 'payment_method', $2, $3)
+		`, id, old.PaymentMethod, paymentMethod)
+	}
+	if old.IsPaid != isPaid {
+		_, _ = r.db.ExecContext(ctx, `
+			INSERT INTO order_payment_events (order_id, kind, old_value, new_value)
+			VALUES ($1, 'paid', $2, $3)
+		`, id, fmt.Sprintf("%v", old.IsPaid), fmt.Sprintf("%v", isPaid))
+	}
 	return nil
 }
 
@@ -451,48 +470,48 @@ func (r *OrderRepository) UpdateItemServiceCharge(ctx context.Context, orderID, 
 	return err
 }
 
-// UpdateTakeawayOverride sets the takeaway override flag and fee on an order.
-func (r *OrderRepository) UpdateTakeawayOverride(ctx context.Context, orderID uuid.UUID, takeawayOverride bool, takeawayFee int64, cashierName string) error {
+// UpdateTakeaway sets the isTakeaway flag and recalculates the total with the
+// takeaway fee from settings (passed in as takeawayFee, 0 if disabled).
+func (r *OrderRepository) UpdateTakeaway(ctx context.Context, orderID uuid.UUID, isTakeaway bool, takeawayFee int64, cashierName string) error {
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	var order struct {
+	var o struct {
 		Subtotal      int64  `db:"subtotal"`
 		Discount      int64  `db:"discount"`
 		ServiceCharge int64  `db:"service_charge"`
 		PriceOverride *int64 `db:"price_override"`
-		OldOverride   bool   `db:"takeaway_override"`
-		OldFee        int64  `db:"takeaway_fee"`
+		OldTakeaway   bool   `db:"is_takeaway"`
 	}
-	if err := tx.GetContext(ctx, &order, `
-		SELECT subtotal, discount, service_charge, price_override, takeaway_override, takeaway_fee FROM orders WHERE id = $1
+	if err := tx.GetContext(ctx, &o, `
+		SELECT subtotal, discount, service_charge, price_override, is_takeaway FROM orders WHERE id = $1
 	`, orderID); err != nil {
 		return err
 	}
 
-	// Calculate new total
-	newTotal := order.Subtotal - order.Discount + order.ServiceCharge
-	if takeawayOverride {
+	// Recalculate total: add takeaway fee only when isTakeaway = true
+	newTotal := o.Subtotal - o.Discount + o.ServiceCharge
+	if isTakeaway && takeawayFee > 0 {
 		newTotal += takeawayFee
 	}
-	if order.PriceOverride != nil {
-		newTotal = *order.PriceOverride
+	if o.PriceOverride != nil {
+		newTotal = *o.PriceOverride
 	}
 
 	if _, err := tx.ExecContext(ctx, `
-		UPDATE orders SET takeaway_override = $2, takeaway_fee = $3, total = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $1
-	`, orderID, takeawayOverride, takeawayFee, newTotal); err != nil {
+		UPDATE orders SET is_takeaway = $2, total = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $1
+	`, orderID, isTakeaway, newTotal); err != nil {
 		return err
 	}
 
-	// Record in payment events
+	// Log the change in payment events
 	_, _ = tx.ExecContext(ctx, `
 		INSERT INTO order_payment_events (order_id, kind, old_value, new_value, cashier)
-		VALUES ($1, 'takeaway_override', $2, $3, $4)
-	`, orderID, fmt.Sprintf("%v", order.OldOverride), fmt.Sprintf("%v", takeawayOverride), cashierName)
+		VALUES ($1, 'takeaway_changed', $2, $3, $4)
+	`, orderID, fmt.Sprintf("%v", o.OldTakeaway), fmt.Sprintf("%v", isTakeaway), cashierName)
 
 	return tx.Commit()
 }

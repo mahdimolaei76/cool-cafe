@@ -385,8 +385,10 @@ func (s *OrderService) UpdateServiceCharge(ctx context.Context, orderID uuid.UUI
 	return s.repo.FindByID(ctx, orderID)
 }
 
-// UpdateItemServiceCharge sets the service charge on a specific order item.
-func (s *OrderService) UpdateItemServiceCharge(ctx context.Context, orderID, itemID uuid.UUID, serviceCharge int64, cashierName string) (*domain.Order, error) {
+// UpdateTakeaway toggles the isTakeaway flag and adjusts the total accordingly.
+// takeawayFee is the fee from Settings (0 if disabled) — the caller reads it
+// from settings and passes it in, keeping business logic in the service layer.
+func (s *OrderService) UpdateTakeaway(ctx context.Context, orderID uuid.UUID, isTakeaway bool, takeawayFee int64, cashierName string) (*domain.Order, error) {
 	order, err := s.repo.FindByID(ctx, orderID)
 	if err != nil {
 		return nil, err
@@ -394,23 +396,23 @@ func (s *OrderService) UpdateItemServiceCharge(ctx context.Context, orderID, ite
 	if order.Status == domain.OrderStatusDelivered || order.Status == domain.OrderStatusCancelled {
 		return nil, ErrOrderLocked
 	}
-	if err := s.repo.UpdateItemServiceCharge(ctx, orderID, itemID, serviceCharge, cashierName); err != nil {
+	if err := s.repo.UpdateTakeaway(ctx, orderID, isTakeaway, takeawayFee, cashierName); err != nil {
 		return nil, err
 	}
 	return s.repo.FindByID(ctx, orderID)
 }
 
-// UpdateTakeawayOverride sets the takeaway fee override on an order.
-func (s *OrderService) UpdateTakeawayOverride(ctx context.Context, orderID uuid.UUID, takeawayOverride bool, takeawayFee int64, cashierName string) (*domain.Order, error) {
+// UpdateItemServiceCharge sets the service charge on a specific order item.
+func (s *OrderService) UpdateItemServiceCharge(ctx context.Context, orderID, itemID uuid.UUID, serviceCharge int64, cashierName string) error {
 	order, err := s.repo.FindByID(ctx, orderID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if order.Status == domain.OrderStatusDelivered || order.Status == domain.OrderStatusCancelled {
-		return nil, ErrOrderLocked
+		return ErrOrderLocked
 	}
-	if err := s.repo.UpdateTakeawayOverride(ctx, orderID, takeawayOverride, takeawayFee, cashierName); err != nil {
-		return nil, err
+	if err := s.repo.UpdateItemServiceCharge(ctx, orderID, itemID, serviceCharge, cashierName); err != nil {
+		return err
 	}
-	return s.repo.FindByID(ctx, orderID)
+	return nil
 }

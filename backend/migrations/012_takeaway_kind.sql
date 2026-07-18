@@ -1,0 +1,4 @@
+-- 012: allow 'takeaway_changed' as a valid kind in order_payment_events
+-- No schema change needed (kind is TEXT/VARCHAR without CHECK constraint).
+-- This comment documents the new event kind for reference.
+-- kind values: price_override | payment_method | paid | service_charge | takeaway_changed

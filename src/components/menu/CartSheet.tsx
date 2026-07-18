@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { X, Minus, Plus, ShoppingBag, ArrowLeft, Trash2, Check, AlertTriangle, Phone, User, MessageSquare } from 'lucide-react';
+import { X, Minus, Plus, ShoppingBag, ArrowLeft, Trash2, Check, AlertTriangle, Phone, User, MessageSquare, Package } from 'lucide-react';
 import { useCartStore, useAppStore, formatPrice } from '@/store';
 import { uuidGenerator } from '@/lib/api';
 import Button from '@/components/ui/Button';
@@ -25,7 +25,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
   const [trackingCode, setTrackingCode] = useState('');
   const [unsynced, setUnsynced] = useState(false);
   const [hadVariableItems, setHadVariableItems] = useState(false);
-  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', notes: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', notes: '', isTakeaway: false });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const total = getTotal();
@@ -36,71 +36,53 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
     const phoneError = iranianMobileError(form.phone, true);
     if (phoneError) e.phone = phoneError;
     setErrors(e);
-    return Object.keys(e)?.length === 0;
+    return Object.keys(e).length === 0;
   };
 
   const handleSubmit = async () => {
-    if (submitting) return; // guard against double-submit from a fast double-tap
-    if (items?.length === 0) {
-      toast.error('سبد خرید شما خالی است');
-      return;
-    }
-    if (!validate()) {
-      // eslint-disable-next-line no-console
-      console.warn('[Order] validation failed before any request was sent:', errors, form);
-      toast.error('لطفاً اطلاعات را کامل و صحیح وارد کنید');
-      return;
-    }
+    if (submitting) return;
+    if (items.length === 0) { toast.error('سبد خرید شما خالی است'); return; }
+    if (!validate()) { toast.error('لطفاً اطلاعات را کامل و صحیح وارد کنید'); return; }
 
     setSubmitting(true);
     try {
-      // eslint-disable-next-line no-console
-      console.info('[Order] submitting to backend…', { base: import.meta.env.VITE_API_URL || '/api' });
       const order = await addOrder({
         customerFirstName: form.firstName,
         customerLastName: form.lastName,
         customerPhone: form.phone,
-        items: items?.map(ci => {
+        items: items.map(ci => {
           const isVariable = ci.menuItem.priceType === 'variable';
           return {
             id: uuidGenerator(), menuItemId: ci.menuItem.id, menuItem: ci.menuItem,
             name: ci.menuItem.name, price: isVariable ? 0 : ci.menuItem.price, quantity: ci.quantity,
             subtotal: isVariable ? 0 : ci.menuItem.price * ci.quantity,
-            isPriceVariable: isVariable,
-            priceConfirmed: !isVariable,
+            isPriceVariable: isVariable, priceConfirmed: !isVariable,
             priceLabel: isVariable ? (ci.menuItem.priceLabel || 'قیمت‌گذاری توسط کافه') : undefined,
           };
         }),
-        subtotal: total, discount: 0, total, notes: form.notes,
-        status: 'pending', orderType: 'online' as OrderType, paymentMethod: 'cash' as PaymentMethod, cashier: '',
+        subtotal: total, discount: 0, serviceCharge: 0, total, notes: form.notes,
+        status: 'pending', orderType: 'online' as OrderType,
+        isTakeaway: form.isTakeaway,
+        paymentMethod: 'cash' as PaymentMethod, cashier: '',
       });
       setOrderNumber(order.orderNumber);
       setTrackingCode(order.trackingCode);
-      setHadVariableItems(getVariablePriceItems()?.length > 0);
+      setHadVariableItems(getVariablePriceItems().length > 0);
       clearCart();
       setStep('success');
       toast.success('سفارش شما با موفقیت ثبت شد');
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('[Order] addOrder threw:', err);
-      // addOrder always keeps the order locally (attached to the error)
-      // even when the backend can't be reached, so the customer's cart
-      // isn't lost. Treat that as a completed order from their point of
-      // view — they still get a tracking code and can check status later
-      // — but flag it clearly so staff know it hasn't synced to the
-      // server yet and may need manual reconciliation.
       const orderErr = err as Error & { order?: Order };
       if (orderErr?.order) {
         setOrderNumber(orderErr.order.orderNumber);
         setTrackingCode(orderErr.order.trackingCode);
         setUnsynced(true);
-        setHadVariableItems(getVariablePriceItems()?.length > 0);
+        setHadVariableItems(getVariablePriceItems().length > 0);
         clearCart();
         setStep('success');
-        toast.warning('سفارش شما ذخیره شد، اما اتصال به سرور برقرار نشد. لطفاً به کافه اطلاع دهید.', { duration: 7000 });
+        toast.warning('سفارش ذخیره شد، اما اتصال به سرور برقرار نشد. لطفاً به کافه اطلاع دهید.', { duration: 7000 });
       } else {
-        const detail = orderErr instanceof Error ? orderErr.message : String(err);
-        toast.error(`ثبت سفارش با خطا مواجه شد: ${detail}`, { duration: 7000 });
+        toast.error(`ثبت سفارش با خطا مواجه شد: ${err instanceof Error ? err.message : String(err)}`, { duration: 7000 });
       }
     } finally {
       setSubmitting(false);
@@ -109,7 +91,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
 
   const handleClose = () => {
     onClose();
-    setTimeout(() => { setStep('cart'); setForm({ firstName: '', lastName: '', phone: '', notes: '' }); setErrors({}); setUnsynced(false); setHadVariableItems(false); }, 300);
+    setTimeout(() => { setStep('cart'); setForm({ firstName: '', lastName: '', phone: '', notes: '', isTakeaway: false }); setErrors({}); setUnsynced(false); setHadVariableItems(false); }, 300);
   };
 
   return (
@@ -118,18 +100,13 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
         <div className="fixed inset-0 z-50">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
+            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             className="absolute bottom-0 left-0 right-0 md:right-0 md:top-0 md:left-auto md:w-[440px] bg-white dark:bg-zinc-900 md:rounded-none rounded-t-3xl shadow-2xl flex flex-col max-h-[calc(92vh-env(safe-area-inset-bottom))] md:max-h-full"
           >
-            {/* Drag handle (mobile) */}
             <div className="md:hidden flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
             </div>
-
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900/30 rounded-xl flex items-center justify-center">
@@ -137,9 +114,9 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                 </div>
                 <div>
                   <h2 className="font-bold text-zinc-900 dark:text-zinc-100">
-                    {step === 'cart' ? 'سبد خرید' : step === 'info' ? 'اطلاعات شما' : 'ثبت شد!'}
+                    {step === 'cart' ? 'سبد خرید' : step === 'info' ? 'اطلاعات و نوع سفارش' : 'ثبت شد!'}
                   </h2>
-                  <p className="text-xs text-zinc-400">{items?.length} محصول</p>
+                  <p className="text-xs text-zinc-400">{items.length} محصول</p>
                 </div>
               </div>
               <button onClick={handleClose} className="p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
@@ -147,12 +124,11 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
               </button>
             </div>
 
-            {/* Content */}
             <div className="flex-1 overflow-y-auto">
               <AnimatePresence mode="wait">
                 {step === 'cart' && (
                   <motion.div key="cart" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-5">
-                    {items?.length === 0 ? (
+                    {items.length === 0 ? (
                       <div className="text-center py-20">
                         <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-3xl mx-auto mb-4 flex items-center justify-center">
                           <ShoppingBag className="w-10 h-10 text-zinc-300 dark:text-zinc-600" />
@@ -162,7 +138,7 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {items?.map(ci => (
+                        {items.map(ci => (
                           <motion.div key={ci.menuItem.id} layout className="flex gap-4 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl">
                             <img src={ci.menuItem.image} alt={ci.menuItem.name} className="w-20 h-20 rounded-xl object-cover flex-shrink-0" />
                             <div className="flex-1 min-w-0">
@@ -203,6 +179,32 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
 
                 {step === 'info' && (
                   <motion.div key="info" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="p-5 space-y-4">
+                    {/* نوع سفارش */}
+                    <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl space-y-3">
+                      <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">نوع سفارش</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => setForm(p => ({ ...p, isTakeaway: false }))}
+                          className={cn(
+                            'py-3 px-4 rounded-xl border-2 flex items-center justify-center gap-2 text-sm font-bold transition-all',
+                            !form.isTakeaway ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500'
+                          )}
+                        >
+                          <ShoppingBag className="w-4 h-4" /> در محل
+                        </button>
+                        <button
+                          onClick={() => setForm(p => ({ ...p, isTakeaway: true }))}
+                          className={cn(
+                            'py-3 px-4 rounded-xl border-2 flex items-center justify-center gap-2 text-sm font-bold transition-all',
+                            form.isTakeaway ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500'
+                          )}
+                        >
+                          <Package className="w-4 h-4" /> بیرون‌بر
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* اطلاعات مشتری */}
                     <div className="space-y-1.5">
                       <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">نام *</label>
                       <div className="relative">
@@ -236,31 +238,15 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                 {step === 'success' && (
                   <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="px-5 py-12 text-center">
                     <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
+                      initial={{ scale: 0 }} animate={{ scale: 1 }}
                       transition={{ type: 'spring', damping: 15, delay: 0.1 }}
-                      className={cn(
-                        'w-24 h-24 mx-auto mb-6 rounded-[2rem] flex items-center justify-center',
-                        unsynced ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'
-                      )}
+                      className={cn('w-24 h-24 mx-auto mb-6 rounded-[2rem] flex items-center justify-center', unsynced ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30')}
                     >
-                      {unsynced
-                        ? <AlertTriangle className="w-12 h-12 text-amber-600 dark:text-amber-400" strokeWidth={2.5} />
-                        : <Check className="w-12 h-12 text-emerald-600 dark:text-emerald-400" strokeWidth={3} />}
+                      {unsynced ? <AlertTriangle className="w-12 h-12 text-amber-600 dark:text-amber-400" strokeWidth={2.5} /> : <Check className="w-12 h-12 text-emerald-600 dark:text-emerald-400" strokeWidth={3} />}
                     </motion.div>
-                    <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
-                      {unsynced ? 'سفارش ذخیره شد' : 'سفارش ثبت شد!'}
-                    </h3>
-                    <p className="mt-2 text-zinc-500 dark:text-zinc-400">
-                      {unsynced ? 'سفارش شما ذخیره شد اما هنوز برای کافه ارسال نشده.' : 'سفارش شما دریافت شد.'}
-                    </p>
-                    {unsynced && (
-                      <div className="mt-4">
-                        <Banner variant="warning">
-                          اتصال به سرور برقرار نشد. لطفاً کد پیگیری زیر را به کافه نشان دهید تا سفارش شما به‌صورت دستی ثبت شود.
-                        </Banner>
-                      </div>
-                    )}
+                    <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">{unsynced ? 'سفارش ذخیره شد' : 'سفارش ثبت شد!'}</h3>
+                    <p className="mt-2 text-zinc-500 dark:text-zinc-400">{unsynced ? 'سفارش شما ذخیره شد اما هنوز برای کافه ارسال نشده.' : 'سفارش شما دریافت شد.'}</p>
+                    {unsynced && <div className="mt-4"><Banner variant="warning">اتصال به سرور برقرار نشد. لطفاً کد پیگیری زیر را به کافه نشان دهید.</Banner></div>}
                     <div className="mt-8 p-5 bg-zinc-50 dark:bg-zinc-800 rounded-2xl">
                       <p className="text-xs text-zinc-400 mb-1">شماره سفارش</p>
                       <p className="text-3xl font-black text-brand-600 font-mono tracking-wider" dir="ltr">{orderNumber}</p>
@@ -271,29 +257,22 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                         <p className="text-xl font-black text-brand-700 dark:text-brand-400 font-mono tracking-widest" dir="ltr">{trackingCode}</p>
                       </div>
                     )}
-                    {hadVariableItems && (
-                      <div className="mt-3">
-                        <Banner variant="warning">
-                          مبلغ نهایی این سفارش شامل قیمت اقلامِ «قیمت بازار» نیست — این مبلغ توسط کافه محاسبه و هنگام تحویل به شما اعلام می‌شود.
-                        </Banner>
-                      </div>
-                    )}
+                    {hadVariableItems && <div className="mt-3"><Banner variant="warning">مبلغ نهایی این سفارش شامل اقلام «قیمت بازار» نیست — توسط کافه هنگام تحویل اعلام می‌شود.</Banner></div>}
                     <p className="mt-4 text-xs text-zinc-400">این کد رو نگه دار برای پیگیری سفارش</p>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* Footer */}
-            {step !== 'success' && items?.length > 0 && (
+            {step !== 'success' && items.length > 0 && (
               <div className="border-t-2 border-zinc-100 dark:border-zinc-800 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] space-y-4 bg-white dark:bg-zinc-900">
                 <div className="flex items-center justify-between">
                   <span className="text-zinc-500 font-medium">جمع کل</span>
                   <span className="text-2xl font-black text-zinc-900 dark:text-zinc-100">{formatPrice(total)}</span>
                 </div>
-                {getVariablePriceItems()?.length > 0 && (
+                {getVariablePriceItems().length > 0 && (
                   <p className="text-xs text-amber-600 dark:text-amber-400 -mt-2">
-                    ⚠️ قیمت {getVariablePriceItems()?.length} قلم در این مبلغ نیست و جداگانه محاسبه می‌شود
+                    ⚠️ قیمت {getVariablePriceItems().length} قلم در این مبلغ نیست و جداگانه محاسبه می‌شود
                   </p>
                 )}
                 {step === 'cart' ? (
@@ -308,7 +287,6 @@ export default function CartSheet({ open, onClose }: CartSheetProps) {
                 )}
               </div>
             )}
-
             {step === 'success' && (
               <div className="border-t border-zinc-100 dark:border-zinc-800 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
                 <Button className="w-full !py-4 !text-base !font-bold !rounded-2xl !bg-brand-600 hover:!bg-brand-700" size="lg" onClick={handleClose}>بستن</Button>

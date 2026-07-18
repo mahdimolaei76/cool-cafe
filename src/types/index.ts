@@ -13,23 +13,14 @@ export interface MenuItem {
   id: string;
   name: string;
   description: string;
-  /** For priceType 'fixed' this is the real price. For 'variable' it's
-   * ignored for order totals (kept as 0 or a reference/starting price)
-   * — the actual amount is entered by the cashier per order instead. */
   price: number;
-  /** 'variable' items (e.g. "قیمت بازار" / "توافقی") don't have one fixed
-   * number — customers/cashiers can still add them to an order, but the
-   * amount is set later by the cashier and is tracked outside the normal
-   * numeric subtotal until then. */
   priceType: 'fixed' | 'variable';
-  /** Free-text shown instead of a price for variable items, e.g. "قیمت بازار". */
   priceLabel?: string;
   categoryId: string;
   category?: Category;
   image: string;
   isAvailable: boolean;
   isFeatured: boolean;
-  /** Display order within this item's category (sort_order from the DB). */
   order: number;
   createdAt: string;
   updatedAt: string;
@@ -42,7 +33,7 @@ export type PaymentMethod = 'cash' | 'card' | 'online' | 'credit' | 'other';
 export interface OrderPaymentEvent {
   id: string;
   orderId: string;
-  kind: 'price_override' | 'payment_method' | 'paid' | 'service_charge' | 'takeaway_override' | 'item_service_deleted';
+  kind: 'price_override' | 'payment_method' | 'paid' | 'service_charge';
   oldValue: string;
   newValue: string;
   note?: string;
@@ -58,7 +49,7 @@ export interface OrderItem {
   price: number;
   quantity: number;
   subtotal: number;
-  serviceCharge?: number; // deprecated - مدیریت نمی‌شود
+  serviceCharge?: number;
   isPriceVariable?: boolean;
   priceConfirmed?: boolean;
   priceLabel?: string;
@@ -79,10 +70,10 @@ export interface Order {
   total: number;
   notes: string;
   status: OrderStatus;
+  /** orderType: 'in-person' = حضوری | 'online' = آنلاین (از منوی عمومی) */
   orderType: OrderType;
+  /** isTakeaway: نوع تحویل — true = بیرون‌بر | false = در محل */
   isTakeaway: boolean;
-  takeawayOverride?: boolean; // آیا حق‌الخدمه بیرون‌بر اعمال شود
-  takeawayFee?: number; // مبلغ حق‌الخدمه بیرون‌بر
   paymentMethod: PaymentMethod;
   paidByCredit?: boolean;
   isPaid?: boolean;
@@ -95,10 +86,6 @@ export interface Order {
   _unsynced?: boolean;
 }
 
-// A café customer, managed from "مدیریت مشتری‌ها" in the admin panel.
-// Matched to orders by phone number. creditBalance can be positive
-// (customer has pre-paid credit) or negative (customer owes money /
-// بدهی) — it can only be toggled while the balance is exactly 0.
 export interface Customer {
   id: string;
   phone: string;
@@ -114,9 +101,6 @@ export interface CustomerWithHistory extends Customer {
   orders: Order[];
 }
 
-/** One row of a customer's combined order + credit-account timeline
- * (تاریخچه سفارشات modal) — either a finalized order or a manual/automatic
- * credit-account change not tied to any specific order. */
 export interface CustomerHistoryEntry {
   entryType: 'order' | 'credit';
   id: string;
@@ -140,10 +124,7 @@ export interface CustomerListResult {
   total: number;
 }
 
-/** Kinds accepted by the "تغییر مقدار بدهی" credit-adjustment modal. */
 export type CreditAdjustKind = 'increase' | 'purchase' | 'settle';
-
-/** Alias kept for readability where "order/credit timeline row" is meant. */
 export type HistoryEntry = CustomerHistoryEntry;
 
 export interface OrderTimeline {
