@@ -11,9 +11,11 @@ interface ModalProps {
   footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
+  /** fixedHeight: مودال ارتفاع ثابت می‌گیرد و محتوا داخلش اسکرول می‌شود */
+  fixedHeight?: boolean;
 }
 
-export default function Modal({ open, onClose, title, children, footer, size = 'md', className }: ModalProps) {
+export default function Modal({ open, onClose, title, children, footer, size = 'md', className, fixedHeight }: ModalProps) {
   const handleEscape = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
   }, [onClose]);
@@ -51,7 +53,9 @@ export default function Modal({ open, onClose, title, children, footer, size = '
             className={cn(
               'relative w-full bg-white dark:bg-zinc-900 shadow-2xl flex flex-col',
               'rounded-t-3xl sm:rounded-2xl',
-              'max-h-[90vh] sm:max-h-[85vh]',
+              fixedHeight
+                ? 'h-[90vh] sm:h-[85vh]'
+                : 'max-h-[90vh] sm:max-h-[85vh]',
               sizes[size],
               className
             )}

@@ -3,7 +3,6 @@ import { X, Coffee, Info, Phone, MapPin, Clock, Shield, Search, Sun, Moon } from
 import { Link } from 'react-router-dom';
 import { cn } from '@/utils/cn';
 import { useAppStore } from '@/store';
-const logoIcon = '/images/logo.jpg'
 
 interface MenuSidebarProps {
   open: boolean;
@@ -41,19 +40,7 @@ export default function MenuSidebar({ open, onClose }: MenuSidebarProps) {
             <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-brand-800 dark:bg-brand-600 rounded-xl flex items-center justify-center">
-                  <img
-                    className="
-                text-brand-600
-                font-black
-                text-3xl
-                md:text-4xl
-                rounded-3xl
-                scale-120
-              "
-                    src={logoIcon}
-                  >
-
-                  </img>
+                  <span className="text-white font-serif font-bold text-lg">C</span>
                 </div>
                 <div>
                   <h2 className="font-bold text-zinc-900 dark:text-zinc-100">{settings.name}</h2>

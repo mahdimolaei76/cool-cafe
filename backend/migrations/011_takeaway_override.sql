@@ -1,8 +1,5 @@
--- Add takeaway override support to orders
-ALTER TABLE orders ADD COLUMN takeaway_override BOOLEAN DEFAULT FALSE;
-ALTER TABLE orders ADD COLUMN takeaway_fee INTEGER DEFAULT 0;
-
--- Update payment events to track takeaway overrides
--- (no schema change needed, just documenting the new 'takeaway_override' kind)
-
-CREATE INDEX idx_orders_takeaway_override ON orders(takeaway_override);
+-- 011: takeaway_override columns (نگه داشته شده برای backward compatibility ولی استفاده نمی‌شود)
+-- isTakeaway روی هر سفارش نوع تحویل را مشخص می‌کند (بیرون‌بر / در محل)
+-- هزینه بیرون‌بر از جدول settings (takeaway_fee) خوانده می‌شود نه از order
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS takeaway_override BOOLEAN DEFAULT FALSE;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS takeaway_fee      BIGINT  DEFAULT 0;

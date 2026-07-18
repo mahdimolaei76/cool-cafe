@@ -85,7 +85,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(authService)
 	categoryHandler := handler.NewCategoryHandler(categoryService)
 	menuItemHandler := handler.NewMenuItemHandler(menuItemService)
-	orderHandler := handler.NewOrderHandler(orderService)
+	orderHandler := handler.NewOrderHandler(orderService, settingsService)
 	settingsHandler := handler.NewSettingsHandler(settingsService)
 	customerHandler := handler.NewCustomerHandler(customerService)
 	uploadHandler := handler.NewUploadHandler(getEnv("UPLOAD_DIR", "./uploads"))
@@ -143,7 +143,8 @@ func main() {
 			r.Patch("/orders/{id}/total", orderHandler.UpdateTotal)
 			r.Patch("/orders/{id}/service-charge", orderHandler.UpdateServiceCharge)
 			r.Patch("/orders/{id}/items/{itemId}/service-charge", orderHandler.UpdateItemServiceCharge)
-			r.Patch("/orders/{id}/takeaway-override", orderHandler.UpdateTakeawayOverride)
+			r.Patch("/orders/{id}/takeaway", orderHandler.UpdateTakeaway)
+			r.Patch("/orders/{id}/staff-note", orderHandler.UpdateStaffNote)
 
 			// Customer lookup + credit adjustment are used by both admin
 			// and cashier (checkout's پرداخت اعتباری checkbox, and the

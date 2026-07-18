@@ -48,7 +48,7 @@ export default function NewOrder() {
     setForm(p => ({ ...p, ...customerDraft }));
     setCustomerModal(false);
   };
-  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person' as OrderType, paymentMethod: 'cash' as PaymentMethod, isTakeaway: false });
+  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', notes: '', staffNote: '', discount: 0, serviceCharge: 0, orderType: 'in-person' as OrderType, paymentMethod: 'cash' as PaymentMethod, isTakeaway: false, isUrgent: false });
 
   const activeCategories = categories?.filter(c => c.isActive).sort((a, b) => a.order - b.order);
 
@@ -85,7 +85,7 @@ export default function NewOrder() {
   const subtotal = cart.reduce((s, c) => s + lineTotal(c), 0);
   const takeawayFee = (form.isTakeaway && settings?.takeawayFeeEnabled && settings.takeawayFee > 0)
     ? (settings.takeawayFee ?? 0) : 0;
-  const total = Math.max(0, subtotal - form.discount + takeawayFee);
+  const total = Math.max(0, subtotal - form.discount + takeawayFee + form.serviceCharge);
   const hasUnpricedVariableItems = cart.some(c => c.menuItem.priceType === 'variable' && (c.manualPrice === null || c.manualPrice === undefined));
   const itemCount = cart.reduce((s, c) => s + c.quantity, 0);
 
@@ -177,7 +177,7 @@ export default function NewOrder() {
             priceLabel: isVariable && (c.manualPrice === null || c.manualPrice === undefined) ? (c.menuItem.priceLabel || 'قیمت‌گذاری نشده') : undefined,
           };
         }),
-        subtotal, discount: form.discount, serviceCharge: takeawayFee, total, notes: form.notes, status: 'pending', orderType: form.orderType, isTakeaway: form.isTakeaway, paymentMethod: form.paymentMethod, paidByCredit, isPaid, cashier: user?.name || '',
+        subtotal, discount: form.discount, serviceCharge: form.serviceCharge + takeawayFee, total, notes: form.notes, staffNote: form.staffNote, isUrgent: form.isUrgent, status: 'pending', orderType: form.orderType, isTakeaway: form.isTakeaway, paymentMethod: form.paymentMethod, paidByCredit, isPaid, cashier: user?.name || '',
       });
       setSuccess(order);
       toast.success('سفارش با موفقیت ثبت شد');
@@ -204,7 +204,7 @@ export default function NewOrder() {
   };
   const resetOrder = () => {
     setCart([]);
-    setForm({ firstName: '', lastName: '', phone: '', notes: '', discount: 0, orderType: 'in-person', paymentMethod: 'cash', isTakeaway: false });
+    setForm({ firstName: '', lastName: '', phone: '', notes: '', staffNote: '', discount: 0, serviceCharge: 0, orderType: 'in-person', paymentMethod: 'cash', isTakeaway: false, isUrgent: false });
     setSuccess(null);
     setConfirmedPaymentMethod('cash');
     setConfirmedDefer(false);
@@ -463,28 +463,62 @@ export default function NewOrder() {
                   <t.i className="w-4 h-4" />{t.l}
                 </button>
               ))}
-              {/* بیرون‌بر */}
-              <button
-                onClick={() => setForm(p => ({ ...p, isTakeaway: !p.isTakeaway }))}
-                className={cn('flex-1 py-2.5 rounded-xl border-2 flex items-center justify-center gap-2 text-sm font-bold transition-all',
-                  form.isTakeaway ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500'
-                )}
-              >
-                🥡 بیرون‌بر
-              </button>
             </div>
-            {/* نمایش هزینه بیرون‌بر اگه فعال باشه */}
-            {form.isTakeaway && settings?.takeawayFeeEnabled && takeawayFee > 0 && (
-              <div className="text-xs text-orange-600 text-center bg-orange-50 dark:bg-orange-900/20 rounded-xl py-2">
-                هزینه بیرون‌بر: +{formatPrice(takeawayFee)} اضافه شد
+
+            {/* سه چک‌باکس: بیرون‌بر، فوری، سرویس */}
+            <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl space-y-2.5 border border-zinc-200 dark:border-zinc-700">
+              {/* بیرون‌بر */}
+              <div className="space-y-1">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input type="checkbox" checked={form.isTakeaway}
+                    onChange={e => setForm(p => ({ ...p, isTakeaway: e.target.checked }))}
+                    className="w-4 h-4 rounded accent-orange-500" />
+                  <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">🥡 بیرون‌بر</span>
+                </label>
+                {form.isTakeaway && takeawayFee > 0 && (
+                  <p className="text-[11px] text-orange-600 mr-6">+{formatPrice(takeawayFee)} هزینه بیرون‌بر اضافه شد</p>
+                )}
               </div>
-            )}
+              {/* فوری */}
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" checked={form.isUrgent}
+                  onChange={e => setForm(p => ({ ...p, isUrgent: e.target.checked }))}
+                  className="w-4 h-4 rounded accent-red-500" />
+                <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">🔴 فوری</span>
+              </label>
+              {/* سرویس */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input type="checkbox" checked={form.serviceCharge > 0}
+                    onChange={e => setForm(p => ({ ...p, serviceCharge: e.target.checked ? (p.serviceCharge || 0) : 0 }))}
+                    className="w-4 h-4 rounded accent-brand-600" />
+                  <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">⚙️ سرویس</span>
+                </label>
+                {(form.serviceCharge > 0 || form.serviceCharge === 0) && (
+                  <div className="mr-6">
+                    <input type="number" inputMode="numeric" placeholder="مبلغ سرویس (تومان)"
+                      value={form.serviceCharge || ''}
+                      onChange={e => setForm(p => ({ ...p, serviceCharge: parseInt(e.target.value) || 0 }))}
+                      className="w-full px-3 py-1.5 text-sm rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                  </div>
+                )}
+              </div>
+            </div>
             <div className="flex gap-2">
               <button onClick={openCustomerModal} className="flex-1 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:border-brand-400 transition-colors flex items-center justify-center gap-2">
                 <User className="w-4 h-4" />{form.firstName ? `${form.firstName} ${form.lastName}` : 'مشتری'}
               </button>
               <input type="number" placeholder="تخفیف" value={form.discount || ''} onChange={e => setForm(p => ({ ...p, discount: parseInt(e.target.value) || 0 }))} className="w-28 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-transparent text-center text-sm font-bold placeholder:text-zinc-400 focus:outline-none focus:border-brand-500" />
             </div>
+
+            {/* توضیحات داخلی سفارش */}
+            <textarea
+              placeholder="📝 توضیحات داخلی سفارش (برای کارکنان)..."
+              value={form.staffNote}
+              onChange={e => setForm(p => ({ ...p, staffNote: e.target.value }))}
+              rows={2}
+              className="w-full px-3 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm placeholder:text-zinc-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 resize-none"
+            />
 
             {/* گزینه پرداخت — باز کردن مودال انتخاب روش پرداخت */}
             <button
@@ -545,7 +579,7 @@ export default function NewOrder() {
             onChange={e => setCustomerDraft(p => ({ ...p, phone: e.target.value }))}
             error={iranianMobileError(customerDraft.phone) || undefined}
           />
-          <Textarea label="یادداشت" placeholder="توضیحات سفارش..." value={customerDraft.notes} onChange={e => setCustomerDraft(p => ({ ...p, notes: e.target.value }))} />
+          <Textarea label="یادداشت مشتری" placeholder="درخواست خاص مشتری..." value={customerDraft.notes} onChange={e => setCustomerDraft(p => ({ ...p, notes: e.target.value }))} />
         </div>
       </Modal>
       {/* Payment Modal — گزینه پرداخت */}

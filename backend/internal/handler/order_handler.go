@@ -13,11 +13,12 @@ import (
 )
 
 type OrderHandler struct {
-	orderService *service.OrderService
+	orderService    *service.OrderService
+	settingsService *service.SettingsService
 }
 
-func NewOrderHandler(orderService *service.OrderService) *OrderHandler {
-	return &OrderHandler{orderService: orderService}
+func NewOrderHandler(orderService *service.OrderService, settingsService *service.SettingsService) *OrderHandler {
+	return &OrderHandler{orderService: orderService, settingsService: settingsService}
 }
 
 func (h *OrderHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -302,6 +303,65 @@ func (h *OrderHandler) UpdateServiceCharge(w http.ResponseWriter, r *http.Reques
 	respondJSON(w, http.StatusOK, order)
 }
 
+// UpdateStaffNote handles PATCH /orders/{id}/staff-note
+func (h *OrderHandler) UpdateStaffNote(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid order ID")
+		return
+	}
+	var input struct {
+		StaffNote string `json:"staffNote"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	order, err := h.orderService.UpdateStaffNote(r.Context(), id, input.StaffNote)
+	if err != nil {
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update staff note", err)
+		return
+	}
+	respondJSON(w, http.StatusOK, order)
+}
+
+// UpdateTakeaway handles PATCH /orders/{id}/takeaway
+// Toggles isTakeaway and applies the takeaway fee from settings to the total.
+func (h *OrderHandler) UpdateTakeaway(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid order ID")
+		return
+	}
+	var input struct {
+		IsTakeaway  bool   `json:"isTakeaway"`
+		CashierName string `json:"cashier"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Read takeaway fee from settings
+	var takeawayFee int64
+	if input.IsTakeaway && h.settingsService != nil {
+		if s, err := h.settingsService.Get(r.Context()); err == nil && s.TakeawayFeeEnabled {
+			takeawayFee = s.TakeawayFee
+		}
+	}
+
+	order, err := h.orderService.UpdateTakeaway(r.Context(), id, input.IsTakeaway, takeawayFee, input.CashierName)
+	if err != nil {
+		if err == service.ErrOrderLocked {
+			respondError(w, http.StatusBadRequest, "این سفارش تحویل داده شده یا لغو شده و قابل تغییر نیست")
+			return
+		}
+		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update takeaway", err)
+		return
+	}
+	respondJSON(w, http.StatusOK, order)
+}
+
 // UpdateItemServiceCharge handles PATCH /orders/{id}/items/{itemId}/service-charge
 func (h *OrderHandler) UpdateItemServiceCharge(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
@@ -322,8 +382,7 @@ func (h *OrderHandler) UpdateItemServiceCharge(w http.ResponseWriter, r *http.Re
 		respondError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
-	order, err := h.orderService.UpdateItemServiceCharge(r.Context(), id, itemID, input.ServiceCharge, input.CashierName)
-	if err != nil {
+	if err := h.orderService.UpdateItemServiceCharge(r.Context(), id, itemID, input.ServiceCharge, input.CashierName); err != nil {
 		if err == service.ErrOrderLocked {
 			respondError(w, http.StatusBadRequest, "این سفارش تحویل داده شده یا لغو شده و قابل تغییر نیست")
 			return
@@ -331,33 +390,5 @@ func (h *OrderHandler) UpdateItemServiceCharge(w http.ResponseWriter, r *http.Re
 		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update item service charge", err)
 		return
 	}
-	respondJSON(w, http.StatusOK, order)
-}
-
-// UpdateTakeawayOverride handles PATCH /orders/{id}/takeaway-override
-func (h *OrderHandler) UpdateTakeawayOverride(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		respondError(w, http.StatusBadRequest, "Invalid order ID")
-		return
-	}
-	var input struct {
-		TakeawayOverride bool   `json:"takeawayOverride"`
-		TakeawayFee      int64  `json:"takeawayFee"`
-		CashierName      string `json:"cashier"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		respondError(w, http.StatusBadRequest, "Invalid request body")
-		return
-	}
-	order, err := h.orderService.UpdateTakeawayOverride(r.Context(), id, input.TakeawayOverride, input.TakeawayFee, input.CashierName)
-	if err != nil {
-		if err == service.ErrOrderLocked {
-			respondError(w, http.StatusBadRequest, "این سفارش تحویل داده شده یا لغو شده و قابل تغییر نیست")
-			return
-		}
-		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to update takeaway override", err)
-		return
-	}
-	respondJSON(w, http.StatusOK, order)
+	respondJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }

@@ -21,6 +21,7 @@ export default function Reports() {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [filterTakeaway, setFilterTakeaway] = useState('');
 
   const filteredOrders = useMemo(() => {
     return orders?.filter(o => {
@@ -28,6 +29,8 @@ export default function Reports() {
       if (d.isBefore(dayjs(dateFrom).startOf('day')) || d.isAfter(dayjs(dateTo).endOf('day'))) return false;
       if (filterStatus && o.status !== filterStatus) return false;
       if (filterType && o.orderType !== filterType) return false;
+      if (filterTakeaway === 'takeaway' && !o.isTakeaway) return false;
+      if (filterTakeaway === 'dine-in' && o.isTakeaway) return false;
       if (filterCategory) {
         const hasItem = o.items.some(item => {
           const mi = menuItems.find(m => m.id === item.menuItemId);
@@ -37,7 +40,7 @@ export default function Reports() {
       }
       return true;
     });
-  }, [orders, dateFrom, dateTo, filterStatus, filterType, filterCategory, menuItems]);
+  }, [orders, dateFrom, dateTo, filterStatus, filterType, filterTakeaway, filterCategory, menuItems]);
 
   const report = useMemo(() => {
     const active = filteredOrders?.filter(o => o.status !== 'cancelled');
@@ -121,6 +124,10 @@ export default function Reports() {
           <Select label="نوع" value={filterType} onChange={e => setFilterType(e.target.value)} placeholder="همه" options={[
             { value: 'in-person', label: 'حضوری' },
             { value: 'online', label: 'آنلاین' },
+          ]} />
+          <Select label="تحویل" value={filterTakeaway} onChange={e => setFilterTakeaway(e.target.value)} placeholder="همه" options={[
+            { value: 'dine-in', label: 'در محل' },
+            { value: 'takeaway', label: 'بیرون‌بر' },
           ]} />
         </div>
       </Card>

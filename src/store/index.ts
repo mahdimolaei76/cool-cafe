@@ -92,6 +92,7 @@ interface AppStore {
   updateOrderStatus: (id: string, status: OrderStatus, note?: string) => Promise<void>;
   updateOrderItemPrice: (orderId: string, itemId: string, price: number) => Promise<void>;
   updateOrderPayment: (orderId: string, data: { paymentMethod: string; isPaid: boolean; paidByCredit: boolean }) => Promise<void>;
+  updateOrderTakeaway: (orderId: string, isTakeaway: boolean, cashier?: string) => Promise<void>;
   trackOrder: (trackingCode: string, phone: string) => Promise<Order | null>;
 
   // مدیریت مشتری‌ها (پرداخت اعتباری)
@@ -109,7 +110,7 @@ interface AppStore {
   toggleTheme: () => void;
 
   // Settings
-  settings: { name: string; phone: string; email: string; address: string; workingHours: string; aboutText: string; };
+  settings: { name: string; phone: string; email: string; address: string; workingHours: string; aboutText: string; takeawayFeeEnabled: boolean; takeawayFee: number; };
   fetchSettings: () => Promise<void>;
   updateSettings: (s: Partial<AppStore['settings']>) => Promise<void>;
 }
@@ -133,6 +134,8 @@ export const useAppStore = create<AppStore>()(
         address: 'تهران، خیابان ولیعصر',
         workingHours: '۷ صبح تا ۱۰ شب',
         aboutText: 'کافه COOL با هدف ارائه بهترین تجربه نوشیدنی و غذا در فضایی گرم و صمیمی راه‌اندازی شده است.',
+        takeawayFeeEnabled: false,
+        takeawayFee: 0,
       },
 
       // ─── Fetch ───
@@ -321,6 +324,13 @@ export const useAppStore = create<AppStore>()(
         }));
       },
 
+      updateOrderTakeaway: async (orderId, isTakeaway, cashier = '') => {
+        const updated = await orderApi.updateTakeaway(orderId, isTakeaway, cashier);
+        set(s => ({
+          orders: s.orders?.map(o => o.id === orderId ? { ...o, ...updated } : o),
+        }));
+      },
+
       // ─── Track (public, no auth) ───
       trackOrder: async (trackingCode, phone) => {
         const code = trackingCode.trim().toUpperCase();
@@ -372,6 +382,8 @@ export const useAppStore = create<AppStore>()(
               address: data?.address ?? s.settings.address,
               workingHours: data?.workingHours ?? s.settings.workingHours,
               aboutText: data?.aboutText ?? s.settings.aboutText,
+              takeawayFeeEnabled: data?.takeawayFeeEnabled ?? s.settings.takeawayFeeEnabled,
+              takeawayFee: data?.takeawayFee ?? s.settings.takeawayFee,
             },
             apiOnline: true,
           }));
