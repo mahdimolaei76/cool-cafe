@@ -9,6 +9,11 @@ import Input from '@/components/ui/Input';
 export default function SettingsPage() {
   const { settings, updateSettings, theme, toggleTheme } = useAppStore();
   const [form, setForm] = useState({ ...settings });
+
+  // Re-sync form if settings are fetched after this page mounts
+  // (e.g. navigating to settings before the initial fetch completes).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setForm({ ...settings }); }, [settings.name, settings.phone, settings.email, settings.address, settings.workingHours, settings.aboutText, settings.takeawayFeeEnabled, settings.takeawayFee]);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +115,7 @@ export default function SettingsPage() {
           <Card className="mt-4">
             <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">درباره</h3>
             <div className="space-y-2 text-sm text-zinc-500 dark:text-zinc-400">
-              <div className="flex justify-between"><span>نسخه</span><span className="font-mono text-zinc-900 dark:text-zinc-100" dir="ltr">1.0.0</span></div>
+              <div className="flex justify-between"><span>نسخه</span><span className="font-mono text-zinc-900 dark:text-zinc-100" dir="ltr">2.0.0</span></div>
               <div className="flex justify-between"><span>پلتفرم</span><span className="text-zinc-900 dark:text-zinc-100">سیستم مدیریت کافه COOL</span></div>
               <div className="flex justify-between"><span>مجوز</span><span className="text-zinc-900 dark:text-zinc-100">تجاری</span></div>
             </div>

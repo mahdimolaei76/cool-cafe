@@ -58,7 +58,16 @@ func (r *OrderRepository) List(ctx context.Context, limit, offset int) ([]domain
 
 func (r *OrderRepository) ListByStatus(ctx context.Context, status string) ([]domain.Order, error) {
 	var orders []domain.Order
-	query := `SELECT * FROM orders WHERE status = $1 ORDER BY created_at DESC`
+	query := `		SELECT id, order_number, tracking_code, customer_first_name, customer_last_name, customer_phone,
+			subtotal, discount, service_charge, total,
+			price_override,
+			notes, COALESCE(staff_note, '') AS staff_note, COALESCE(is_urgent, false) AS is_urgent,
+			status, order_type, is_takeaway,
+			COALESCE(takeaway_override, false) AS takeaway_override, COALESCE(takeaway_fee, 0) AS takeaway_fee,
+			payment_method, COALESCE(paid_by_credit, false) AS paid_by_credit, COALESCE(is_paid, false) AS is_paid,
+			cashier_id, COALESCE(cashier_name, '') AS cashier_name,
+			created_at, updated_at, delivered_at
+		FROM orders WHERE status = $1 ORDER BY created_at DESC`
 	if err := r.db.SelectContext(ctx, &orders, query, status); err != nil {
 		return nil, err
 	}
@@ -98,7 +107,16 @@ func (r *OrderRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.O
 
 func (r *OrderRepository) FindByOrderNumber(ctx context.Context, orderNumber string) (*domain.Order, error) {
 	var order domain.Order
-	query := `SELECT * FROM orders WHERE order_number = $1`
+	query := `		SELECT id, order_number, tracking_code, customer_first_name, customer_last_name, customer_phone,
+			subtotal, discount, service_charge, total,
+			price_override,
+			notes, COALESCE(staff_note, '') AS staff_note, COALESCE(is_urgent, false) AS is_urgent,
+			status, order_type, is_takeaway,
+			COALESCE(takeaway_override, false) AS takeaway_override, COALESCE(takeaway_fee, 0) AS takeaway_fee,
+			payment_method, COALESCE(paid_by_credit, false) AS paid_by_credit, COALESCE(is_paid, false) AS is_paid,
+			cashier_id, COALESCE(cashier_name, '') AS cashier_name,
+			created_at, updated_at, delivered_at
+		FROM orders WHERE order_number = $1`
 	if err := r.db.GetContext(ctx, &order, query, orderNumber); err != nil {
 		return nil, err
 	}
@@ -247,7 +265,7 @@ func (r *OrderRepository) UpdateItemPrice(ctx context.Context, orderID, itemID u
 		total = GREATEST(0, COALESCE((
 			SELECT SUM(oi.subtotal) FROM order_items oi
 			WHERE oi.order_id = o.id AND oi.price_confirmed = true
-		), 0) - o.discount),
+		), 0) - o.discount + o.service_charge),
 		updated_at = CURRENT_TIMESTAMP
 		WHERE o.id = $1
 	`, orderID); err != nil {
@@ -375,7 +393,16 @@ func randomTrackingCode() (string, error) {
 // enough to look up someone else's order.
 func (r *OrderRepository) FindByTrackingCodeAndPhone(ctx context.Context, trackingCode, phone string) (*domain.Order, error) {
 	var order domain.Order
-	query := `SELECT * FROM orders WHERE tracking_code = $1 AND customer_phone = $2`
+	query := `		SELECT id, order_number, tracking_code, customer_first_name, customer_last_name, customer_phone,
+			subtotal, discount, service_charge, total,
+			price_override,
+			notes, COALESCE(staff_note, '') AS staff_note, COALESCE(is_urgent, false) AS is_urgent,
+			status, order_type, is_takeaway,
+			COALESCE(takeaway_override, false) AS takeaway_override, COALESCE(takeaway_fee, 0) AS takeaway_fee,
+			payment_method, COALESCE(paid_by_credit, false) AS paid_by_credit, COALESCE(is_paid, false) AS is_paid,
+			cashier_id, COALESCE(cashier_name, '') AS cashier_name,
+			created_at, updated_at, delivered_at
+		FROM orders WHERE tracking_code = $1 AND customer_phone = $2`
 	if err := r.db.GetContext(ctx, &order, query, trackingCode, phone); err != nil {
 		return nil, err
 	}

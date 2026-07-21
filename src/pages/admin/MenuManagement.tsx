@@ -1,7 +1,39 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, Star, Eye, EyeOff, Upload, Image, X } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Star, Eye, EyeOff, Upload, Image, X, Loader2 } from 'lucide-react';
+
 import { useAppStore, formatItemPrice } from '@/store';
+
+// ─── Image Compression ───────────────────────────────────────────────────────
+// قبل از ارسال به سرور، عکس رو در مرورگر resize و compress می‌کنه.
+// این باعث میشه حجم از چند مگابایت به چند ده کیلوبایت برسه.
+async function compressImage(file: File, maxSizePx = 800, quality = 0.82): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = document.createElement('img');
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxSizePx || height > maxSizePx) {
+        if (width >= height) { height = Math.round((height * maxSizePx) / width); width = maxSizePx; }
+        else { width = Math.round((width * maxSizePx) / height); height = maxSizePx; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        blob => {
+          if (!blob) { reject(new Error('فشرده‌سازی ناموفق')); return; }
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+        },
+        'image/jpeg', quality,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('بارگذاری تصویر ناموفق')); };
+    img.src = url;
+  });
+}
 import { cn } from '@/utils/cn';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -24,6 +56,7 @@ export default function MenuManagement() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
@@ -62,20 +95,27 @@ export default function MenuManagement() {
     setModalOpen(true);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      try {
-        const url = await uploadImage(file);
-        setForm(p => ({ ...p, image: url }));
-      } catch {
-        // fallback base64
-        const reader = new FileReader();
-        reader.onloadend = () => setForm(p => ({ ...p, image: reader.result as string }));
-        reader.readAsDataURL(file);
-      }
+    // reset input so همون فایل رو دوباره بشه انتخاب کرد
+    e.target.value = '';
+    if (!file) return;
+
+    setImageUploading(true);
+    try {
+      // فشرده‌سازی در مرورگر قبل از ارسال
+      const compressed = await compressImage(file);
+      const url = await uploadImage(compressed);
+      setForm(p => ({ ...p, image: url }));
+    } catch {
+      // fallback: base64 پیش‌نمایش محلی (بدون ذخیره روی سرور)
+      const reader = new FileReader();
+      reader.onloadend = () => setForm(p => ({ ...p, image: reader.result as string }));
+      reader.readAsDataURL(file);
+    } finally {
+      setImageUploading(false);
     }
-  };
+  }, [uploadImage]);
 
   const handleSave = async () => {
     const data = {
@@ -187,69 +227,69 @@ export default function MenuManagement() {
 
         {filtered?.length > 0 ? (
           <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <AnimatePresence>
-              {paginated?.map((item, index) => {
-                const cat = categories.find(c => c.id === item.categoryId);
-                return (
-                  <motion.div
-                    key={item.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ delay: index * 0.02 }}
-                    className={`bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 overflow-hidden group ${!item.isAvailable && 'opacity-60'}`}
-                  >
-                    <div className="relative aspect-[4/3] bg-zinc-100 dark:bg-zinc-700">
-                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        {item.isFeatured && (
-                          <span className="w-7 h-7 bg-amber-500 rounded-full flex items-center justify-center shadow-lg">
-                            <Star className="w-4 h-4 text-white fill-white" />
-                          </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <AnimatePresence>
+                {paginated?.map((item, index) => {
+                  const cat = categories.find(c => c.id === item.categoryId);
+                  return (
+                    <motion.div
+                      key={item.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ delay: index * 0.02 }}
+                      className={`bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 overflow-hidden group ${!item.isAvailable && 'opacity-60'}`}
+                    >
+                      <div className="relative aspect-[4/3] bg-zinc-100 dark:bg-zinc-700">
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          {item.isFeatured && (
+                            <span className="w-7 h-7 bg-amber-500 rounded-full flex items-center justify-center shadow-lg">
+                              <Star className="w-4 h-4 text-white fill-white" />
+                            </span>
+                          )}
+                          {!item.isAvailable && (
+                            <span className="px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-full">ناموجود</span>
+                          )}
+                        </div>
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <button onClick={() => updateMenuItem(item.id, { isAvailable: !item.isAvailable })} className="p-2.5 bg-white rounded-xl hover:bg-zinc-100 transition-colors">
+                            {item.isAvailable ? <EyeOff className="w-4 h-4 text-zinc-600" /> : <Eye className="w-4 h-4 text-zinc-600" />}
+                          </button>
+                          <button onClick={() => openEdit(item)} className="p-2.5 bg-white rounded-xl hover:bg-zinc-100 transition-colors">
+                            <Edit2 className="w-4 h-4 text-blue-600" />
+                          </button>
+                          <button onClick={() => setDeleteId(item.id)} className="p-2.5 bg-white rounded-xl hover:bg-zinc-100 transition-colors">
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="font-bold text-zinc-900 dark:text-zinc-100">{item.name}</h3>
+                          <Badge className="flex-shrink-0 !text-base !px-2">{cat?.icon}</Badge>
+                        </div>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">{item.description}</p>
+                        {item.priceType === 'variable' ? (
+                          <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{item.priceLabel || 'قیمت بازار'}</p>
+                        ) : (
+                          <p className="text-lg font-bold text-brand-700 dark:text-brand-400">{formatItemPrice(item)}</p>
                         )}
-                        {!item.isAvailable && (
-                          <span className="px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-full">ناموجود</span>
-                        )}
                       </div>
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <button onClick={() => updateMenuItem(item.id, { isAvailable: !item.isAvailable })} className="p-2.5 bg-white rounded-xl hover:bg-zinc-100 transition-colors">
-                          {item.isAvailable ? <EyeOff className="w-4 h-4 text-zinc-600" /> : <Eye className="w-4 h-4 text-zinc-600" />}
-                        </button>
-                        <button onClick={() => openEdit(item)} className="p-2.5 bg-white rounded-xl hover:bg-zinc-100 transition-colors">
-                          <Edit2 className="w-4 h-4 text-blue-600" />
-                        </button>
-                        <button onClick={() => setDeleteId(item.id)} className="p-2.5 bg-white rounded-xl hover:bg-zinc-100 transition-colors">
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="font-bold text-zinc-900 dark:text-zinc-100">{item.name}</h3>
-                        <Badge className="flex-shrink-0 !text-base !px-2">{cat?.icon}</Badge>
-                      </div>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">{item.description}</p>
-                      {item.priceType === 'variable' ? (
-                        <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{item.priceLabel || 'قیمت بازار'}</p>
-                      ) : (
-                        <p className="text-lg font-bold text-brand-700 dark:text-brand-400">{formatItemPrice(item)}</p>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
-          <Pagination
-            page={page}
-            pageSize={pageSize}
-            total={filtered.length}
-            onPageChange={setPage}
-            onPageSizeChange={size => { setPageSize(size); setPage(1); }}
-            className="mt-2 -mx-2"
-          />
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={filtered.length}
+              onPageChange={setPage}
+              onPageSizeChange={size => { setPageSize(size); setPage(1); }}
+              className="mt-2 -mx-2"
+            />
           </>
         ) : (
           <EmptyState
@@ -276,7 +316,12 @@ export default function MenuManagement() {
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">تصویر</label>
             <div className="flex gap-4">
               <div className="w-32 h-32 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 overflow-hidden bg-zinc-50 dark:bg-zinc-800 flex-shrink-0">
-                {form.image ? (
+                {imageUploading ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-brand-500 gap-2">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                    <span className="text-xs text-zinc-400">در حال آپلود...</span>
+                  </div>
+                ) : form.image ? (
                   <div className="relative w-full h-full group">
                     <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
                     <button
@@ -300,14 +345,16 @@ export default function MenuManagement() {
                   accept="image/*"
                   onChange={handleImageUpload}
                   className="hidden"
+                  disabled={imageUploading}
                 />
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => fileInputRef.current?.click()}
-                  icon={<Upload className="w-4 h-4" />}
+                  onClick={() => !imageUploading && fileInputRef.current?.click()}
+                  icon={imageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  disabled={imageUploading}
                 >
-                  آپلود تصویر
+                  {imageUploading ? 'در حال آپلود...' : 'آپلود تصویر'}
                 </Button>
                 <p className="text-xs text-zinc-400">یا یک تصویر پیش‌فرض انتخاب کنید:</p>
                 <div className="flex gap-2 flex-wrap">

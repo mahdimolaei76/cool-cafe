@@ -110,7 +110,7 @@ interface AppStore {
   toggleTheme: () => void;
 
   // Settings
-  settings: { name: string; phone: string; email: string; address: string; workingHours: string; aboutText: string; takeawayFeeEnabled: boolean; takeawayFee: number; };
+  settings: { name: string; phone: string; email: string; address: string; workingHours: string; aboutText: string; takeawayFeeEnabled: boolean; takeawayFee: number; footerIcons: any[]; };
   fetchSettings: () => Promise<void>;
   updateSettings: (s: Partial<AppStore['settings']>) => Promise<void>;
 }
@@ -136,6 +136,7 @@ export const useAppStore = create<AppStore>()(
         aboutText: 'کافه COOL با هدف ارائه بهترین تجربه نوشیدنی و غذا در فضایی گرم و صمیمی راه‌اندازی شده است.',
         takeawayFeeEnabled: false,
         takeawayFee: 0,
+        footerIcons: [],
       },
 
       // ─── Fetch ───
@@ -384,6 +385,7 @@ export const useAppStore = create<AppStore>()(
               aboutText: data?.aboutText ?? s.settings.aboutText,
               takeawayFeeEnabled: data?.takeawayFeeEnabled ?? s.settings.takeawayFeeEnabled,
               takeawayFee: data?.takeawayFee ?? s.settings.takeawayFee,
+              footerIcons: Array.isArray(data?.footerIcons) ? data.footerIcons : (s.settings.footerIcons ?? []),
             },
             apiOnline: true,
           }));
@@ -393,11 +395,34 @@ export const useAppStore = create<AppStore>()(
         }
       },
       updateSettings: async (data) => {
-        // Optimistic local update so the UI feels instant even if the
-        // request is slow or fails.
+        // Snapshot current state for rollback on failure
+        const prev = (_get() as AppStore).settings;
+        // Optimistic local update so the UI feels instant
         set(s => ({ settings: { ...s.settings, ...data } }));
-        const merged = { ...(_get() as AppStore).settings, ...data };
-        await settingsApi.update(merged);
+        const merged = { ...prev, ...data };
+        try {
+          const updated = await settingsApi.update(merged);
+          // Sync with server response (includes any server-side defaults)
+          if (updated) {
+            set(s => ({
+              settings: {
+                name: updated.name ?? s.settings.name,
+                phone: updated.phone ?? s.settings.phone,
+                email: updated.email ?? s.settings.email,
+                address: updated.address ?? s.settings.address,
+                workingHours: updated.workingHours ?? s.settings.workingHours,
+                aboutText: updated.aboutText ?? s.settings.aboutText,
+                takeawayFeeEnabled: updated.takeawayFeeEnabled ?? s.settings.takeawayFeeEnabled,
+                takeawayFee: updated.takeawayFee ?? s.settings.takeawayFee,
+                footerIcons: Array.isArray(updated.footerIcons) ? updated.footerIcons : s.settings.footerIcons,
+              },
+            }));
+          }
+        } catch (err) {
+          // Revert optimistic update on failure
+          set({ settings: prev });
+          throw err;
+        }
       },
     }),
     {

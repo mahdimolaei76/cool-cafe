@@ -19,9 +19,10 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
+      className="h-full"
     >
       <div className={cn(
-        'bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden transition-all duration-300',
+        'bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden transition-all duration-300 h-full flex flex-col',
         'shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)]',
         'border border-zinc-100/80 dark:border-zinc-800',
         'dark:hover:border-zinc-700',
@@ -71,8 +72,8 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
         </div>
 
         {/* Details */}
-        <div className="p-4">
-          <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base leading-tight">
+        <div className="p-4 flex flex-col flex-1">
+          <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base leading-snug line-clamp-2">
             {item.name}
           </h3>
           <p className="mt-1.5 text-[13px] text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed min-h-[2.6em]">
@@ -80,7 +81,7 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
           </p>
 
           {/* Price & Action */}
-          <div className="flex flex-col items-start justify-between gap-2 mt-4">
+          <div className="flex flex-col items-start justify-between gap-2 mt-auto pt-4">
             <div>
               {item.priceType === 'variable' ? (
                 <span className="text-sm font-black text-amber-600 dark:text-amber-400">

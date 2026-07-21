@@ -177,7 +177,7 @@ export default function NewOrder() {
             priceLabel: isVariable && (c.manualPrice === null || c.manualPrice === undefined) ? (c.menuItem.priceLabel || 'قیمت‌گذاری نشده') : undefined,
           };
         }),
-        subtotal, discount: form.discount, serviceCharge: form.serviceCharge + takeawayFee, total, notes: form.notes, staffNote: form.staffNote, isUrgent: form.isUrgent, status: 'pending', orderType: form.orderType, isTakeaway: form.isTakeaway, paymentMethod: form.paymentMethod, paidByCredit, isPaid, cashier: user?.name || '',
+        subtotal, discount: form.discount, serviceCharge: form.serviceCharge, total, notes: form.notes, staffNote: form.staffNote, isUrgent: form.isUrgent, status: 'pending', orderType: form.orderType, isTakeaway: form.isTakeaway, paymentMethod: form.paymentMethod, paidByCredit, isPaid, cashier: user?.name || '',
       });
       setSuccess(order);
       toast.success('سفارش با موفقیت ثبت شد');

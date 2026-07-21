@@ -33,7 +33,7 @@ export type PaymentMethod = 'cash' | 'card' | 'online' | 'credit' | 'other';
 export interface OrderPaymentEvent {
   id: string;
   orderId: string;
-  kind: 'price_override' | 'payment_method' | 'paid' | 'service_charge';
+  kind: 'price_override' | 'payment_method' | 'paid' | 'service_charge' | 'takeaway_changed' | string;
   oldValue: string;
   newValue: string;
   note?: string;
@@ -183,6 +183,7 @@ export interface CafeSettings {
   aboutText: string;
   takeawayFeeEnabled: boolean;
   takeawayFee: number;
+  footerIcons?: any[];
 }
 
 export interface ReportFilters {

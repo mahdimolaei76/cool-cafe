@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { AlertTriangle, Clock, ChevronDown, ChevronUp, Wrench, Settings2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -40,6 +40,12 @@ export default function OrderPricePanel({ order }: { order: Order }) {
   const [serviceEnabled, setServiceEnabled] = useState((order.serviceCharge ?? 0) > 0);
   const [serviceAmount, setServiceAmount] = useState(String(order.serviceCharge ?? 0));
   const [savingService, setSavingService] = useState(false);
+
+  // Sync local state when order prop updates from server
+  useEffect(() => {
+    setServiceEnabled((order.serviceCharge ?? 0) > 0);
+    setServiceAmount(String(order.serviceCharge ?? 0));
+  }, [order.id, order.serviceCharge]);
 
   // ── تغییر مبلغ دستی ──
   const [newTotal, setNewTotal] = useState('');

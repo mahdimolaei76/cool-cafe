@@ -114,7 +114,11 @@ type CreateOrderInput struct {
 	PaidByCredit      bool                   `json:"paidByCredit"`
 	IsPaid            bool                   `json:"isPaid"`
 	CashierID         *uuid.UUID             `json:"cashierId"`
-	CashierName       string                 `json:"cashier"`
+	CashierName           string                 `json:"cashier"`
+	// TakeawayFeeOnCreate is set by the handler when isTakeaway=true at
+	// creation time. It is added to the order total so the fee is reflected
+	// immediately without needing a separate PATCH /takeaway call.
+	TakeawayFeeOnCreate   int64                  `json:"-"`
 }
 
 func (s *OrderService) Create(ctx context.Context, input CreateOrderInput) (*domain.Order, error) {
@@ -147,7 +151,7 @@ func (s *OrderService) Create(ctx context.Context, input CreateOrderInput) (*dom
 		}
 	}
 
-	total := subtotal - input.Discount + input.ServiceCharge
+	total := subtotal - input.Discount + input.ServiceCharge + input.TakeawayFeeOnCreate
 	if total < 0 {
 		total = 0
 	}

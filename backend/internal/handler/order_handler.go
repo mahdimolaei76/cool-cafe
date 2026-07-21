@@ -88,6 +88,16 @@ func (h *OrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 		input.CustomerFirstName = "مشتری"
 	}
 
+	// Apply takeaway fee from settings when isTakeaway is set on creation,
+	// same as PATCH /takeaway does post-creation. This prevents the frontend
+	// from having to embed the fee inside serviceCharge (which makes it
+	// impossible to split them apart if takeaway is later toggled off).
+	if input.IsTakeaway && h.settingsService != nil {
+		if s, err := h.settingsService.Get(r.Context()); err == nil && s.TakeawayFeeEnabled && s.TakeawayFee > 0 {
+			input.TakeawayFeeOnCreate = s.TakeawayFee
+		}
+	}
+
 	order, err := h.orderService.Create(r.Context(), input)
 	if err != nil {
 		respondErrorWithCause(w, http.StatusInternalServerError, "Failed to create order", err)

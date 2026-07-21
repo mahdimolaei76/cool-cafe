@@ -5,6 +5,7 @@ import { Lock, User, Eye, EyeOff, Coffee } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import Button from '@/components/ui/Button';
 import Banner from '@/components/ui/Banner';
+const logoIcon = '/images/logo.jpg'
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -46,7 +47,18 @@ export default function LoginPage() {
             transition={{ delay: 0.2, duration: 0.8 }}
           >
             <div className="w-28 h-28 bg-white/15 backdrop-blur-sm rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-white/20">
-              <span className="text-white font-black text-5xl" style={{ fontFamily: 'Playfair Display, serif' }}>C</span>
+              <img
+                className="
+                text-brand-600
+                font-black
+                text-3xl
+                md:text-4xl
+                rounded-3xl
+              "
+                src={logoIcon}
+              >
+
+              </img>
             </div>
             <h2 className="text-5xl font-black mb-4" style={{ fontFamily: 'Playfair Display, serif' }}>COOL</h2>
             <p className="text-white/60 text-lg leading-relaxed">

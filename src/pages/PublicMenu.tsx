@@ -68,7 +68,7 @@ export default function PublicMenu() {
       );
     }
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 items-stretch">
         {items?.map((item, i) => <MenuItemCard key={item.id} item={item} index={startIndex + i} />)}
       </div>
     );
@@ -156,7 +156,7 @@ export default function PublicMenu() {
                 {[1, 2].map(section => (
                   <div key={section}>
                     <div className="h-5 w-32 bg-zinc-200 dark:bg-zinc-800 rounded mb-4 animate-pulse" />
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 items-stretch">
                       {[1, 2, 3, 4].map(i => (
                         <div key={i} className="rounded-2xl overflow-hidden animate-pulse">
                           <div className="aspect-square bg-zinc-200 dark:bg-zinc-800" />
