@@ -106,7 +106,7 @@ export default function NewOrder() {
   // زدن «انصراف» هیچ تغییری در انتخاب فعلی سفارش ایجاد نمی‌کند.
   const [draftPaymentMethod, setDraftPaymentMethod] = useState<PaymentMethod | null>('cash');
   const [draftDefer, setDraftDefer] = useState(false);
-  const [creditCustomer, setCreditCustomer] = useState<{ firstName: string; lastName: string; creditEnabled: boolean; creditBalance: number } | null>(null);
+  const [creditCustomer, setCreditCustomer] = useState<{ firstName: string; lastName: string; creditEnabled: boolean; creditBalance: number; } | null>(null);
   const [creditChecking, setCreditChecking] = useState(false);
   const [creditError, setCreditError] = useState<string | null>(null);
 
@@ -189,7 +189,7 @@ export default function NewOrder() {
       // doesn't lose the work, but it must NOT be reported as a normal
       // success — the kitchen and other devices won't see it until it's
       // synced, so we say so clearly instead of hiding the failure.
-      const orderErr = err as Error & { order?: Order };
+      const orderErr = err as Error & { order?: Order; };
       const message = err instanceof Error ? err.message : 'ثبت سفارش با خطا مواجه شد. دوباره تلاش کنید.';
       if (orderErr?.order) {
         setSuccess(orderErr.order);
@@ -295,7 +295,7 @@ export default function NewOrder() {
               {topSellingItems?.map(item => {
                 const inCart = cart.find(c => c.menuItem.id === item.id);
                 return (
-                  <button key={item.id} onClick={() => addToCart(item)} className={cn('flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl transition-all text-right border', inCart ? 'bg-brand-600 border-brand-600 text-white shadow-lg shadow-brand-500/30' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:border-brand-400')}>
+                  <button key={item.id} onClick={() => addToCart(item)} className={cn('shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl transition-all text-right border', inCart ? 'bg-brand-600 border-brand-600 text-white shadow-lg shadow-brand-500/30' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:border-brand-400')}>
                     <img src={item.image} alt="" className="w-8 h-8 rounded-lg object-cover" />
                     <div>
                       <p className={cn('text-xs font-bold', inCart ? 'text-white' : 'text-zinc-900 dark:text-zinc-100')}>{item.name}</p>

@@ -30,7 +30,7 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
         !item.isAvailable && 'opacity-50 grayscale pointer-events-none'
       )}>
         {/* Image */}
-        <div className="relative aspect-[5/4] overflow-hidden group bg-zinc-100 dark:bg-zinc-800">
+        <div className="relative aspect-[4/4] overflow-hidden group bg-zinc-100 dark:bg-zinc-800">
           <img
             src={item.image}
             alt={item.name}
@@ -61,14 +61,14 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
           )}
 
           {/* Quick add on hover (desktop) */}
-          <motion.button
+          {/* <motion.button
             onClick={() => addItem(item)}
             whileTap={{ scale: 0.9 }}
             className="absolute bottom-3 left-3 right-3 py-2.5 bg-white/95 backdrop-blur-sm text-brand-700 rounded-xl text-sm font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 hidden md:flex items-center justify-center gap-2 shadow-lg"
           >
             <Plus className="w-4 h-4" />
             افزودن به سبد
-          </motion.button>
+          </motion.button> */}
         </div>
 
         {/* Details */}
@@ -94,8 +94,7 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
               )}
             </div>
 
-            {inCart ? (
-              /* Quantity Stepper */
+            {/* {inCart ? (
               <div className="flex items-center gap-0.5 bg-brand-50 dark:bg-brand-900/30 rounded-xl p-1 border border-brand-200 dark:border-brand-800 flex-shrink-0">
                 <button
                   onClick={() => updateQuantity(item.id, cartItem.quantity - 1)}
@@ -116,7 +115,6 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
                 </button>
               </div>
             ) : (
-              /* Add Button */
               <motion.button
                 whileTap={{ scale: 0.92 }}
                 onClick={() => addItem(item)}
@@ -126,7 +124,7 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
                 <Plus className="w-4 h-4 flex-shrink-0" strokeWidth={3} />
                 <span className="hidden md:inline">افزودن</span>
               </motion.button>
-            )}
+            )} */}
           </div>
         </div>
       </div>

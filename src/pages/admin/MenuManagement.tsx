@@ -241,7 +241,7 @@ export default function MenuManagement() {
                       transition={{ delay: index * 0.02 }}
                       className={`bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 overflow-hidden group ${!item.isAvailable && 'opacity-60'}`}
                     >
-                      <div className="relative aspect-[4/3] bg-zinc-100 dark:bg-zinc-700">
+                      <div className="relative aspect-[4/4] bg-zinc-100 dark:bg-zinc-700">
                         <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                         <div className="absolute top-2 right-2 flex gap-1">
                           {item.isFeatured && (
