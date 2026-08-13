@@ -110,8 +110,10 @@ func main() {
 	r.Route("/api", func(r chi.Router) {
 		// Public
 		r.Post("/auth/login", authHandler.Login)
+		r.Post("/auth/refresh", authHandler.Refresh)
 		r.Get("/categories", categoryHandler.List)
 		r.Get("/menu", menuItemHandler.List)
+		r.Get("/menu/default-images", menuItemHandler.DefaultImages)
 		r.Get("/menu/{id}", menuItemHandler.Get)
 		r.Get("/menu/by-category/{categoryId}", menuItemHandler.ListByCategory)
 		r.Post("/orders", orderHandler.Create)
@@ -170,9 +172,16 @@ func main() {
 		})
 	})
 
-	// Static uploads
+	// Static uploads (آپلودهای کاربران)
 	r.Handle("/uploads/*", http.StripPrefix("/uploads/",
 		http.FileServer(http.Dir(getEnv("UPLOAD_DIR", "./uploads")))))
+
+	// Static assets — عکس‌های پیش‌فرض منو و سایر فایل‌های ایستا
+	// بک‌اند پوشه STATIC_DIR/images را روی /images/* سرو می‌کند.
+	// مثال: GET /images/defaultMenuImages/coffee-hot.jpg
+	staticDir := getEnv("STATIC_DIR", "./static")
+	r.Handle("/images/*", http.StripPrefix("/images/",
+		http.FileServer(http.Dir(staticDir+"/images"))))
 
 	// Health
 	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {

@@ -3,6 +3,9 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -12,10 +15,17 @@ import (
 
 type MenuItemHandler struct {
 	menuItemService *service.MenuItemService
+	// مسیر پوشه‌ای که فرانت از آن serve می‌شه (معمولاً ./static یا ./public)
+	staticDir string
 }
 
 func NewMenuItemHandler(menuItemService *service.MenuItemService) *MenuItemHandler {
-	return &MenuItemHandler{menuItemService: menuItemService}
+	// مسیر پیش‌فرض: ./static — می‌توان با متغیر محیطی STATIC_DIR تغییر داد
+	staticDir := os.Getenv("STATIC_DIR")
+	if staticDir == "" {
+		staticDir = "./static"
+	}
+	return &MenuItemHandler{menuItemService: menuItemService, staticDir: staticDir}
 }
 
 func (h *MenuItemHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -102,11 +112,6 @@ func (h *MenuItemHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// ReorderItems handles PATCH /menu/reorder — receives an ordered list of
-// item IDs and assigns sort_order 1..N to them in that sequence.
-// This is a whole-category bulk update, so it's atomic: either all items
-// get their new sort_order or none do (wrapped in a transaction inside
-// the service).
 func (h *MenuItemHandler) ReorderItems(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		IDs []string `json:"ids"`
@@ -126,10 +131,6 @@ func (h *MenuItemHandler) ReorderItems(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// ListByCategory handles GET /menu/by-category/{categoryId} — returns
-// items for a single category sorted by their current sort_order.
-// Used by the category-edit modal to build the reorder list without
-// having to download every item in the whole menu.
 func (h *MenuItemHandler) ListByCategory(w http.ResponseWriter, r *http.Request) {
 	catIDStr := chi.URLParam(r, "categoryId")
 	catID, err := uuid.Parse(catIDStr)
@@ -143,4 +144,34 @@ func (h *MenuItemHandler) ListByCategory(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	respondJSON(w, http.StatusOK, items)
+}
+
+// DefaultImages لیست فایل‌های عکس پیش‌فرض را از پوشه images/defaultMenuImages برمی‌گرداند.
+// GET /api/menu/default-images  — عمومی، نیاز به توکن ندارد
+func (h *MenuItemHandler) DefaultImages(w http.ResponseWriter, r *http.Request) {
+	imagesDir := filepath.Join(h.staticDir, "images", "defaultMenuImages")
+
+	entries, err := os.ReadDir(imagesDir)
+	if err != nil {
+		// اگه پوشه وجود نداشت آرایه خالی برمی‌گردانیم (نه خطا)
+		respondJSON(w, http.StatusOK, map[string][]string{"images": {}})
+		return
+	}
+
+	var images []string
+	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".webp": true, ".gif": true}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		ext := strings.ToLower(filepath.Ext(e.Name()))
+		if allowed[ext] {
+			images = append(images, e.Name())
+		}
+	}
+	if images == nil {
+		images = []string{}
+	}
+
+	respondJSON(w, http.StatusOK, map[string][]string{"images": images})
 }

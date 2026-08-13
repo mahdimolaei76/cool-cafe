@@ -227,3 +227,12 @@ type FooterIcon struct {
 	Icon string `json:"icon"`
 	Link string `json:"link"`
 }
+
+// RefreshTokenRecord نگه‌دارنده اطلاعات توکن refresh در DB
+type RefreshTokenRecord struct {
+	UserID    uuid.UUID `db:"user_id"`
+	TokenHash string    `db:"token_hash"`
+	ExpiresAt time.Time `db:"expires_at"`
+	Role      string    `db:"role"`
+	Name      string    `db:"name"`
+}

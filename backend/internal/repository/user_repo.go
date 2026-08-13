@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -35,6 +36,40 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Us
 		return nil, err
 	}
 	return &user, nil
+}
+
+// SaveRefreshToken ذخیره توکن refresh برای یک کاربر
+func (r *UserRepository) SaveRefreshToken(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) error {
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id) DO UPDATE
+		  SET token_hash = EXCLUDED.token_hash,
+		      expires_at = EXCLUDED.expires_at,
+		      created_at = now()
+	`, userID, tokenHash, expiresAt)
+	return err
+}
+
+// FindRefreshToken پیدا کردن توکن refresh معتبر
+func (r *UserRepository) FindRefreshToken(ctx context.Context, tokenHash string) (*domain.RefreshTokenRecord, error) {
+	var rec domain.RefreshTokenRecord
+	err := r.db.GetContext(ctx, &rec, `
+		SELECT rt.user_id, rt.token_hash, rt.expires_at, u.role, u.name
+		FROM refresh_tokens rt
+		JOIN users u ON u.id = rt.user_id AND u.is_active = true
+		WHERE rt.token_hash = $1 AND rt.expires_at > now()
+	`, tokenHash)
+	if err != nil {
+		return nil, err
+	}
+	return &rec, nil
+}
+
+// RevokeRefreshToken حذف توکن refresh یک کاربر
+func (r *UserRepository) RevokeRefreshToken(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `DELETE FROM refresh_tokens WHERE user_id = $1`, userID)
+	return err
 }
 
 func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
