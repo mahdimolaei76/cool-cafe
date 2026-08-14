@@ -345,7 +345,7 @@ export default function NewOrder() {
                   <motion.button key={item.id} whileTap={{ scale: 0.95 }} onClick={() => addToCart(item)}
                     className={cn('relative p-4 rounded-2xl text-right transition-all', inCart ? 'bg-brand-50 dark:bg-brand-900/30 border-2 border-brand-500 shadow-lg shadow-brand-500/20' : 'bg-white dark:bg-zinc-800 border-2 border-zinc-200 dark:border-zinc-700 hover:border-brand-400 hover:shadow-lg')}>
                     <div className="aspect-square rounded-xl overflow-hidden mb-3 bg-zinc-100 dark:bg-zinc-700">
-                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                      <img src={item.image} alt={item.name} className="w-full h-full object-cover aspect-square" />
                     </div>
                     <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base truncate">{item.name}</h3>
                     <p className="text-brand-600 dark:text-brand-400 font-black text-lg mt-1">{formatItemPrice(item)}</p>
@@ -376,7 +376,7 @@ export default function NewOrder() {
                           <motion.button key={item.id} whileTap={{ scale: 0.95 }} onClick={() => addToCart(item)}
                             className={cn('relative p-4 rounded-2xl text-right transition-all', inCart ? 'bg-brand-50 dark:bg-brand-900/30 border-2 border-brand-500 shadow-lg shadow-brand-500/20' : 'bg-white dark:bg-zinc-800 border-2 border-zinc-200 dark:border-zinc-700 hover:border-brand-400 hover:shadow-lg')}>
                             <div className="aspect-square rounded-xl overflow-hidden mb-3 bg-zinc-100 dark:bg-zinc-700">
-                              <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                              <img src={item.image} alt={item.name} className="w-full h-full object-cover aspect-square" />
                             </div>
                             <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm truncate">{item.name}</h3>
                             <p className="text-brand-600 dark:text-brand-400 font-black text-base mt-1">{formatItemPrice(item)}</p>

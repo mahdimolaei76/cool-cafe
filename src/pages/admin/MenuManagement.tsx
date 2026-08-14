@@ -241,7 +241,7 @@ export default function MenuManagement() {
                       className={`bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 overflow-hidden group ${!item.isAvailable && 'opacity-60'}`}
                     >
                       <div className="relative aspect-square  bg-zinc-100 dark:bg-zinc-700">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover aspect-square" />
                         <div className="absolute top-2 right-2 flex gap-1">
                           {item.isFeatured && (
                             <span className="w-7 h-7 bg-amber-500 rounded-full flex items-center justify-center shadow-lg">
@@ -322,7 +322,7 @@ export default function MenuManagement() {
                   </div>
                 ) : form.image ? (
                   <div className="relative w-full h-full group">
-                    <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
+                    <img src={form.image} alt="Preview" className="w-full h-full object-cover aspect-square" />
                     <button
                       onClick={() => setForm(p => ({ ...p, image: '' }))}
                       className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -367,7 +367,7 @@ export default function MenuManagement() {
                           className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${form.image === img.value ? 'border-brand-500 ring-2 ring-brand-500/30 scale-105' : 'border-zinc-200 dark:border-zinc-700 hover:border-brand-300'}`}
                           title={img.label}
                         >
-                          <img src={img.value} alt={img.label} className="w-full h-full object-cover" />
+                          <img src={img.value} alt={img.label} className="w-full h-full object-cover aspect-square" />
                         </button>
                         {/* tooltip */}
                         <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-zinc-900 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover/img:opacity-100 transition-opacity z-10">

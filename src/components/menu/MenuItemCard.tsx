@@ -34,7 +34,7 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
           <img
             src={item.image}
             alt={item.name}
-            className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+            className="w-full h-full aspect-square object-cover object-center transition-transform duration-700 group-hover:scale-105"
             loading="lazy"
           />
           {/* Dark overlay on hover */}
