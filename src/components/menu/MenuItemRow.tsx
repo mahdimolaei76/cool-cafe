@@ -64,7 +64,7 @@ export default function MenuItemRow({ item, index }: Props) {
             </span>
           )}
 
-          {inCart ? (
+          {/* {inCart ? (
             <div className="flex items-center gap-1 bg-white dark:bg-zinc-800 rounded-xl p-0.5 border border-zinc-200 dark:border-zinc-700 shadow-sm">
               <button
                 onClick={() => updateQuantity(item.id, cartItem.quantity - 1)}
@@ -90,7 +90,7 @@ export default function MenuItemRow({ item, index }: Props) {
               <Plus className="w-3.5 h-3.5" strokeWidth={3} />
               افزودن
             </button>
-          )}
+          )} */}
         </div>
       </div>
     </motion.div>
