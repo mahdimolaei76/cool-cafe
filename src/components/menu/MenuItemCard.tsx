@@ -94,8 +94,7 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
               )}
             </div>
 
-            {inCart ? (
-              /* Quantity Stepper */
+            {/* {inCart ? (
               <div className="flex items-center gap-0.5 bg-brand-50 dark:bg-brand-900/30 rounded-xl p-1 border border-brand-200 dark:border-brand-800 flex-shrink-0">
                 <button
                   onClick={() => updateQuantity(item.id, cartItem.quantity - 1)}
@@ -116,7 +115,6 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
                 </button>
               </div>
             ) : (
-              /* Add Button */
               <motion.button
                 whileTap={{ scale: 0.92 }}
                 onClick={() => addItem(item)}
@@ -126,7 +124,7 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
                 <Plus className="w-4 h-4 flex-shrink-0" strokeWidth={3} />
                 <span className="hidden md:inline">افزودن</span>
               </motion.button>
-            )}
+            )} */}
           </div>
         </div>
       </div>
