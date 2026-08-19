@@ -48,8 +48,7 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
               </span>
             </div>
           )}
-
-          {/* Cart indicator */}
+          {/* 
           {inCart && (
             <motion.div
               initial={{ scale: 0 }}
@@ -60,7 +59,6 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
             </motion.div>
           )}
 
-          {/* Quick add on hover (desktop) */}
           <motion.button
             onClick={() => addItem(item)}
             whileTap={{ scale: 0.9 }}
@@ -68,7 +66,7 @@ export default function MenuItemCard({ item, index }: MenuItemCardProps) {
           >
             <Plus className="w-4 h-4" />
             افزودن به سبد
-          </motion.button>
+          </motion.button> */}
         </div>
 
         {/* Details */}
